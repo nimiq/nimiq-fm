@@ -1,6 +1,7 @@
 import topLevelAwait from 'vite-plugin-top-level-await'
 import wasm from 'vite-plugin-wasm'
 import process from 'node:process'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   future: {
@@ -57,8 +58,9 @@ export default defineNuxtConfig({
       topLevelAwait(),
     ],
     optimizeDeps: {
-      exclude: ['@nimiq/core'],
+      exclude: ['@nimiq/core',],
     },
+
   },
 
   nitro: {
