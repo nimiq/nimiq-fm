@@ -58,7 +58,7 @@ export default defineNuxtConfig({
       topLevelAwait(),
     ],
     optimizeDeps: {
-      exclude: ['@nimiq/core', 'tone', 'three'],
+      exclude: ['@nimiq/core'],
     },
 
   },
