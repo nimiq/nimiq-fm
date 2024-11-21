@@ -2,12 +2,15 @@ import * as Tone from 'tone'
 
 export default function useTone() {
   const maxNotes = 4
-  const synth = new Tone.Synth({
+const synth = ref()
+  function init() {
+  synth.value = new Tone.Synth({
     oscillator: {
       type: 'fmsine4',
       modulationType: 'square',
     },
   }).toDestination()
+  }
 
   function playNotes(notes: string[]) {
     const now = Tone.now()
@@ -16,5 +19,5 @@ export default function useTone() {
     }
   }
 
-  return { playNotes }
+  return { playNotes, init }
 }
