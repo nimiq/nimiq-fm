@@ -22,10 +22,17 @@ watch(block, (_block) => {
   // console.log(notes)
   playNotes(notes)
 })
+
+const clicked = ref(false)
+function onClick() {
+  clicked.value = !clicked.value
+  Tone.start()
+}
 </script>
 
 <template>
-  <div @click="() => Tone.start()">
+  <div flex="~ items-center justify-center" h-full>
+    <!-- <button @click="onClick" nq-pill-blue v-if="!clicked">Click me</button> -->
     <MainScene />
   </div>
 </template>
