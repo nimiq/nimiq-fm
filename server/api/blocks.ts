@@ -5,6 +5,7 @@ let closeFn: (() => void) | undefined
 export default defineWebSocketHandler({
   async open(peer) {
     const nodeRpcUrl = useRuntimeConfig().nodeRpcUrl
+    console.log('Connecting to Nimiq node at')
 
     const client = new NimiqRPCClient(nodeRpcUrl)
 
