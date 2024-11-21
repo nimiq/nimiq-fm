@@ -1,8 +1,9 @@
 import topLevelAwait from 'vite-plugin-top-level-await'
 import wasm from 'vite-plugin-wasm'
-
+import process from 'node:process'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  ssr: false,
   future: {
     compatibilityVersion: 4,
   },
@@ -47,6 +48,10 @@ export default defineNuxtConfig({
     typedPages: true,
   },
 
+  runtimeConfig: {
+    nodeRpcUrl: process.env.NUXT_RPC_URL || '',
+  },
+
   vite: {
     plugins: [
       wasm(),
@@ -63,6 +68,9 @@ export default defineNuxtConfig({
         target: 'esnext',
       },
     },
+      experimental: {
+        websocket: true,
+      },
   },
 
   app: {

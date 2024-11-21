@@ -1,5 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from 'gsap'
+import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
 import { onBeforeUnmount, onMounted } from 'vue'
 
@@ -39,8 +40,8 @@ function createHexagonShape() {
 }
 
 function shakeGrid() {
-  const intensity = 0.05
-  const duration = 0.3
+  const intensity = 0.1
+  const duration = 0.05
 
   gsap.to(gridHelper.rotation, {
     x: `+=${intensity * (Math.random() - 0.5)}`,
@@ -85,7 +86,8 @@ function setupScene() {
   camera.rotation.x = 0.3
 
   // Add ambient light
-  const ambientLight = new THREE.AmbientLight(0x404040)
+  // const ambientLight = new THREE.AmbientLight(0x404040)
+  const ambientLight = new THREE.AmbientLight(0x000000)
   scene.add(ambientLight)
 
   // Add directional light
@@ -95,32 +97,44 @@ function setupScene() {
 
   // Add background effects
   createBackground()
-
-  // Start periodic grid shake
-  setInterval(shakeGrid, 1000)
 }
 
 function createBackground() {
   // Create a grid
-  gridHelper = new THREE.GridHelper(20, 20, 0x00FF00, 0x00FF00)
+  gridHelper = new THREE.GridHelper(20, 20, 0x0CA6FE, 0x0CA6FE)
   gridHelper.position.y = -3
   scene.add(gridHelper)
 
   // Add neon post-processing
   const renderScene = new THREE.Scene()
-  renderScene.background = new THREE.Color(0x000011)
+  renderScene.background = new THREE.Color(0x0CA6FE)
 }
-
-function createNote() {
-  const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00]
+// 12 166 254 blue
+// 36 204 162; green
+// 255 153 0  orange
+// 255 92 72; red
+// 255 196 59; gold
+// 143 63 213; puple
+function createNote(svg: string) {
+  // const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00]
+  const colors = [0x0CA6FE, 0x24CCA2, 0xFF9900, 0xFF5C48, 0xFFC43B, 0x8F3FD5]
   const geometry = createHexagonShape()
-  const material = new THREE.MeshPhongMaterial({
-    color: colors[Math.floor(Math.random() * colors.length)],
-    emissive: 0x444444,
-    shininess: 100,
-    flatShading: true,
-    side: THREE.DoubleSide,
-  })
+  // const material = new THREE.MeshPhongMaterial({
+  //   color: colors[Math.floor(Math.random() * colors.length)],
+  //   emissive: 0x444444,
+  //   shininess: 100,
+  //   flatShading: true,
+  //   side: THREE.DoubleSide,
+  // })
+
+  // Create the texture from SVG
+  const texture = createTextureFromSVG(svg)
+
+  // Create a material with the texture
+  const material = new THREE.MeshStandardMaterial({ map: texture })
+
+  // Create a mesh with geometry and material
+  // const hexagon = new THREE.Mesh(geometry, material);
 
   const note = new THREE.Mesh(geometry, material)
   note.position.set(
@@ -143,12 +157,10 @@ function createNote() {
   scene.add(note)
   notes.push(note)
 }
-
-function animate(time) {
-  requestAnimationFrame(animate)
-
+function animate(producer: string, time) {
+  requestAnimationFrame(producer)
   if (time - lastNoteTime > NOTE_INTERVAL) {
-    createNote()
+    createNote(producer)
     lastNoteTime = time
   }
 
@@ -177,17 +189,21 @@ useEventListener(handleResize)
 
 onMounted(() => {
   setupScene()
-  animate(0)
+  // animate(0)
 })
 
-onBeforeUnmount(() => {
-  // Clear the shake interval
-  clearInterval(shakeGrid)
+const { block, micro } = storeToRefs(useBlocks())
+watch(block, shakeGrid)
+
+watch(micro, async (b) => {
+  console.log({prod:b.producer, b})
+  const svgString = await createIdenticon(b.producer.validator)
+  animate(0, svgString)
 })
 </script>
 
 <template>
-  <div ref="container" class="game-container" />
+  <div ref="container" bg-pink class="game-container" />
 </template>
 
 <style scoped>

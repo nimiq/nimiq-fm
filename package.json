@@ -13,10 +13,13 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@nimiq/core": "next",
+    "@nimiq/core": "^2.0.0",
     "gsap": "^3.12.5",
+    "identicons-esm": "^0.2.0",
+    "nimiq-rpc-client-ts": "^0.4.5",
     "nuxt": "^3.13.2",
-    "three": "^0.162.0"
+    "three": "^0.162.0",
+    "tone": "^15.0.4"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.9.2",
