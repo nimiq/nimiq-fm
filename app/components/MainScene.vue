@@ -2,8 +2,9 @@
 import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
-import { onBeforeUnmount, onMounted } from 'vue'
+import {  onMounted } from 'vue'
 
+const { block, micro, svg } = storeToRefs(useBlocks())
 const container = ref(null)
 let scene
 let camera
@@ -115,23 +116,23 @@ function createBackground() {
 // 255 92 72; red
 // 255 196 59; gold
 // 143 63 213; puple
-function createNote(svg: string) {
+function createNote() {
   // const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00]
   const colors = [0x0CA6FE, 0x24CCA2, 0xFF9900, 0xFF5C48, 0xFFC43B, 0x8F3FD5]
   const geometry = createHexagonShape()
-  // const material = new THREE.MeshPhongMaterial({
-  //   color: colors[Math.floor(Math.random() * colors.length)],
-  //   emissive: 0x444444,
-  //   shininess: 100,
-  //   flatShading: true,
-  //   side: THREE.DoubleSide,
-  // })
+  const material = new THREE.MeshPhongMaterial({
+    color: colors[Math.floor(Math.random() * colors.length)],
+    emissive: 0x444444,
+    shininess: 100,
+    flatShading: true,
+    side: THREE.DoubleSide,
+  })
 
   // Create the texture from SVG
-  const texture = createTextureFromSVG(svg)
+  // const texture = createTextureFromSVG(svg.value)
 
   // Create a material with the texture
-  const material = new THREE.MeshStandardMaterial({ map: texture })
+  // const material = new THREE.MeshStandardMaterial({ map: texture })
 
   // Create a mesh with geometry and material
   // const hexagon = new THREE.Mesh(geometry, material);
@@ -157,10 +158,11 @@ function createNote(svg: string) {
   scene.add(note)
   notes.push(note)
 }
-function animate(producer: string, time) {
-  requestAnimationFrame(producer)
+
+function animate(time) {
+  requestAnimationFrame(animate)
   if (time - lastNoteTime > NOTE_INTERVAL) {
-    createNote(producer)
+    createNote()
     lastNoteTime = time
   }
 
@@ -192,7 +194,6 @@ onMounted(() => {
   // animate(0)
 })
 
-const { block, micro } = storeToRefs(useBlocks())
 watch(block, shakeGrid)
 
 watch(micro, async (b) => {
