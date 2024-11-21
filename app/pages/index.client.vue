@@ -32,7 +32,7 @@ function onClick() {
 </script>
 
 <template>
-  <div flex="~ items-center justify-center col" size-full>
+  <div flex="~ items-center justify-center col" size-screen>
     <h1 text-3xl text-white>Nimiq Song</h1>
     <p nq-subline>Each block is produced by a validator and each validator has their own "identisound"</p>
     <button @click="onClick" nq-pill-blue v-if="!clicked">Tune in!</button>
