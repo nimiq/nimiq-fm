@@ -167,8 +167,8 @@ function animate(time) {
   }
 
   notes.forEach((note, index) => {
-    note.position.y += NOTE_SPEED * 0.02
-    note.rotation.y += 0.02
+    note.position.y += NOTE_SPEED * 0.015
+    note.rotation.y += 0.015
 
     if (note.position.y > 5) {
       scene.remove(note)

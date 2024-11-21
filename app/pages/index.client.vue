@@ -32,7 +32,7 @@ function onClick() {
 
 <template>
   <div flex="~ items-center justify-center" h-full>
-    <!-- <button @click="onClick" nq-pill-blue v-if="!clicked">Click me</button> -->
+    <button @click="onClick" nq-pill-blue v-if="!clicked">Click me</button>
     <MainScene />
   </div>
 </template>

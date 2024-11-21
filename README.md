@@ -1,8 +1,8 @@
-<h1 align="center">Nimiq Nuxt Template</h1>
+<h1 align="center">Nimiq Song</h1>
 
 <p align="center">
   <a href="https://github.com/onmax/nimiq-vue-template">
-    <img src="https://github.com/onmax/nimiq-vue-template/raw/main/public/brave_screenshot_localhost.png" alt="Nimiq Nuxt Template" width="644" />
+    <img src="https://github.com/onmax/nimiq-vue-template/raw/main/public/brave_screenshot_localhost.png" alt="Nimiq Song" width="644" />
   </a>
 
 <p align="center">

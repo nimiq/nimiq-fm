@@ -27,8 +27,8 @@ export default defineNuxtConfig({
 
   site: {
     url: 'https://nimiq-nuxt-template.nuxt.dev/',
-    name: 'Nimiq Nuxt Template',
-    description: 'Welcome to Nimiq Nuxt Template site!',
+    name: 'Nimiq Song',
+    description: 'Welcome to Nimiq Song site!',
     defaultLocale: 'en', // not needed if you have @nuxtjs/i18n installed
   },
 
@@ -76,7 +76,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Nimiq Nuxt Template',
+      title: 'Nimiq Song',
       viewport: 'width=device-width,initial-scale=1',
       link: [
         { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
