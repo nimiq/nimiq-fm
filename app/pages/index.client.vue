@@ -3,7 +3,7 @@ import { BlockType } from 'nimiq-rpc-client-ts'
 import * as Tone from 'tone'
 
 const { block } = storeToRefs(useBlocks())
-const { playNotes } = useTone()
+const { playNotes, init } = useTone()
 
 const pentatonic = ['C', 'D', 'E', 'G', 'A']
 const octaveNumber = [2, 3, 4, 5]
@@ -27,6 +27,7 @@ watch(block, (_block) => {
 const clicked = ref(false)
 function onClick() {
   clicked.value = !clicked.value
+  init()
   Tone.start()
 }
 </script>
