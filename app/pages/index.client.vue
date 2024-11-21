@@ -32,6 +32,7 @@ function onClick() {
 
 <template>
   <div flex="~ items-center justify-center" h-full>
+    <h1 text-3xl text-white>Nimiq Song</h1>
     <button @click="onClick" nq-pill-blue v-if="!clicked">Click me</button>
     <MainScene />
   </div>
