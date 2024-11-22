@@ -2,7 +2,7 @@
 import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
-import {  onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 const { block, micro, svg } = storeToRefs(useBlocks())
 const container = ref(null)
@@ -197,7 +197,7 @@ onMounted(() => {
 watch(block, shakeGrid)
 
 watch(micro, async (b) => {
-  console.log({prod:b.producer, b})
+  console.log({ prod: b.producer, b })
   const svgString = await createIdenticon(b.producer.validator)
   animate(0, svgString)
 })
