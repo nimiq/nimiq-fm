@@ -6,7 +6,9 @@ const { block } = storeToRefs(useBlocks())
 const { playNotes, init } = useTone()
 
 const pentatonic = ['C', 'D', 'E', 'G', 'A']
-const octaveNumber = [2, 3, 4, 5]
+// const octaveNumber = [2, 3, 4, 5]
+const octaveNumber = [1,2, 3]
+const clicked = ref(false)
 
 watch(block, (_block) => {
   //if(!clicked.value) return
@@ -24,7 +26,6 @@ watch(block, (_block) => {
   playNotes(notes)
 })
 
-const clicked = ref(false)
 function onClick() {
   clicked.value = !clicked.value
   init()
@@ -37,6 +38,6 @@ function onClick() {
     <h1 text-3xl text="neutral-0 center">Nimiq Song</h1>
     <p nq-subline>Each block is produced by a validator and each validator has their own "identisound"</p>
     <button @click="onClick" nq-pill-blue v-if="!clicked">Tune in!</button>
-    <!-- <MainScene /> -->
+    <MainScene v-else />
   </div>
 </template>
