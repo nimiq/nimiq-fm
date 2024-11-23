@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BlockType } from 'nimiq-rpc-client-ts'
-import * as Tone from 'tone'
 
 const { block } = storeToRefs(useBlocks())
 const { playNotes, init, ready } = useTone()
@@ -26,10 +25,9 @@ watch(block, (_block) => {
   playNotes(notes)
 })
 
-function onClick() {
+async function onClick() {
+  await init()
   clicked.value = !clicked.value
-  init()
-  Tone.start()
 }
 </script>
 
