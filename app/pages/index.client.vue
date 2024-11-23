@@ -33,7 +33,7 @@ async function onClick() {
 
 <template>
   <div flex="~ items-center justify-center col" size-screen>
-    <h1 text-3xl text="neutral-0 center">
+    <h1 text="center 3xl" w-full>
       Nimiq Song
     </h1>
     <p nq-subline>
