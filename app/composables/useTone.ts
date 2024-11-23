@@ -1,8 +1,9 @@
+import { now, start, Synth } from 'tone'
+
 export default function useTone() {
   const maxNotes = 8
   const synth = ref()
-  async function init() {
-    const { Synth, start } = await import('tone')
+  function init() {
     synth.value = new Synth({
       oscillator: {
         type: 'fmsine4',
@@ -13,8 +14,7 @@ export default function useTone() {
     start()
   }
 
-  async function playNotes(notes: string[]) {
-    const { now } = await import('tone')
+  function playNotes(notes: string[]) {
     if (!synth.value)
       return
     const noww = now()
