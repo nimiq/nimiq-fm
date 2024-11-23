@@ -1,27 +1,29 @@
-import { now, start, Synth } from 'tone'
+import * as T from 'tone'
 
 export default function useTone() {
   const maxNotes = 8
   const synth = ref()
+  const ready = ref(false)
   function init() {
-    synth.value = new Synth({
+    synth.value = new T.Synth({
       oscillator: {
         type: 'fmsine4',
         modulationType: 'square',
       },
     }).toDestination()
 
-    start()
+    T.start()
+    ready.value = true
   }
 
   function playNotes(notes: string[]) {
     if (!synth.value)
       return
-    const noww = now()
+    const noww = T.now()
     for (let i = 0; i < maxNotes; i++) {
       synth.value!.triggerAttackRelease(notes[i]!, '16n', noww + i * 0.125)
     }
   }
 
-  return { playNotes, init, ready: computed(() => !!synth.value) }
+  return { playNotes, init, ready }
 }

@@ -25,8 +25,8 @@ watch(block, (_block) => {
   playNotes(notes)
 })
 
-async function onClick() {
-  await init()
+function onClick() {
+  init()
   clicked.value = !clicked.value
 }
 </script>
