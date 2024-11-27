@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BlockType } from 'nimiq-rpc-client-ts'
-import * as Tone from 'tone'
 
 const { block } = storeToRefs(useBlocks())
 const { playNotes, playBass, playMacroBlock, start, addEffects, removeEffects } = useTone()
