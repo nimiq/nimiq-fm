@@ -5,7 +5,7 @@ import { BlockType } from 'nimiq-rpc-client-ts'
 export const useBlocks = defineStore('blocks', () => {
   const url = `/api/blocks`
   console.log('/api/block')
-  const { status, data: blocksStr } = useWebSocket(url, {
+  const { status, data: blocksStr } = useWebSocket('https://nimiq-song.nuxt.dev/api/blocks', {
     autoReconnect: {
       retries: 3,
       delay: 1000,
