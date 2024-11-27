@@ -3,7 +3,7 @@ import { createIdenticon } from 'identicons-esm'
 import { BlockType } from 'nimiq-rpc-client-ts'
 
 export const useBlocks = defineStore('blocks', () => {
-  const url = import.meta.dev ? '/api/blocks' : 'https://nimiq-song.nuxt.dev/api/blocks'
+  const url = import.meta.dev ? '/api/blocks' : 'https://nimiq-website.pages.dev/api/blocks'
   console.log(url)
   const { status, data: blocksStr } = useWebSocket(url, {
     autoReconnect: {
@@ -14,7 +14,7 @@ export const useBlocks = defineStore('blocks', () => {
       },
     },
   })
-  const block = computed(() => JSON.parse(blocksStr.value) as Block)
+  const block = computed(() => JSON.parse(blocksStr.value).at(0) as Block)
   const micro = ref<Block>()
   const svg = ref<string>()
   watch(block, async (b) => {
