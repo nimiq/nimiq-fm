@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { BlockType } from 'nimiq-rpc-client-ts'
+import * as Tone from 'tone'
 
 const { block } = storeToRefs(useBlocks())
-const { playNotes, init, ready } = useTone()
+const { playNotes, playBass, playMacroBlock, start, addEffects, removeEffects } = useTone()
 
 const pentatonic = ['C', 'D', 'E', 'G', 'A']
-// const octaveNumber = [2, 3, 4, 5]
-const octaveNumber = [1, 2, 3]
+const octaveNumber = [3, 4, 5]
+const pentatonicBass = ['C', 'E', 'G']
+const bassOctaveNumber = [1, 2, 3]
 const clicked = ref(false)
 
 watch(block, (_block) => {
-  if (!ready.value)
+  if (!clicked.value)
     return
-  if (_block.type === BlockType.Macro)
+  if (_block.type === BlockType.Macro) {
+    playMacroBlock()
     return
+  }
   const hash = makeHash(_block?.producer.validator || '')
   const notes = []
   for (let i = 0; i < hash.length - 2; i += 2) {
@@ -21,12 +25,24 @@ watch(block, (_block) => {
     const octave = octaveNumber[Number(hash[i + 2]) % octaveNumber.length]
     notes.push(`${note}${octave}`)
   }
-  // console.log(notes)
+
+  const bassNote = pentatonicBass[Number(hash[0]) % pentatonicBass.length]
+  const bassOctave = bassOctaveNumber[Number(hash[1]) % bassOctaveNumber.length]
+
   playNotes(notes)
+  playBass(`${bassNote}${bassOctave}`)
+  if (_block.batch % 4 === 0) {
+    console.log('add effects')
+    addEffects()
+  }
+  else {
+    console.log('remove effects')
+    removeEffects()
+  }
 })
 
 function onClick() {
-  init()
+  start()
   clicked.value = !clicked.value
 }
 </script>

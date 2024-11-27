@@ -18,7 +18,7 @@ export const useBlocks = defineStore('blocks', () => {
   const micro = ref<Block>()
   const svg = ref<string>()
   watch(block, async (b) => {
-    if (b.type === BlockType.MicroBlock)
+    if (b.type === BlockType.Macro)
       return
     micro.value = b
     svg.value = await createIdenticon(b.producer.validator)
