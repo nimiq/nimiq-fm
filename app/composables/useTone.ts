@@ -5,6 +5,7 @@ const synthA = new Tone.Synth({
     type: 'fatsawtooth',
     count: 3,
     spread: 30,
+    volume: -5,
   },
   envelope: {
     attack: 0.01,
@@ -19,7 +20,7 @@ const fatOsc = new Tone.Synth({
     type: 'fatsawtooth',
     count: 3,
     spread: 10,
-    volume: -5,
+    volume: -10,
   },
   envelope: {
     attack: 1,
@@ -74,6 +75,9 @@ export default function useTone() {
   }
 
   function playMacroBlock() {
+    console.log('Macro Block')
+    Tone.getTransport().stop()
+    Tone.getTransport().start()
     const part = new Tone.Part(
       (time, note) => {
         jumpSynth.triggerAttackRelease(
@@ -210,72 +214,6 @@ export default function useTone() {
           velocity: 0.8188976377952756,
           duration: '104i',
         },
-        {
-          time: '2016i',
-          noteName: 'F4',
-          velocity: 0.7086614173228346,
-          duration: '104i',
-        },
-        {
-          time: '2016i',
-          noteName: 'A4',
-          velocity: 0.7244094488188977,
-          duration: '104i',
-        },
-        {
-          time: '2016i',
-          noteName: 'C5',
-          velocity: 0.7007874015748031,
-          duration: '104i',
-        },
-        {
-          time: '2208i',
-          noteName: 'C4',
-          velocity: 0.9921259842519685,
-          duration: '296i',
-        },
-        {
-          time: '2208i',
-          noteName: 'F4',
-          velocity: 0.968503937007874,
-          duration: '200i',
-        },
-        {
-          time: '2208i',
-          noteName: 'A4',
-          velocity: 0.9606299212598425,
-          duration: '208i',
-        },
-        {
-          time: '2400i',
-          noteName: 'E4',
-          velocity: 0.7559055118110236,
-          duration: '104i',
-        },
-        {
-          time: '2400i',
-          noteName: 'G4',
-          velocity: 0.7007874015748031,
-          duration: '104i',
-        },
-        {
-          time: '2592i',
-          noteName: 'C4',
-          velocity: 0.968503937007874,
-          duration: '488i',
-        },
-        {
-          time: '2592i',
-          noteName: 'D4',
-          velocity: 0.9448818897637795,
-          duration: '488i',
-        },
-        {
-          time: '2592i',
-          noteName: 'G4',
-          velocity: 0.937007874015748,
-          duration: '488i',
-        },
       ],
     ).start(0)
     Tone.getTransport().bpm.value = 132
@@ -289,12 +227,16 @@ export default function useTone() {
 
   function addEffects() {
     if (!isPitchShift.value) {
+      console.log('add effects')
+      isPitchShift.value = true
       synthA.connect(pitchShift)
     }
   }
 
   function removeEffects() {
     if (isPitchShift.value) {
+      console.log('remove effects')
+      isPitchShift.value = false
       synthA.disconnect(pitchShift)
     }
   }

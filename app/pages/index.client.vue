@@ -31,14 +31,11 @@ watch(block, (_block) => {
 
   playNotes(notes)
   playBass(`${bassNote}${bassOctave}`)
-  if (_block.batch % 4 === 0) {
-    console.log('add effects')
+
+  if (_block.batch % 4 === 0)
     addEffects()
-  }
-  else {
-    console.log('remove effects')
+  else
     removeEffects()
-  }
 })
 
 function onClick() {

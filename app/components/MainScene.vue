@@ -197,7 +197,7 @@ onMounted(() => {
 watch(block, shakeGrid)
 
 watch(micro, async (b) => {
-  console.log({ prod: b.producer, b })
+  // console.log({ prod: b.producer, b })
   const svgString = await createIdenticon(b.producer.validator)
   animate(0, svgString)
 })
