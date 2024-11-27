@@ -17,6 +17,8 @@ export default defineWebSocketHandler({
         console.error(`Error subscribing to head block: ${JSON.stringify(error)}`)
         return
       }
+      // eslint-disable-next-line no-console
+      console.log(`block ${block.number}`)
       peer.send(JSON.stringify(block))
     })
   },
