@@ -2,6 +2,7 @@
 import { BlockType } from 'nimiq-rpc-client-ts'
 
 const { block } = storeToRefs(useBlocks())
+const { open } = useBlocks()
 const { playNotes, playBass, playMacroBlock, start, addEffects, removeEffects } = useTone()
 
 const pentatonic = ['C', 'D', 'E', 'G', 'A']
@@ -38,6 +39,7 @@ watch(block, (_block) => {
 })
 
 function onClick() {
+  open()
   start()
   clicked.value = !clicked.value
 }

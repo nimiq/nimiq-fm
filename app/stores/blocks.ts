@@ -5,7 +5,9 @@ import { BlockType } from 'nimiq-rpc-client-ts'
 export const useBlocks = defineStore('blocks', () => {
   const url = import.meta.dev ? '/api/blocks' : 'https://nimiq-website.pages.dev/api/blocks'
   console.log(url)
-  const { status, data: blocksStr } = useWebSocket(url, {
+  const { status, open, data: blocksStr } = useWebSocket(url, {
+    heartbeat: true,
+    immediate: false,
     autoReconnect: {
       retries: 3,
       delay: 1000,
@@ -18,6 +20,7 @@ export const useBlocks = defineStore('blocks', () => {
   const micro = ref<Block>()
   const svg = ref<string>()
   watch(block, async (b) => {
+    console.log('block from ws', b)
     if (b.type === BlockType.Macro)
       return
     micro.value = b
@@ -28,5 +31,6 @@ export const useBlocks = defineStore('blocks', () => {
     svg,
     micro,
     block,
+    open,
   }
 })
