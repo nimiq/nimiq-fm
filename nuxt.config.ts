@@ -53,7 +53,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    nodeRpcUrl: process.env.NUXT_RPC_URL || '',
+    nodeRpcUrl: process.env.NUXT_NODE_RPC_URL || '',
   },
 
   vite: {
