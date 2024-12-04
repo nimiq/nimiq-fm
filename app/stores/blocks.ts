@@ -3,36 +3,28 @@ import { createIdenticon } from 'identicons-esm'
 import { BlockType } from 'nimiq-rpc-client-ts'
 
 export const useBlocks = defineStore('blocks', () => {
-  const url = import.meta.dev ? '/api/blocks' : 'https://nimiq-website.pages.dev/api/blocks'
+  const url = '/api/blocks'
   console.log(url)
-  const { status, open, data: blocksStr } = useWebSocket(url, {
-    heartbeat: true,
-    immediate: false,
-    autoReconnect: {
-      retries: 3,
-      delay: 1000,
-      onFailed() {
-        alert('Failed to connect to WS after 3 retries')
-      },
-    },
-  })
-  const block = computed(() => (import.meta.dev ? JSON.parse(blocksStr.value) : JSON.parse(blocksStr.value).at(0)) as Block)
+  const blocksStr = ref<string>('')
+  const eventSource = new EventSource(url)
+  eventSource.onmessage = (event) => {
+    blocksStr.value = event.data
+  }
+
+  const block = computed(() => blocksStr.value ? JSON.parse(blocksStr.value) as Block : undefined)
   const micro = ref<Block>()
   const svg = ref<string>()
   watch(block, async (b) => {
     if (!b)
       return
-    console.log('block from ws', b)
     if (b.type === BlockType.Macro)
       return
     micro.value = b
     svg.value = await createIdenticon(b.producer.validator)
   })
   return {
-    status,
     svg,
     micro,
     block,
-    open,
   }
 })
