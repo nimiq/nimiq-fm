@@ -16,10 +16,12 @@ export const useBlocks = defineStore('blocks', () => {
       },
     },
   })
-  const block = computed(() => JSON.parse(blocksStr.value).at(0) as Block)
+  const block = computed(() => (import.meta.dev ? JSON.parse(blocksStr.value) : JSON.parse(blocksStr.value).at(0)) as Block)
   const micro = ref<Block>()
   const svg = ref<string>()
   watch(block, async (b) => {
+    if (!b)
+      return
     console.log('block from ws', b)
     if (b.type === BlockType.Macro)
       return

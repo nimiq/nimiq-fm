@@ -40,6 +40,10 @@ export default defineNuxtConfig({
     classSuffix: '',
   },
 
+  pinia: {
+    storesDirs: ['./app/stores/**'],
+  },
+
   experimental: {
     // when using generate, payload js assets included in sw precache manifest
     // but missing on offline, disabling extraction it until fixed
