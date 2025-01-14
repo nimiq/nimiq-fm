@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 
+// Synthesizers
 const synthA = new Tone.Synth({
   oscillator: {
     type: 'fatsawtooth',
@@ -15,6 +16,7 @@ const synthA = new Tone.Synth({
     attackCurve: 'sine',
   },
 }).toDestination()
+
 const fatOsc = new Tone.Synth({
   oscillator: {
     type: 'fatsawtooth',
@@ -46,6 +48,10 @@ const jumpSynth = new Tone.PolySynth(Tone.Synth, {
   },
 }).toDestination()
 
+const pluckSynth = new Tone.PluckSynth().toDestination()
+const fmSynth = new Tone.FMSynth().toDestination()
+const amSynth = new Tone.AMSynth().toDestination()
+
 // Effects
 const reverbGlass = new Tone.Freeverb().set({
   roomSize: 0.7,
@@ -61,6 +67,13 @@ const pitchShift = new Tone.PitchShift().set({
   feedback: 0,
   wet: 0.5,
 })
+
+const delay = new Tone.FeedbackDelay("8n", 0.5).toDestination()
+const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination()
+const distortion = new Tone.Distortion(0.4).toDestination()
+
+// Background music
+const backgroundMusic = new Tone.Player("path/to/background-music.mp3").toDestination()
 
 export default function useTone() {
   const maxNotes = 4
@@ -244,6 +257,7 @@ export default function useTone() {
   function start() {
     // all loops start when the Transport is started
     Tone.getTransport().start()
+    backgroundMusic.start()
   }
 
   return {

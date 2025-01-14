@@ -3,12 +3,18 @@ import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
 import { onMounted } from 'vue'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 
 const { block, micro, svg } = storeToRefs(useBlocks())
 const container = ref(null)
 let scene
 let camera
 let renderer
+let composer
 const notes = []
 let lastNoteTime = 0
 let gridHelper
@@ -98,6 +104,17 @@ function setupScene() {
 
   // Add background effects
   createBackground()
+
+  // Setup post-processing
+  const renderPass = new RenderPass(scene, camera)
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85)
+  const fxaaPass = new ShaderPass(FXAAShader)
+  fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight)
+
+  composer = new EffectComposer(renderer)
+  composer.addPass(renderPass)
+  composer.addPass(bloomPass)
+  composer.addPass(fxaaPass)
 }
 
 function createBackground() {
@@ -155,6 +172,30 @@ function createNote() {
     ease: 'back.out',
   })
 
+  // Add interactive element
+  note.userData = { clicked: false }
+  note.callback = () => {
+    if (!note.userData.clicked) {
+      gsap.to(note.scale, {
+        x: 2,
+        y: 2,
+        z: 2,
+        duration: 0.5,
+        ease: 'elastic.out',
+      })
+      note.userData.clicked = true
+    } else {
+      gsap.to(note.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+        duration: 0.5,
+        ease: 'elastic.out',
+      })
+      note.userData.clicked = false
+    }
+  }
+
   scene.add(note)
   notes.push(note)
 }
@@ -176,7 +217,7 @@ function animate(time) {
     }
   })
 
-  renderer.render(scene, camera)
+  composer.render()
 }
 
 function handleResize() {
@@ -184,6 +225,7 @@ function handleResize() {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
+    composer.setSize(window.innerWidth, window.innerHeight)
   }
 }
 
