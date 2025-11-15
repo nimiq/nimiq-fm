@@ -18,5 +18,8 @@ export default defineNuxtConfig({
       websocket: true,
     },
   },
-  css: ['./app/assets/css/main.css']
+  css: ['./app/assets/css/main.css'],
+  runtimeConfig: {
+    nimiqRpcUrl: process.env.NIMIQ_RPC_URL || 'http://localhost:8648',
+  },
 })

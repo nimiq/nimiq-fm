@@ -1,49 +1,48 @@
-import type { MicroBlock } from 'nimiq-rpc-client-ts/types'
+import type { Block } from 'nimiq-rpc-client-ts/types'
 import { initRpcClient } from 'nimiq-rpc-client-ts/client'
-import { BlockTypeEnum } from 'nimiq-rpc-client-ts/types'
+import { BlockType } from 'nimiq-rpc-client-ts/types'
 import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
 
-interface StreamedBlock {
+export interface StreamedBlock {
   number: number
   validator?: string
 }
 
-export default defineWebSocketHandler({
-  async open(peer) {
-    peer.send(JSON.stringify({ type: 'connected' }))
+export default defineEventHandler(async (event) => {
+  const eventStream = createEventStream(event)
 
-    const config = useRuntimeConfig()
-    const nodeRpcUrl = config.nimiqRpcUrl
+  const config = useRuntimeConfig()
+  const nodeRpcUrl = config.nimiqRpcUrl
 
-    try {
-      initRpcClient({ url: nodeRpcUrl })
+  try {
+    initRpcClient({ url: nodeRpcUrl })
 
-      const eventEmitter = await subscribeForHeadBlock(true)
+    const eventEmitter = await subscribeForHeadBlock(true)
 
-      eventEmitter.addEventListener('data', async (event: CustomEvent) => {
-        const { data: block } = event.detail
-        if (!block)
-          return
+    eventEmitter.addEventListener('data', async (event: CustomEvent) => {
+      const { data: block } = event.detail as { data: Block | null }
+      if (!block)
+        return
 
-        const streamedBlock: StreamedBlock = {
-          number: block.number,
-          validator: block.type === BlockTypeEnum.Micro ? (block as MicroBlock).producer.validator : undefined,
-        }
+      const streamedBlock: StreamedBlock = {
+        number: block.number,
+        validator: block.type === BlockType.Micro ? block.producer.validator : undefined,
+      }
 
-        peer.send(JSON.stringify({ type: 'block', data: streamedBlock }))
-      })
+      eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
+    })
 
-      eventEmitter.addEventListener('error', (event: CustomEvent) => {
-        peer.send(JSON.stringify({ type: 'error', message: 'Subscription error' }))
-      })
-    }
-    catch {
-      peer.send(JSON.stringify({ type: 'error', message: 'Failed to subscribe' }))
-    }
-  },
+    eventEmitter.addEventListener('error', () => {
+      eventStream.push(JSON.stringify({ type: 'error', message: 'Subscription error' }))
+    })
+  }
+  catch {
+    eventStream.push(JSON.stringify({ type: 'error', message: 'Failed to subscribe' }))
+  }
 
-  async close() {},
-  async error(peer, error) {
-    console.error('WS error:', error)
-  },
+  eventStream.onClosed(async () => {
+    await eventStream.close()
+  })
+
+  return eventStream.send()
 })

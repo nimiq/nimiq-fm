@@ -1,3 +1,5 @@
+import type { StreamedBlock } from '~~/server/routes/blocks'
+
 export interface BlockEvent {
   blockNumber: number
   timestamp: number
@@ -10,19 +12,23 @@ export function useBlockchain() {
   const latestBlock = ref<BlockEvent | null>(null)
   const listeners = new Set<(event: BlockEvent) => void>()
 
-  const wsUrl = computed(() => {
-    if (!import.meta.client) return ''
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${protocol}//${window.location.host}/blocks`
+  const url = computed(() => {
+    if (!import.meta.client)
+      return ''
+    return `${window.location.protocol}//${window.location.host}/blocks`
   })
 
-  const { status, data, open } = useWebSocket(wsUrl, {
-    autoReconnect: { retries: 3, delay: 1000 },
-    heartbeat: { message: 'ping', interval: 30000 },
+  const { data, open } = useEventSource(url, [], {
+    autoReconnect: true,
+    autoConnect: true,
+    serializer: {
+      read: rawData => JSON.parse(rawData!),
+    },
   })
 
   const startListening = () => {
-    if (!import.meta.client) return
+    if (!import.meta.client)
+      return
     open()
   }
 
@@ -32,10 +38,11 @@ export function useBlockchain() {
   }
 
   watch(data, (message) => {
-    if (!message) return
+    if (!message)
+      return
 
     try {
-      const parsed = JSON.parse(message)
+      const parsed = message as { type: 'block', data: StreamedBlock } | { type: 'error', message: string }
 
       if (parsed.type === 'block') {
         const block = parsed.data

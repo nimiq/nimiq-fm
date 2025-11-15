@@ -6,7 +6,8 @@ let isInitialized = false
 
 export function useStrudel() {
   const init = async () => {
-    if (isInitialized || !import.meta.client) return
+    if (isInitialized || !import.meta.client)
+      return
 
     try {
       const { repl } = await import('@strudel/core')
@@ -15,7 +16,8 @@ export function useStrudel() {
       await initAudioOnFirstClick()
       const ctx = getAudioContext()
 
-      if (ctx.state === 'suspended') await ctx.resume()
+      if (ctx.state === 'suspended')
+        await ctx.resume()
 
       await samples('github:tidalcycles/dirt-samples')
 
@@ -30,7 +32,8 @@ export function useStrudel() {
   }
 
   const playBlockSound = async ({ validatorAddress }: { validatorAddress: string }) => {
-    if (!scheduler || !import.meta.client) return
+    if (!scheduler || !import.meta.client)
+      return
 
     try {
       const { note } = await import('@strudel/core')
