@@ -1,31 +1,46 @@
 <script setup lang="ts">
 import { makeHash } from 'identicons-esm/core'
 
-const { init, playBlockSound } = useStrudel()
-const { startListening, onBlockEvent } = useBlockchain()
 const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
 
+// Initialize composables only on client-side
+let strudel: ReturnType<typeof useStrudel> | null = null
+let blockchain: ReturnType<typeof useBlockchain> | null = null
+
 async function togglePlay() {
+  if (!strudel)
+    return
+
   if (!isPlaying.value) {
-    await init()
+    await strudel.start()
     isPlaying.value = true
   }
   else {
+    strudel.stop()
     isPlaying.value = false
   }
 }
 
 onMounted(() => {
-  startListening()
+  // Initialize composables (client-side only)
+  strudel = useStrudel()
+  blockchain = useBlockchain()
 
-  onBlockEvent((blockEvent) => {
+  // Initialize Strudel in background (waits for first user interaction)
+  // Will complete when user clicks Play button
+  strudel.init()
+
+  // Start listening to blockchain events
+  blockchain.startListening()
+
+  blockchain.onBlockEvent((blockEvent) => {
     currentBlock.value = blockEvent
 
-    if (!isPlaying.value || !blockEvent.validatorAddress)
+    if (!isPlaying.value || !strudel)
       return
 
-    playBlockSound({ validatorAddress: blockEvent.validatorAddress })
+    strudel.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
 })
 </script>

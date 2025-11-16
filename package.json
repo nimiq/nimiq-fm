@@ -16,8 +16,9 @@
     "@nuxt/eslint": "1.10.0",
     "@nuxt/hints": "1.0.0-alpha.1",
     "@nuxt/ui": "4.1.0",
-    "@strudel/core": "^1.2.5",
-    "@strudel/webaudio": "^1.2.6",
+    "@strudel/core": "^1.1.0",
+    "@strudel/web": "^1.2.6",
+    "@strudel/webaudio": "^1.1.0",
     "@vueuse/nuxt": "14.0.0",
     "eslint": "^9.39.1",
     "identicons-esm": "1.0.0-beta.5",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
+    "eslint": "^9.38.0",
     "tailwindcss": "^4.1.17"
   }
 }
