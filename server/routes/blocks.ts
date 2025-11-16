@@ -5,6 +5,8 @@ import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
 
 export interface StreamedBlock {
   number: number
+  epoch: number
+  batch: number
   validator?: string
 }
 
@@ -26,6 +28,8 @@ export default defineEventHandler(async (event) => {
 
       const streamedBlock: StreamedBlock = {
         number: block.number,
+        batch: block.batch,
+        epoch: block.epoch,
         validator: block.type === BlockType.Micro ? block.producer.validator : undefined,
       }
 
