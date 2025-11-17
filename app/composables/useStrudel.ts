@@ -1,6 +1,7 @@
 let scheduler: any = null
 let isInitialized = false
 let initPromise: Promise<void> | null = null
+let lastPatternType: string | null = null
 
 export function useStrudel() {
   // Initialize Strudel library and create patterns (client-side only)
@@ -19,11 +20,11 @@ export function useStrudel() {
     initPromise = (async () => {
       try {
         // Dynamic import to avoid SSR issues
-        const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput } = await import('@strudel/web')
+        const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput, samples } = await import('@strudel/web')
 
         // Initialize Strudel core
         await initStrudel({
-          // prebake: () => samples('github:tidalcycles/dirt-samples'),
+          prebake: () => samples('github:tidalcycles/dirt-samples'),
         })
 
         // Wait for first user click to initialize audio and load AudioWorklet modules
@@ -37,7 +38,7 @@ export function useStrudel() {
           getTime: () => ctx.currentTime,
         })
         scheduler = replScheduler
-        scheduler.setCps(140 / 60 / 4) // 140 BPM, 4 beats per measure
+        scheduler.setCps(120 / 60 / 4) // 140 BPM, 4 beats per measure
         isInitialized = true
       }
       catch (error) {
@@ -133,15 +134,16 @@ export function useStrudel() {
       // Melodic, sustained pattern with progressive intensity
       const createEvenBatchPattern = (notes: string) => {
         // Base melodic pattern with dynamic filtering based on cycle position
-        const melody = note(notes)
+        // Take the last 2 notes and use as base
+        const melody = note(`${notes}, [${notes.split(' ').slice(-2).join(' ')}]*2`)
           .scale('c:minor')
           .rib(46, 1)
           .distort('2.2:.3')
           .s('sawtooth')
-          .lpf(200 + (intensity * 400)) // Filter opens from 200 to 600 Hz
+          .lpf(200 + (intensity * 100)) // Filter opens from 200 to 600 Hz
           .lpenv(0.8 + (intensity * 0.8)) // Envelope lengthens
-          .lpq(8 + (intensity * 8)) // Resonance increases
-          .gain(5 + intensity) // Volume gradually increases
+          .lpq(8 + (intensity * 2)) // Resonance increases
+          .gain(4 + intensity) // Volume gradually increases
           .orbit(2)
 
         // Supersaw layer that intensifies in second half of cycle
@@ -164,15 +166,16 @@ export function useStrudel() {
       // Rhythmic, punchy pattern with variation
       const createOddBatchPattern = (notes: string) => {
         // More aggressive melodic pattern
-        const melody = note(notes)
+        // Take the last 2 notes and use as base
+        const melody = note(`${notes}, [${notes.split(' ').slice(-2).join(' ')}]*2`)
           .scale('c:minor')
           .rib(46, 1)
           .distort('2.2:.3')
           .s('sawtooth')
-          .lpf(300 + (intensity * 300)) // Filter range 300-600 Hz
-          .lpenv(1.6)
+          .lpf(300 + (intensity * 100)) // Filter range 300-600 Hz
+          .lpenv(0.8)
           .lpq(12)
-          .gain(5.5)
+          .gain(4)
           .orbit(2)
 
         // Riser in first half, release in second half
@@ -187,6 +190,16 @@ export function useStrudel() {
         return stack(melody, dynamicRiser, drums)
       }
 
+      // Track previous pattern type to detect changes
+      const currentPatternType = !validatorAddress ? 'macro' : (batch % 3 === 0 ? 'drums' : (batch % 2 === 0 ? 'even' : 'odd'))
+
+      // Detect pattern change (store in module-level variable)
+      if (!lastPatternType) {
+        lastPatternType = currentPatternType
+      }
+
+      const patternChanged = lastPatternType !== currentPatternType
+
       // Select pattern based on validator presence and batch parity
       let finalPattern
 
@@ -194,25 +207,50 @@ export function useStrudel() {
         // Macro block: no validator (every 60 seconds)
         finalPattern = createMacroPattern()
       }
+      else if (batch % 3 === 0) {
+        // Every 3rd batch: drums with percussive fills based on batch number
+        const fillSpeed = 2 + (batch % 8) // Speed varies from 2 to 9
+        const fill = sound('cp, oh').fast(fillSpeed).gain(0.5).orbit(6)
+
+        // Bass note based on batch number
+        const bass = note(batch.toString().split('').map(Number).map(n => n + 32).join(' ')).s('sawtooth').lpf(100 + (batch % 4) * 50).lpq(2).gain(3).orbit(7)
+
+        finalPattern = stack(drums, fill, bass)
+      }
       else {
         // Micro block: validator present
         // Generate notes from validator address hash
         const hashStr = makeHash(validatorAddress)
         const digits = hashStr.split('').map(Number)
-        const notes = digits.map((n, i) => {
+
+        // Create base (low) notes - octave 2-3
+        const baseNotes = digits.map((n, i) => {
           const next1 = digits[i + 1] ?? 0
           const next2 = digits[i + 2] ?? 0
-          return n + next1 + next2 + 32 // Base octave
+          return n + next1 + next2 + 32 // Lower octave
+        }).join(' ')
+
+        // Create high pitch notes - octave 4-5
+        const highNotes = digits.map((n, i) => {
+          const next1 = digits[i + 1] ?? 0
+          const next2 = digits[i + 2] ?? 0
+          return n + next1 + next2 + 40 // Higher octave
         }).join(' ')
 
         if (batch % 2 === 0) {
           // Even batch: sustained, melodic pattern
-          finalPattern = createEvenBatchPattern(notes)
+          finalPattern = createEvenBatchPattern(baseNotes)
         }
         else {
           // Odd batch: rhythmic, punchy pattern
-          finalPattern = createOddBatchPattern(notes)
+          finalPattern = createOddBatchPattern(highNotes)
         }
+      }
+
+      // Handle pattern transitions
+      if (patternChanged) {
+        console.warn(`Pattern changing from ${lastPatternType} to ${currentPatternType}`)
+        lastPatternType = currentPatternType
       }
 
       // Set the pattern with smooth transition
