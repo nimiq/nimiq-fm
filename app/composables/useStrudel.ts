@@ -19,11 +19,15 @@ export function useStrudel() {
     initPromise = (async () => {
       try {
         // Dynamic import to avoid SSR issues
-        const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput } = await import('@strudel/web')
+        const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput, samples } = await import('@strudel/web')
 
         // Initialize Strudel core
         await initStrudel({
-          // prebake: () => samples('github:tidalcycles/dirt-samples'),
+          prebake: () => [
+            samples('github:tidalcycles/dirt-samples'),
+            // samples('github:bubobubobubobubo/dough-waveforms'),
+            samples('github:tidalcycles/uzu-wavetables'),
+          ],
         })
 
         // Wait for first user click to initialize audio and load AudioWorklet modules
@@ -81,142 +85,27 @@ export function useStrudel() {
       return
 
     try {
-      const { note, stack, sound, time } = await import('@strudel/web')
+      const { note, stack, sound, time, rand, saw } = await import('@strudel/web')
       const { makeHash } = await import('identicons-esm/core')
 
-      // Calculate position within 60-second cycle (0-59)
-      const cyclePosition = blockNumber % 60
-      // Normalize to 0-1 range for intensity calculations
-      const intensity = cyclePosition / 60
+      const hashStr = makeHash(validatorAddress || '')
+      const digits = hashStr.split('').map(Number)
+      const notes = digits.map((n, i) => {
+        return n + 40
+      }).join(' ')
 
-      // Base drums pattern (present in all patterns)
-      const drums = sound('sbd!4').distort('3:.3').duck('2:3:4').duckattack(0.2).duckdepth(0.8)
+      const melody = note(notes).scale('c:major:pentatonic').seg(8).s('wt_vgame:4').rel(1).pan(rand).delay(0.6).dec(0.2)
+      const base = note('<f0 a0 g0 [g0 a0]>/2').seg(8).s('wt_digital:0').warp(saw.fast(4)).warpmode(6).unison(3).att(0.03).wtenv(0.5).wtdec(0.3).gain(0.5)
+      let drums = note('~')
 
-      // Pattern 1: Macro blocks (no validator, every 60 seconds)
-      // Dramatic transition marker with building riser and minimal melody
-      const createMacroPattern = () => {
-        // Fixed ambient notes for macro blocks
-        const macroNotes = 'c3 eb3 g3 bb3'
-
-        const ambientPad = note(macroNotes)
-          .scale('c:minor')
-          .slow(4)
-          .s('sawtooth')
-          .lpf(150)
-          .lpenv(2)
-          .lpq(4)
-          .gain(0.4)
-          .room(2)
-          .roomsize(6)
-          .orbit(1)
-
-        // Dramatic riser that builds throughout the macro block cycle
-        const macroRiser = sound('pulse')
-          .orbit(4)
-          .seg(16)
-          .dec(0.1)
-          .fm(time.mul(2))
-          .fmh(time.mul(1.5))
-          .gain(0.6)
-          .lpf(time.mul(500).add(200))
-
-        // Impact sound at the end of macro block
-        const impact = sound('bd')
-          .distort('4:.5')
-          .gain(1.2)
-          .orbit(5)
-
-        return stack(ambientPad, macroRiser, impact, drums)
+      if (blockNumber % 60 < 20) {
+        drums = sound('bd!2')
       }
 
-      // Pattern 2: Even batch micro blocks (validator present, even batches)
-      // Melodic, sustained pattern with progressive intensity
-      const createEvenBatchPattern = (notes: string) => {
-        // Base melodic pattern with dynamic filtering based on cycle position
-        const melody = note(notes)
-          .scale('c:minor')
-          .rib(46, 1)
-          .distort('2.2:.3')
-          .s('sawtooth')
-          .lpf(200 + (intensity * 400)) // Filter opens from 200 to 600 Hz
-          .lpenv(0.8 + (intensity * 0.8)) // Envelope lengthens
-          .lpq(8 + (intensity * 8)) // Resonance increases
-          .gain(5 + intensity) // Volume gradually increases
-          .orbit(2)
-
-        // Supersaw layer that intensifies in second half of cycle
-        const supersaw = sound('supersaw')
-          .detune(1)
-          .rel(5)
-          .beat(2, 32)
-          .slow(2)
-          .fm('2')
-          .fmh(2.04)
-          .room(1)
-          .roomsize(4)
-          .gain(cyclePosition >= 30 ? 0.6 : 0.2) // Louder in second half
-          .orbit(3)
-
-        return stack(melody, supersaw, drums)
-      }
-
-      // Pattern 3: Odd batch micro blocks (validator present, odd batches)
-      // Rhythmic, punchy pattern with variation
-      const createOddBatchPattern = (notes: string) => {
-        // More aggressive melodic pattern
-        const melody = note(notes)
-          .scale('c:minor')
-          .rib(46, 1)
-          .distort('2.2:.3')
-          .s('sawtooth')
-          .lpf(300 + (intensity * 300)) // Filter range 300-600 Hz
-          .lpenv(1.6)
-          .lpq(12)
-          .gain(5.5)
-          .orbit(2)
-
-        // Riser in first half, release in second half
-        const dynamicRiser = sound('pulse')
-          .orbit(4)
-          .seg(16)
-          .dec(0.1)
-          .fm(time)
-          .fmh(time)
-          .gain(cyclePosition < 30 ? 0.4 : 0.2) // Louder in first half
-
-        return stack(melody, dynamicRiser, drums)
-      }
-
-      // Select pattern based on validator presence and batch parity
-      let finalPattern
-
-      if (!validatorAddress) {
-        // Macro block: no validator (every 60 seconds)
-        finalPattern = createMacroPattern()
-      }
-      else {
-        // Micro block: validator present
-        // Generate notes from validator address hash
-        const hashStr = makeHash(validatorAddress)
-        const digits = hashStr.split('').map(Number)
-        const notes = digits.map((n, i) => {
-          const next1 = digits[i + 1] ?? 0
-          const next2 = digits[i + 2] ?? 0
-          return n + next1 + next2 + 32 // Base octave
-        }).join(' ')
-
-        if (batch % 2 === 0) {
-          // Even batch: sustained, melodic pattern
-          finalPattern = createEvenBatchPattern(notes)
-        }
-        else {
-          // Odd batch: rhythmic, punchy pattern
-          finalPattern = createOddBatchPattern(notes)
-        }
-      }
+      const pattern = stack(melody, base, drums)
 
       // Set the pattern with smooth transition
-      scheduler.setPattern(finalPattern, true)
+      scheduler.setPattern(pattern, true)
     }
     catch (error) {
       console.error('Failed to play sound:', error)
