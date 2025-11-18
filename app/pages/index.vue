@@ -62,6 +62,9 @@ onMounted(() => {
       <div class="font-mono text-2xl font-bold break-all">
         {{ makeHash(currentBlock.validatorAddress) }}
       </div>
+      <div class="mt-4 text-sm text-gray-500">
+        Epoch: {{ currentBlock.epoch }} | Batch: {{ currentBlock.batch }} | Block Number: {{ currentBlock.blockNumber }}
+      </div>
     </UPageSection>
   </UContainer>
 </template>

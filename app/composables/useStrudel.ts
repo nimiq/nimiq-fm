@@ -90,17 +90,24 @@ export function useStrudel() {
 
       const hashStr = makeHash(validatorAddress || '')
       const digits = hashStr.split('').map(Number)
-      const notes = digits.map((n, i) => {
-        return n + 40
-      }).join(' ')
+      const notes = digits.map(n => n + 40).join(' ')
 
       const melody = note(notes).scale('c:major:pentatonic').seg(8).s('wt_vgame:4').rel(1).pan(rand).delay(0.6).dec(0.2)
       const base = note('<f0 a0 g0 [g0 a0]>/2').seg(8).s('wt_digital:0').warp(saw.fast(4)).warpmode(6).unison(3).att(0.03).wtenv(0.5).wtdec(0.3).gain(0.5)
       let drums = note('~')
 
-      if (blockNumber % 60 < 20) {
+      if (blockNumber % 60 === 0)
+        drums = note('~')
+      else if (blockNumber % 60 < 10)
         drums = sound('bd!2')
-      }
+      else if (blockNumber % 60 < 40)
+        drums = sound('bd!4')
+      else if (blockNumber % 60 < 52)
+        drums = sound('bd!8')
+      else if (blockNumber % 60 < 58)
+        drums = sound('bd!16,[hh]*16')
+      else
+        drums = sound('bd!32,[hh]*32')
 
       const pattern = stack(melody, base, drums)
 
