@@ -145,12 +145,12 @@ export function useStrudel() {
       const trumpets = note(`<[${digits[0]} ~ ${digits[1]} ${digits[2]} ~ ${digits[3]} ${digits[4]} ~] [~ ${digits[5]} ${digits[6]} ${digits[7]} ~ ${digits[0]} ${digits[1]} ~] [${digits[2]} ~ ${digits[3]} ~ ${digits[4]} ${digits[5]} ${digits[6]} ${digits[7]}] [~ ${digits[0]} ${digits[1]} ${digits[2]} ${digits[3]} ${digits[4]} ~ ~]>`)
         .scale('c5:pentatonic') // Pentatonic scale fits great for salsa-style trumpet lines
         .sound('Trumpet')
-        .transpose(36)
+        .transpose(28)
         .cut(1) // Cut off previous sample to prevent overlap
-        .legato(0.8) // Control note length (0.8 = 80% of step duration)
+        .legato(1.6) // Control note length (0.8 = 80% of step duration)
         .room(0.5)
         .pan(0.4)
-        .gain(0.6)
+        .gain(0.3)
 
       const pattern = stack(clave, timbales, congas, cowbell, guiro, maracas, piano, trumpets)
 
