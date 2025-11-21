@@ -21,12 +21,19 @@ export function useStrudel() {
         // Dynamic import to avoid SSR issues
         const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput, samples } = await import('@strudel/web')
 
+        const ds = 'https://raw.githubusercontent.com/felixroos/dough-samples/main/'
         // Initialize Strudel core
         await initStrudel({
           prebake: () => [
             samples('github:tidalcycles/dirt-samples'),
             // samples('github:bubobubobubobubo/dough-waveforms'),
             samples('github:tidalcycles/uzu-wavetables'),
+            samples(`${ds}/tidal-drum-machines.json`),
+            samples(`${ds}/piano.json`),
+            samples(`${ds}/Dirt-Samples.json`),
+            samples(`${ds}/EmuSP12.json`),
+            samples(`${ds}/vcsl.json`),
+            samples(`${ds}/mridangam.json`),
           ],
         })
 
@@ -41,7 +48,7 @@ export function useStrudel() {
           getTime: () => ctx.currentTime,
         })
         scheduler = replScheduler
-        scheduler.setCps(140 / 60 / 4) // 140 BPM, 4 beats per measure
+        scheduler.setCps(180 / 60 / 4) // 140 BPM, 4 beats per measure
         isInitialized = true
       }
       catch (error) {
@@ -94,92 +101,24 @@ export function useStrudel() {
       const digits = hashStr.split('').map(Number).map(n => n + 32)
       const seedSequence = digits.slice(0, 8).join(' ')
 
-      console.log(`Playing block ${blockNumber} sound with seed sequence:`, seedSequence)
+      const salsa = sound('clave')
+        .struct('<[x ~ ~ x ~ ~ x ~] [~ ~ x ~ x ~ ~ ~]>')
+        .gain(4)
+        .pan(0.6)
 
-      const transposeAmount = 20 + (batch % 4) * 2
-      console.log('Transpose amount based on batch:', transposeAmount)
+      const timbales = note('16 26 16 ~ 16 26 16 16')
+        .sound('RolandCompurhythm1000_perc:1')
+        .velocity('<0.7 0.9 0.6 0.95>')
+        .pan(0.3)
+        .gain(0.4)
 
-      // 2. THE MELODY (The "Data Stream")
-      // Improvements:
-      // - Uses scale degrees (0-9) instead of raw MIDI numbers for harmony.
-      // - 'jux' creates a stereo delay effect.
-      const melody = note(seedSequence)
-        .scale('e:phrygian') // Phrygian mode for that trance feel
-        .transpose(transposeAmount) // Move up one octave
-        .s('wt_vgame:4') // Classic trance waveform
-        .lpf(2000)
-        .lpq(5) // Resonant low pass filter
-        .hpf(500)
-        .dec(0.3)
-        .sus(0)
-        .rel(0.1) // Plucky envelope
-        .delay(0.5)
-        .jux(rev) // Stereo width
-        .room(0.8)
-        .gain(0.2)
+      const cowbell = note('~ 24 ~ 23 24 23 23 23')
+        .transpose(14)
+        .sound('conga:1')
+        .velocity('<0.9 1 0.8 1.1>')
+        .gain(1.1)
 
-      // 3. THE BASS (The "Block Foundation")
-      // Improvements:
-      // - Uses a sub-bass sound.
-      // - Anchors the random melody to a root note (0).
-      const base = note('0 [0 7] ~ ~') // A simple ostinato pattern
-        .scale('e:minor')
-        .s('triangle')
-        .transpose(40) // Drop to bass register
-        .cut(0.5) // Staccato feel
-        .shape(0.5) // Add distortion/saturation
-        .gain(0.8)
-
-      // 4. THE DRUMS (The "Timer")
-      // Improvements:
-      // - Uses the 'gm' (General MIDI) bank for punchier sounds.
-      // - Uses Euclidean rhythms 'euclid(3,8)' for a more modern, less "marching" feel.
-      let drums = note('~')
-      const bNum = blockNumber % 60
-
-      if (bNum === 0) {
-        // The "Block Mined" moment - a crash or sweep
-        drums = sound('crash').slow(2).room(0.8)
-      }
-      else if (bNum < 15) {
-        drums = sound('bd(3,8)') // Simple kick groove
-      }
-      else if (bNum < 30) {
-        drums = stack(
-          sound('bd(3,8)'),
-          sound('hh*4').pan(0.2), // Add hi-hats
-        )
-      }
-      else if (bNum < 50) {
-        drums = stack(
-          sound('bd(5,8)'), // More active kick
-          sound('hh*8').pan('<0.2 0.2>'), // Faster hats, stereo
-          sound('sd(3,8,2)'), // Add snare
-        )
-      }
-      else {
-        // Final countdown tension
-        drums = stack(
-          sound('bd*4'),
-          sound('hh*16'),
-          sound('cp*2'), // Glitchy clap
-        )
-      }
-
-      // 5. FINAL MIX
-      let pattern = stack(melody, base, drums).gain(0.6)
-
-      if (bNum < 10) {
-        // Low-pass filter only for the first 10 blocks (opening up)
-        const lpfCutoff = 500 + (bNum / 10) * 5000
-        pattern = pattern.lpf(lpfCutoff)
-      }
-
-      if (bNum > 52) {
-        // High-pass filter for the last few blocks (thinning out)
-        const hpfCutoff = (bNum - 52) * 200
-        pattern = pattern.hpf(hpfCutoff)
-      }
+      const pattern = stack(salsa, cowbell)
 
       scheduler.setPattern(pattern, true)
     }
