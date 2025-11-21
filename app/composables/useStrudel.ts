@@ -85,18 +85,17 @@ export function useStrudel() {
       return
 
     try {
-      const { note, stack, sound, time, rand, saw } = await import('@strudel/web')
+      const { note, stack, sound, rand, saw } = await import('@strudel/web')
       const { makeHash } = await import('identicons-esm/core')
 
       const hashStr = makeHash(validatorAddress || '')
       const digits = hashStr.split('').map(Number)
-      const notes = digits.map(n => n + 40).join(' ')
+      const notes = digits.map(n => n + 44).join(' ')
 
       const melody = note(notes).scale('c:major:pentatonic').seg(8).s('wt_vgame:4').rel(1).pan(rand).delay(0.6).dec(0.2)
       const base = note('<f0 a0 g0 [g0 a0]>/2').seg(8).s('wt_digital:0').warp(saw.fast(4)).warpmode(6).unison(3).att(0.03).wtenv(0.5).wtdec(0.3).gain(0.5)
       let drums = note('~')
 
-      console.log('Block number:', blockNumber % 60)
       if (blockNumber % 60 === 0)
         drums = note('~')
       else if (blockNumber % 60 < 10)
