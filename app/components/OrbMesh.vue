@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { shallowRef, watchEffect } from 'vue'
-import { useRenderLoop } from '@tresjs/core'
+import { useLoop } from '@tresjs/core'
 import * as THREE from 'three'
 import type { ValidatorNode, PeerNode, LinkData, Beam } from '~/types/orb'
 import { ORB_CONFIG, THEME_PALETTES } from '~/utils/orb-constants'
@@ -31,9 +31,9 @@ watchEffect(() => {
   linesRef.value.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 })
 
-const { onLoop } = useRenderLoop()
+const { onBeforeRender } = useLoop()
 
-onLoop(({ delta, elapsed }) => {
+onBeforeRender(({ delta, elapsed }) => {
   if (!nodesMeshRef.value || !linesRef.value || !props.nodes.length) return
 
   const linePositions = linesRef.value.geometry.getAttribute('position') as THREE.BufferAttribute
