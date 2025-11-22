@@ -59,12 +59,13 @@ onMounted(async () => {
 .orb-demo-page {
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: radial-gradient(circle at center, #2E3669 0%, #181B38 50%, #0B0C16 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
 .orb-container {

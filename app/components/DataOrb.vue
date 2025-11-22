@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Beam, ValidatorNode } from '~/types/orb'
+import type { Beam, ValidatorNode, ValidatorAPIResponse } from '~/types/orb'
 import { generateGraph } from '~/utils/generate-graph'
 import { ORB_CONFIG } from '~/utils/orb-constants'
 
@@ -9,37 +9,32 @@ const props = defineProps<{
   peerCount: number
 }>()
 
-const { validators, fetchValidators } = useValidators()
+const { data: validators } = await useFetch<ValidatorAPIResponse[]>('https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false')
 const graphData = shallowRef<ReturnType<typeof generateGraph>>()
 const beams = ref<Beam[]>([])
 
-// Fetch validators on mount
-onMounted(async () => {
-  await fetchValidators()
-})
-
 // Generate graph when validators loaded
 watchEffect(() => {
-  if (validators.value.length > 0) {
+  if (validators.value && validators.value.length > 0) {
     graphData.value = generateGraph(validators.value, props.peerCount, props.songTheme)
   }
 })
 
 // Watch peer count changes
 watch(() => props.peerCount, (newCount) => {
-  if (!graphData.value || validators.value.length === 0) return
+  if (!graphData.value || !validators.value || validators.value.length === 0) return
   graphData.value = generateGraph(validators.value, newCount, props.songTheme)
 })
 
 // Watch theme changes
 watch(() => props.songTheme, (newTheme) => {
-  if (!graphData.value || validators.value.length === 0) return
+  if (!graphData.value || !validators.value || validators.value.length === 0) return
   graphData.value = generateGraph(validators.value, props.peerCount, newTheme)
 })
 
 // Trigger block (called from parent)
 const triggerBlock = (validatorAddress?: string) => {
-  if (!graphData.value) return
+  if (!graphData.value || !validators.value) return
 
   let address = validatorAddress
   if (!address) {
@@ -81,7 +76,7 @@ defineExpose({ triggerBlock })
       :validator-map="graphData.validatorMap"
       :beams="beams"
       :theme="songTheme"
-      :validator-count="validators.length"
+      :validator-count="validators?.length || 0"
     />
   </div>
   <div v-else class="size-full flex items-center justify-center text-white">

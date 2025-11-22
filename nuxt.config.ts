@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     '@nuxt/hints',
     '@nuxt/ui',
     '@vueuse/nuxt',
+    '@tresjs/nuxt',
   ],
   eslint: {
     config: {

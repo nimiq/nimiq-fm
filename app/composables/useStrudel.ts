@@ -3,8 +3,12 @@ import { makeHash } from 'identicons-esm/core'
 
 let scheduler: any = null
 let isInitialized = false
+let analyser: AnalyserNode | null = null
+let audioContext: AudioContext | null = null
 
 export function useStrudel() {
+  const audioData = ref<Float32Array>(new Float32Array(512))
+
   const init = async () => {
     if (isInitialized || !import.meta.client) return
 
@@ -14,6 +18,7 @@ export function useStrudel() {
 
       await initAudioOnFirstClick()
       const ctx = getAudioContext()
+      audioContext = ctx
 
       if (ctx.state === 'suspended') await ctx.resume()
 
@@ -21,6 +26,27 @@ export function useStrudel() {
 
       const replInstance = repl({ defaultOutput: webaudioOutput, getTime: () => ctx.currentTime })
       scheduler = replInstance.scheduler
+
+      // Setup analyser for audio visualization
+      analyser = ctx.createAnalyser()
+      analyser.fftSize = 1024
+      analyser.smoothingTimeConstant = 0.8
+
+      // Connect destination to analyser
+      if (ctx.destination) {
+        const source = ctx.createMediaStreamDestination()
+        analyser.connect(ctx.destination)
+      }
+
+      // Start audio analysis loop
+      const updateAudioData = () => {
+        if (!analyser) return
+        const dataArray = new Uint8Array(analyser.frequencyBinCount)
+        analyser.getByteFrequencyData(dataArray)
+        audioData.value = new Float32Array(dataArray)
+        requestAnimationFrame(updateAudioData)
+      }
+      updateAudioData()
 
       isInitialized = true
     }
@@ -50,5 +76,5 @@ export function useStrudel() {
     }
   }
 
-  return { init, playBlockSound }
+  return { init, playBlockSound, audioData: readonly(audioData) }
 }
