@@ -54,6 +54,9 @@ onMounted(() => {
     </UPageHero>
     <UPageSection v-if="currentBlock?.validatorAddress" class="text-center">
       <div class="text-sm text-gray-500 mb-2">
+        Now Playing: {{ strudel?.nowPlaying }}
+      </div>
+      <div class="text-sm text-gray-500 mb-2">
         Latest Block Validator
       </div>
       <div class="font-mono text-2xl font-bold break-all">
@@ -61,6 +64,10 @@ onMounted(() => {
       </div>
       <div class="font-mono text-2xl font-bold break-all">
         {{ makeHash(currentBlock.validatorAddress) }}
+      </div>
+
+      <div>
+        Block #{{ currentBlock.blockNumber }} (Epoch {{ currentBlock.epoch }}, Batch {{ currentBlock.batch }})
       </div>
     </UPageSection>
   </UContainer>

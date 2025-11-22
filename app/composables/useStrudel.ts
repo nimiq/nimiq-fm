@@ -3,6 +3,8 @@ let isInitialized = false
 let initPromise: Promise<void> | null = null
 
 export function useStrudel() {
+  const nowPlaying = ref('')
+
   const init = async () => {
     if (!import.meta.client)
       return
@@ -101,27 +103,27 @@ export function useStrudel() {
       let pattern
       switch (patternIndex) {
         case 0:
-          console.log('Playing Desert Dune')
+          nowPlaying.value = 'Desert Dune'
           pattern = desertDune(digits, batch, blockNumber)
           break
         case 1:
-          console.log('Playing Milky Way')
+          nowPlaying.value = 'Milky Way'
           pattern = milkyWay(digits, batch, blockNumber)
           break
         case 2:
-          console.log('Playing Acid')
+          nowPlaying.value = 'Acid'
           pattern = acid(digits, batch, blockNumber)
           break
         case 3:
-          console.log('Playing Qimin')
+          nowPlaying.value = 'Qimin'
           pattern = qimin(digits, batch, blockNumber)
           break
         case 4:
-          console.log('Playing Running Away')
+          nowPlaying.value = 'Running Away'
           pattern = runningAway(digits, batch, blockNumber)
           break
         default:
-          console.log('Playing Desert Dune (default)')
+          nowPlaying.value = 'Desert Dune'
           pattern = desertDune(digits, batch, blockNumber)
       }
 
@@ -144,5 +146,5 @@ export function useStrudel() {
     }
   }
 
-  return { init, start, playBlockSound, stop: () => scheduler?.stop() }
+  return { init, start, playBlockSound, stop: () => scheduler?.stop(), nowPlaying }
 }
