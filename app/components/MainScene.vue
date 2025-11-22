@@ -2,7 +2,7 @@
 import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 const { block, micro, svg } = storeToRefs(useBlocks())
 const container = ref(null)
@@ -10,10 +10,9 @@ let scene
 let camera
 let renderer
 const notes = []
-let lastNoteTime = 0
 let gridHelper
 const NOTE_SPEED = 2
-const NOTE_INTERVAL = 250 // 4 notes per second (in milliseconds)
+let animationId
 
 function createHexagonShape() {
   const shape = new THREE.Shape()
@@ -52,13 +51,11 @@ function shakeGrid() {
     yoyo: true,
     repeat: 1,
     onComplete: () => {
-      // Reset rotation to avoid accumulation
       gridHelper.rotation.x = 0
       gridHelper.rotation.z = 0
     },
   })
 
-  // Subtle position shake
   gsap.to(gridHelper.position, {
     x: `+=${intensity * (Math.random() - 0.5)}`,
     z: `+=${intensity * (Math.random() - 0.5)}`,
@@ -67,7 +64,6 @@ function shakeGrid() {
     yoyo: true,
     repeat: 1,
     onComplete: () => {
-      // Reset position (except y which should stay at -3)
       gridHelper.position.x = 0
       gridHelper.position.z = 0
     },
@@ -81,61 +77,68 @@ function setupScene() {
   renderer.setSize(window.innerWidth, window.innerHeight)
   container.value.appendChild(renderer.domElement)
 
-  // Setup camera
   camera.position.z = 5
   camera.position.y = -2
   camera.rotation.x = 0.3
 
-  // Add ambient light
-  // const ambientLight = new THREE.AmbientLight(0x404040)
-  const ambientLight = new THREE.AmbientLight(0x000000)
+  const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5)
   scene.add(ambientLight)
 
-  // Add directional light
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1)
   directionalLight.position.set(0, 1, 1)
   scene.add(directionalLight)
 
-  // Add background effects
   createBackground()
 }
 
 function createBackground() {
-  // Create a grid
   gridHelper = new THREE.GridHelper(20, 20, 0x0CA6FE, 0x0CA6FE)
   gridHelper.position.y = -3
   scene.add(gridHelper)
-
-  // Add neon post-processing
-  const renderScene = new THREE.Scene()
-  renderScene.background = new THREE.Color(0x0CA6FE)
 }
-// 12 166 254 blue
-// 36 204 162; green
-// 255 153 0  orange
-// 255 92 72; red
-// 255 196 59; gold
-// 143 63 213; puple
-function createNote() {
-  // const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00]
-  const colors = [0x0CA6FE, 0x24CCA2, 0xFF9900, 0xFF5C48, 0xFFC43B, 0x8F3FD5]
+
+function createTextureFromSVG(svgString) {
+  const img = new Image()
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+  const texture = new THREE.Texture(img)
+  img.onload = () => { texture.needsUpdate = true }
+  return texture
+}
+
+function createNote(svgString = null) {
   const geometry = createHexagonShape()
-  const material = new THREE.MeshPhongMaterial({
-    color: colors[Math.floor(Math.random() * colors.length)],
-    emissive: 0x444444,
-    shininess: 100,
-    flatShading: true,
-    side: THREE.DoubleSide,
-  })
+  let material
 
-  // Create the texture from SVG
-  // const texture = createTextureFromSVG(svg.value)
+  if (svgString) {
+    const texture = createTextureFromSVG(svgString)
+    // Map the texture to the hexagon size (radius 0.3 -> width/height ~0.6)
+    // UVs are based on world units. Range is approx -0.3 to 0.3.
+    // We want to map this range to 0..1
+    // 0 -> 0.5
+    // 0.3 -> 1.0 => 0.3 * repeat + 0.5 = 1.0 => repeat = 0.5 / 0.3 = 1.666
+    texture.repeat.set(1.666, 1.666)
+    texture.offset.set(0.5, 0.5)
 
-  // Create a material with the texture
-  // const material = new THREE.MeshStandardMaterial({ map: texture })
-
-  // Create a mesh with geometry and material
-  // const hexagon = new THREE.Mesh(geometry, material);
+    // Use array of materials: [face, side]
+    // ExtrudeGeometry uses index 0 for faces (top/bottom) and 1 for sides
+    const faceMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: 0xFFFFFF
+    })
+    const sideMaterial = new THREE.MeshBasicMaterial({
+      color: 0x222222
+    })
+    material = [faceMaterial, sideMaterial]
+  } else {
+    const colors = [0x0CA6FE, 0x24CCA2, 0xFF9900, 0xFF5C48, 0xFFC43B, 0x8F3FD5]
+    material = new THREE.MeshPhongMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+      emissive: 0x444444,
+      shininess: 100,
+      flatShading: true,
+      side: THREE.DoubleSide,
+    })
+  }
 
   const note = new THREE.Mesh(geometry, material)
   note.position.set(
@@ -144,7 +147,7 @@ function createNote() {
     0,
   )
 
-  note.rotation.z = Math.PI / 2
+  note.rotation.z = 0
   note.rotation.y = Math.PI
 
   gsap.from(note.scale, {
@@ -159,12 +162,8 @@ function createNote() {
   notes.push(note)
 }
 
-function animate(time) {
-  requestAnimationFrame(animate)
-  if (time - lastNoteTime > NOTE_INTERVAL) {
-    createNote()
-    lastNoteTime = time
-  }
+function animate() {
+  animationId = requestAnimationFrame(animate)
 
   notes.forEach((note, index) => {
     note.position.y += NOTE_SPEED * 0.015
@@ -172,6 +171,18 @@ function animate(time) {
 
     if (note.position.y > 5) {
       scene.remove(note)
+
+      if (Array.isArray(note.material)) {
+        note.material.forEach(m => {
+          if (m.map) m.map.dispose()
+          m.dispose()
+        })
+      } else {
+        if (note.material.map) note.material.map.dispose()
+        note.material.dispose()
+      }
+
+      note.geometry.dispose()
       notes.splice(index, 1)
     }
   })
@@ -187,19 +198,23 @@ function handleResize() {
   }
 }
 
-useEventListener(handleResize)
+useEventListener(window, 'resize', handleResize)
 
 onMounted(() => {
   setupScene()
-  // animate(0)
+  animate()
+})
+
+onUnmounted(() => {
+  if (animationId) cancelAnimationFrame(animationId)
+  if (renderer) renderer.dispose()
 })
 
 watch(block, shakeGrid)
 
 watch(micro, async (b) => {
-  // console.log({ prod: b.producer, b })
   const svgString = await createIdenticon(b.producer.validator)
-  animate(0, svgString)
+  createNote(svgString)
 })
 </script>
 

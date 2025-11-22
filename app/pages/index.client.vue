@@ -48,7 +48,7 @@ function onClick() {
     <h1 text="center 3xl" w-full>
       Nimiq Song
     </h1>
-    <p nq-subline>
+    <p nq-subline text-center w-full mb-32>
       Each block is produced by a validator and each validator has their own "identisound"
     </p>
     <button v-if="!clicked" nq-pill-blue @click="onClick">
