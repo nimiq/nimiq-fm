@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { TresCanvas } from '@tresjs/core'
 import { OrbitControls, Stars, Sparkles } from '@tresjs/cientos'
+import { EffectComposerPmndrs, BloomPmndrs, NoisePmndrs, VignettePmndrs } from '@tresjs/post-processing'
 import * as THREE from 'three'
 import type { ValidatorNode, PeerNode, LinkData, Beam } from '~/types/orb'
 import { THEME_PALETTES } from '~/utils/orb-constants'
@@ -35,6 +36,14 @@ const themeColors = computed(() => THEME_PALETTES[props.theme])
     <Stars :radius="100" :depth="50" :count="1000" :factor="4" :saturation="0.5" :fade="true" :speed="0.2" />
 
     <OrbMesh :nodes="nodes" :links="links" :validator-map="validatorMap" :beams="beams" :theme="theme" :validator-count="validatorCount" />
+
+    <Suspense>
+      <EffectComposerPmndrs>
+        <BloomPmndrs :luminance-threshold="0.2" :intensity="1.0" :radius="0.5" :levels="8" :mipmapBlur="true" />
+        <NoisePmndrs :opacity="0.05" />
+        <VignettePmndrs :offset="0.1" :darkness="0.6" />
+      </EffectComposerPmndrs>
+    </Suspense>
 
     <OrbitControls :enable-pan="false" :enable-zoom="true" :min-distance="15" :max-distance="70" :auto-rotate="true" :auto-rotate-speed="0.3" />
   </TresCanvas>
