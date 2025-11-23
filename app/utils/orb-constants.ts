@@ -1,7 +1,7 @@
 import type { OrbConstants } from '~/types/orb'
 
 export const ORB_CONFIG: OrbConstants = {
-  VALIDATOR_COUNT: 72,
+  VALIDATOR_COUNT: 2000,
   ORB_RADIUS: 10,
   VALIDATOR_ROTATION_SPEED: 0.05,
   BEAM_SPEED: 8,
@@ -11,4 +11,4 @@ export const ORB_CONFIG: OrbConstants = {
 
 
 
-export const DEFAULT_VALIDATOR_COLOR = '#4FC3F7'
+export const DEFAULT_VALIDATOR_COLOR = '#00BCD4'

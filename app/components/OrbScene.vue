@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const glowMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    color: { value: new THREE.Color('#F0F5FF') },
+    color: { value: new THREE.Color('#C0D0E0') },
   },
   vertexShader: `
     varying vec3 vNormal;
@@ -28,8 +28,8 @@ const glowMaterial = new THREE.ShaderMaterial({
     uniform vec3 color;
     varying vec3 vNormal;
     void main() {
-      float intensity = pow(abs(vNormal.z), 6.0);
-      gl_FragColor = vec4(color, intensity * 0.2);
+      float intensity = pow(abs(vNormal.z), 3.0);
+      gl_FragColor = vec4(color, intensity * 0.8);
     }
   `,
   transparent: true,
@@ -45,8 +45,21 @@ const glowMaterial = new THREE.ShaderMaterial({
     :tone-mapping="THREE.ACESFilmicToneMapping"
     :tone-mapping-exposure="1.2"
   >
+    <!-- Central solid sphere -->
     <TresMesh :position="[0, 0, 0]">
-      <TresSphereGeometry :args="[7, 32, 32]" />
+      <TresSphereGeometry :args="[5, 32, 32]" />
+      <TresMeshStandardMaterial 
+        color="#607080" 
+        :roughness="0.7" 
+        :metalness="0.3"
+        :emissive="'#304050'"
+        :emissive-intensity="0.3"
+      />
+    </TresMesh>
+
+    <!-- Glow layer -->
+    <TresMesh :position="[0, 0, 0]">
+      <TresSphereGeometry :args="[8, 32, 32]" />
       <primitive :object="glowMaterial" />
     </TresMesh>
 
