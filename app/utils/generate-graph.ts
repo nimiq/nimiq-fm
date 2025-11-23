@@ -7,7 +7,7 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
   const links: LinkData[] = []
   const validatorMap = new Map<string, number>()
 
-  const palette = ['#00E5FF', '#7C4DFF', '#D500F9', '#3D5AFE']
+  const palette = ['#F5F5F5', '#CFD8DC', '#B0BEC5', '#90CAF9', '#B39DDB']
 
   // Generate validators
   for (let i = 0; i < validators.length; i++) {

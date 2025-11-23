@@ -89,7 +89,7 @@ onBeforeRender(({ delta, elapsed }) => {
       else if (n.state === 'dying') {
         const p = n.timer / ORB_CONFIG.PEER_TRANSITION_MS
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'hidden'; n.timer = Math.random() * 5000 }
+        if (n.timer <= 0) { n.state = 'hidden'; n.timer = 2000 + Math.random() * 15000 }
       }
     }
 
@@ -145,7 +145,7 @@ onBeforeRender(({ delta, elapsed }) => {
         }
         else {
           tempColor.copy('address' in n ? new THREE.Color(n.accentColor) : n.baseColor)
-          tempColor.multiplyScalar('address' in n ? 1.5 : 1.0)
+          tempColor.multiplyScalar('address' in n ? 1.2 : 0.8)
         }
 
         nodesMeshRef.value.setColorAt(i, tempColor)
@@ -166,7 +166,7 @@ onBeforeRender(({ delta, elapsed }) => {
         const op1 = 'opacity' in n1 ? n1.opacity : 1
         const op2 = 'opacity' in n2 ? n2.opacity : 1
         let alpha = Math.min(op1, op2)
-        if (dist > 7.0) alpha = 0
+        if (dist > 4.5) alpha = 0
 
         if (alpha < 0.01) {
           linePositions.setXYZ(i * 2, 0, 0, 0)
@@ -197,8 +197,8 @@ onBeforeRender(({ delta, elapsed }) => {
           tempColor.multiplyScalar(2 + beamHit * 10.0)
         }
         else {
-          tempColor.set('#00E5FF')
-          tempColor.multiplyScalar(link.isValidatorLink ? 2.0 : 1.5)
+          tempColor.set('#B0BEC5')
+          tempColor.multiplyScalar(link.isValidatorLink ? 0.8 : 0.5)
         }
 
         tempColor.multiplyScalar(alpha)
