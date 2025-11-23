@@ -1,6 +1,6 @@
 import type * as THREE from 'three'
 
-export type LifeCycleState = 'hidden' | 'spawning' | 'active' | 'dying'
+export type LifeCycleState = 'hidden' | 'spawning' | 'connecting' | 'active' | 'dying'
 
 export interface ValidatorNode {
   address: string
@@ -22,6 +22,7 @@ export interface PeerNode {
   state: LifeCycleState
   timer: number
   opacity: number
+  linkOpacity: number
   phi: number
   theta: number
   radius: number

@@ -77,6 +77,7 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
       state: initialState,
       timer: initialTimer,
       opacity: initialOpacity,
+      linkOpacity: initialOpacity,
       phi,
       theta,
       radius: r,

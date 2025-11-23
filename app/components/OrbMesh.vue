@@ -66,10 +66,8 @@ onBeforeRender(({ delta, elapsed }) => {
       n.timer -= dt
       if (n.state === 'active') {
         n.currentPosition.copy(n.targetPosition)
-        n.currentPosition.x += noiseX
-        n.currentPosition.y += noiseY
-        n.currentPosition.z += noiseZ
         n.opacity = 1
+        n.linkOpacity = 1
         if (n.timer <= 0) { n.state = 'dying'; n.timer = ORB_CONFIG.PEER_TRANSITION_MS }
       }
       else if (n.state === 'hidden') {
@@ -78,18 +76,57 @@ onBeforeRender(({ delta, elapsed }) => {
           n.timer = ORB_CONFIG.PEER_TRANSITION_MS
           n.startPosition.copy(n.targetPosition).normalize().multiplyScalar(ORB_CONFIG.ORB_RADIUS * 1.4)
           n.currentPosition.copy(n.startPosition)
+          n.linkOpacity = 0
         }
       }
       else if (n.state === 'spawning') {
         const p = 1 - (n.timer / ORB_CONFIG.PEER_TRANSITION_MS)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - Math.pow(1 - p, 3))
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'active'; n.timer = ORB_CONFIG.PEER_LIFETIME_MS + Math.random() * 5000 }
+        n.linkOpacity = 0
+        if (n.timer <= 0) {
+          n.state = 'connecting'
+          // Random delay before connections start appearing (1-4 seconds)
+          n.timer = 1000 + Math.random() * 3000
+        }
+      }
+      else if (n.state === 'connecting') {
+        const duration = 2000 // Duration of connection fade-in
+        const p = 1 - (n.timer / duration)
+        // If timer is larger than duration (waiting period), p is negative, so clamp to 0
+        n.linkOpacity = Math.max(0, Math.min(1, p))
+        n.opacity = 1
+        n.currentPosition.copy(n.targetPosition) // Ensure position is locked
+        if (n.timer <= 0) {
+           n.state = 'active'
+           n.timer = ORB_CONFIG.PEER_LIFETIME_MS + Math.random() * 5000
+           n.linkOpacity = 1
+        }
+      }
+      else if (n.state === 'active') {
+         // Keep position locked in active state too (handled by copy above for connecting, need here too?)
+         // In previous code, active just updated noise. Position was set to target.
+         // Wait, previous code:
+         // if (n.state === 'active') { n.currentPosition.copy(n.targetPosition); ... }
+         // So I should restore that logic or merge connecting/active handling.
+         // Let's keep it clean.
+         n.currentPosition.copy(n.targetPosition)
+         n.opacity = 1
+         n.linkOpacity = 1
+         if (n.timer <= 0) { n.state = 'dying'; n.timer = ORB_CONFIG.PEER_TRANSITION_MS }
       }
       else if (n.state === 'dying') {
         const p = n.timer / ORB_CONFIG.PEER_TRANSITION_MS
         n.opacity = p
+        n.linkOpacity = p
         if (n.timer <= 0) { n.state = 'hidden'; n.timer = 2000 + Math.random() * 15000 }
+      }
+
+      // Apply noise to currentPosition for all visible states
+      if (n.state !== 'hidden') {
+          n.currentPosition.x += noiseX
+          n.currentPosition.y += noiseY
+          n.currentPosition.z += noiseZ
       }
     }
 
@@ -163,8 +200,8 @@ onBeforeRender(({ delta, elapsed }) => {
         const pos2 = 'address' in n2 ? n2.position : n2.currentPosition
         const dist = pos1.distanceTo(pos2)
 
-        const op1 = 'opacity' in n1 ? n1.opacity : 1
-        const op2 = 'opacity' in n2 ? n2.opacity : 1
+        const op1 = 'address' in n1 ? 1 : n1.linkOpacity
+        const op2 = 'address' in n2 ? 1 : n2.linkOpacity
         let alpha = Math.min(op1, op2)
         if (dist > 4.5) alpha = 0
 
