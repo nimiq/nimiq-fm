@@ -1,6 +1,6 @@
 import type * as THREE from 'three'
 
-export type LifeCycleState = 'hidden' | 'spawning' | 'connecting' | 'active' | 'dying'
+export type LifeCycleState = 'hidden' | 'spawning' | 'connecting' | 'active' | 'disconnecting' | 'dying'
 
 export interface ValidatorNode {
   address: string

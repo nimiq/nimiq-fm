@@ -113,12 +113,27 @@ onBeforeRender(({ delta, elapsed }) => {
          n.currentPosition.copy(n.targetPosition)
          n.opacity = 1
          n.linkOpacity = 1
-         if (n.timer <= 0) { n.state = 'dying'; n.timer = ORB_CONFIG.PEER_TRANSITION_MS }
+         if (n.timer <= 0) {
+           n.state = 'disconnecting'
+           n.timer = 2000 // Duration for link fade out
+         }
+      }
+      else if (n.state === 'disconnecting') {
+        const duration = 2000
+        const p = n.timer / duration
+        n.linkOpacity = Math.max(0, p)
+        n.opacity = 1
+        n.currentPosition.copy(n.targetPosition)
+        if (n.timer <= 0) {
+          n.state = 'dying'
+          n.timer = 2000 // Duration for node fade out
+        }
       }
       else if (n.state === 'dying') {
-        const p = n.timer / ORB_CONFIG.PEER_TRANSITION_MS
-        n.opacity = p
-        n.linkOpacity = p
+        const duration = 2000
+        const p = n.timer / duration
+        n.opacity = Math.max(0, p)
+        n.linkOpacity = 0
         if (n.timer <= 0) { n.state = 'hidden'; n.timer = 2000 + Math.random() * 15000 }
       }
 
