@@ -1,6 +1,7 @@
 {
   "name": "song",
   "type": "module",
+  "homepage": "https://post-processing.tresjs.org/",
   "private": true,
   "scripts": {
     "build": "nuxt build",
