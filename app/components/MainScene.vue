@@ -3,8 +3,9 @@ import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { useBlocks } from '~/stores/blocks'
 
-const { block, micro, svg } = storeToRefs(useBlocks())
+const { block, micro } = storeToRefs(useBlocks())
 const container = ref(null)
 let scene
 let camera
@@ -99,13 +100,13 @@ function createBackground() {
 
 function createTextureFromSVG(svgString) {
   const img = new Image()
-  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+  img.src = svgString
   const texture = new THREE.Texture(img)
   img.onload = () => { texture.needsUpdate = true }
   return texture
 }
 
-function createNote(svgString = null) {
+function createNote(svgString: string | null = null) {
   const geometry = createHexagonShape()
   let material
 
@@ -123,13 +124,14 @@ function createNote(svgString = null) {
     // ExtrudeGeometry uses index 0 for faces (top/bottom) and 1 for sides
     const faceMaterial = new THREE.MeshBasicMaterial({
       map: texture,
-      color: 0xFFFFFF
+      color: 0xFFFFFF,
     })
     const sideMaterial = new THREE.MeshBasicMaterial({
-      color: 0x222222
+      color: 0x222222,
     })
     material = [faceMaterial, sideMaterial]
-  } else {
+  }
+  else {
     const colors = [0x0CA6FE, 0x24CCA2, 0xFF9900, 0xFF5C48, 0xFFC43B, 0x8F3FD5]
     material = new THREE.MeshPhongMaterial({
       color: colors[Math.floor(Math.random() * colors.length)],
@@ -173,12 +175,15 @@ function animate() {
       scene.remove(note)
 
       if (Array.isArray(note.material)) {
-        note.material.forEach(m => {
-          if (m.map) m.map.dispose()
+        note.material.forEach((m) => {
+          if (m.map)
+            m.map.dispose()
           m.dispose()
         })
-      } else {
-        if (note.material.map) note.material.map.dispose()
+      }
+      else {
+        if (note.material.map)
+          note.material.map.dispose()
         note.material.dispose()
       }
 
@@ -206,20 +211,22 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (animationId) cancelAnimationFrame(animationId)
-  if (renderer) renderer.dispose()
+  if (animationId)
+    cancelAnimationFrame(animationId)
+  if (renderer)
+    renderer.dispose()
 })
 
 watch(block, shakeGrid)
 
 watch(micro, async (b) => {
-  const svgString = await createIdenticon(b.producer.validator)
+  const svgString = createIdenticon(b?.validator || '', { format: 'image/svg+xml' })
   createNote(svgString)
 })
 </script>
 
 <template>
-  <div ref="container" bg-pink class="game-container" />
+  <div ref="container" class="bg-pink-500 game-container" />
 </template>
 
 <style scoped>

@@ -1,72 +1,89 @@
 import * as Tone from 'tone'
 
-const synthA = new Tone.Synth({
-  oscillator: {
-    type: 'fatsawtooth',
-    count: 3,
-    spread: 30,
-    volume: -5,
-  },
-  envelope: {
-    attack: 0.01,
-    decay: 0.1,
-    sustain: 0.5,
-    release: 0.4,
-    attackCurve: 'sine',
-  },
-}).toDestination()
-const fatOsc = new Tone.Synth({
-  oscillator: {
-    type: 'fatsawtooth',
-    count: 3,
-    spread: 10,
-    volume: -10,
-  },
-  envelope: {
-    attack: 1,
-    decay: 0.1,
-    sustain: 0.5,
-    release: 0.4,
-    attackCurve: 'sine',
-  },
-}).toDestination()
+let synthA: Tone.Synth
+let fatOsc: Tone.Synth
+let jumpSynth: Tone.PolySynth
+let reverbGlass: Tone.Freeverb
+let pitchShift: Tone.PitchShift
 
-const jumpSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: {
-    type: 'fatsawtooth',
-    count: 3,
-    spread: 30,
-  },
-  envelope: {
-    attack: 0.01,
-    decay: 0.1,
-    sustain: 0.5,
-    release: 0.4,
-    attackCurve: 'exponential',
-  },
-}).toDestination()
+function initAudio() {
+  if (synthA)
+    return
 
-// Effects
-const reverbGlass = new Tone.Freeverb().set({
-  roomSize: 0.7,
-  dampening: 4300,
-  wet: 0.5,
-})
-fatOsc.connect(reverbGlass)
+  synthA = new Tone.Synth({
+    oscillator: {
+      type: 'fatsawtooth',
+      count: 3,
+      spread: 30,
+      volume: -5,
+    },
+    envelope: {
+      attack: 0.01,
+      decay: 0.1,
+      sustain: 0.5,
+      release: 0.4,
+      attackCurve: 'sine',
+    },
+  }).toDestination()
+  fatOsc = new Tone.Synth({
+    oscillator: {
+      type: 'fatsawtooth',
+      count: 3,
+      spread: 10,
+      volume: -10,
+    },
+    envelope: {
+      attack: 1,
+      decay: 0.1,
+      sustain: 0.5,
+      release: 0.4,
+      attackCurve: 'sine',
+    },
+  }).toDestination()
 
-const pitchShift = new Tone.PitchShift().set({
-  pitch: 7,
-  windowSize: 0.1,
-  delayTime: 0,
-  feedback: 0,
-  wet: 0.5,
-})
+  jumpSynth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: {
+      type: 'fatsawtooth',
+      count: 3,
+      spread: 30,
+    },
+    envelope: {
+      attack: 0.01,
+      decay: 0.1,
+      sustain: 0.5,
+      release: 0.4,
+      attackCurve: 'exponential',
+    },
+  }).toDestination()
+
+  // Effects
+  reverbGlass = new Tone.Freeverb().set({
+    roomSize: 0.7,
+    dampening: 4300,
+    wet: 0.5,
+  })
+  fatOsc.connect(reverbGlass)
+
+  pitchShift = new Tone.PitchShift().set({
+    pitch: 7,
+    windowSize: 0.1,
+    delayTime: 0,
+    feedback: 0,
+    wet: 0.5,
+  })
+}
 
 export default function useTone() {
+  if (import.meta.client) {
+    initAudio()
+  }
+
   const maxNotes = 4
   const isPitchShift = ref(false)
 
   function playNotes(notes: string[]) {
+    if (!synthA)
+      return
     const notesToPlay = notes.slice(0, maxNotes)
     console.log('Notes:', notesToPlay)
     const seq = new Tone.Sequence((time, note) => {
@@ -75,6 +92,8 @@ export default function useTone() {
   }
 
   function playMacroBlock() {
+    if (!jumpSynth)
+      return
     console.log('Macro Block')
     Tone.getTransport().stop()
     Tone.getTransport().start()
@@ -220,12 +239,16 @@ export default function useTone() {
   }
 
   function playBass(note: string) {
+    if (!fatOsc)
+      return
     console.log('Bass:', note)
     Tone.getTransport().bpm.value = 120
     fatOsc.triggerAttackRelease(note, '2n')
   }
 
   function addEffects() {
+    if (!synthA || !pitchShift)
+      return
     if (!isPitchShift.value) {
       console.log('add effects')
       isPitchShift.value = true
@@ -234,6 +257,8 @@ export default function useTone() {
   }
 
   function removeEffects() {
+    if (!synthA || !pitchShift)
+      return
     if (isPitchShift.value) {
       console.log('remove effects')
       isPitchShift.value = false

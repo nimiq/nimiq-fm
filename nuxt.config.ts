@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   modules: [
     '@vueuse/nuxt',
     '@pinia/nuxt',
-    '@unocss/nuxt',
+    '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
     '@nuxthub/core',
     '@nuxt/eslint',
@@ -53,7 +53,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    nodeRpcUrl: process.env.NUXT_NODE_RPC_URL || '',
+    nodeRpcUrl: process.env.NIMIQ_RPC_URL || '',
   },
 
   vite: {
@@ -86,6 +86,9 @@ export default defineNuxtConfig({
         { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
         { rel: 'icon', type: 'image/icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&display=swap' },
       ],
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -99,11 +102,6 @@ export default defineNuxtConfig({
 
   build: {
     transpile: ['postprocessing'],
-  },
-
-  features: {
-    // For UnoCSS
-    inlineStyles: false,
   },
 
   eslint: {

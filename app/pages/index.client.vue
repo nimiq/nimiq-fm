@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useBlocks } from '~/stores/blocks'
 
 const { block } = storeToRefs(useBlocks())
 const { playNotes, playBass, playMacroBlock, start, addEffects, removeEffects } = useTone()
@@ -16,7 +17,7 @@ watch(block, (_block) => {
     playMacroBlock()
     return
   }
-  const hash = makeHash(_block?.producer.validator || '')
+  const hash = makeHash(_block?.validator || '')
   const notes = []
   for (let i = 0; i < hash.length - 2; i += 2) {
     const note = pentatonic[Number(hash[i + 1]) % pentatonic.length]
@@ -43,14 +44,14 @@ function onClick() {
 </script>
 
 <template>
-  <div flex="~ items-center justify-center col" size-screen>
-    <h1 text="center 3xl" w-full>
+  <div class="flex flex-col items-center justify-center w-screen h-screen">
+    <h1 class="text-center text-3xl w-full">
       Nimiq Song
     </h1>
-    <p nq-subline text-center w-full mb-32>
+    <p class="text-center w-full mb-32 text-xl text-gray-400 font-semibold">
       Each block is produced by a validator and each validator has their own "identisound"
     </p>
-    <button v-if="!clicked" nq-pill-blue @click="onClick">
+    <button v-if="!clicked" class="bg-[#0582CA] text-white rounded-full px-8 py-3 font-bold hover:bg-[#0466a0] transition-colors" @click="onClick">
       Tune in!
     </button>
     <MainScene v-else />

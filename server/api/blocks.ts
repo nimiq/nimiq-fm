@@ -6,14 +6,14 @@ export interface StreamedBlock {
   number: number
   epoch: number
   batch: number
+  type: 'macro' | 'micro'
   validator?: string
 }
 
 export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event)
 
-  const config = useRuntimeConfig()
-  const nodeRpcUrl = config.nimiqRpcUrl
+  const { nodeRpcUrl } = useRuntimeConfig()
 
   try {
     initRpcClient({ url: nodeRpcUrl })
@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
         batch: block.batch,
         epoch: block.epoch,
         validator: block.type === 'micro' ? block.producer.validator : undefined,
+        type: block.type,
       }
 
       eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
