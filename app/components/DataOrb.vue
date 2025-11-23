@@ -5,7 +5,6 @@ import { ORB_CONFIG } from '~/utils/orb-constants'
 
 const props = defineProps<{
   audioData: Float32Array
-  songTheme: 'dunesOfDessert' | 'qinim'
   peerCount: number
 }>()
 
@@ -16,20 +15,15 @@ const beams = ref<Beam[]>([])
 // Generate graph when validators loaded
 watchEffect(() => {
   if (validators.value && validators.value.length > 0) {
-    graphData.value = generateGraph(validators.value, props.peerCount, props.songTheme)
+    graphData.value = generateGraph(validators.value, props.peerCount)
   }
 })
 
 // Watch peer count changes
 watch(() => props.peerCount, (newCount) => {
   if (!graphData.value || !validators.value || validators.value.length === 0) return
-  graphData.value = generateGraph(validators.value, newCount, props.songTheme)
-})
-
-// Watch theme changes
-watch(() => props.songTheme, (newTheme) => {
-  if (!graphData.value || !validators.value || validators.value.length === 0) return
-  graphData.value = generateGraph(validators.value, props.peerCount, newTheme)
+  graphD
+  ata.value = generateGraph(validators.value, newCount)
 })
 
 // Trigger block (called from parent)
@@ -75,7 +69,6 @@ defineExpose({ triggerBlock })
       :links="graphData.links"
       :validator-map="graphData.validatorMap"
       :beams="beams"
-      :theme="songTheme"
       :validator-count="validators?.length || 0"
     />
   </div>

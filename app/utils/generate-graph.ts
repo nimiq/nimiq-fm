@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import type { ValidatorNode, PeerNode, LinkData, ValidatorAPIResponse } from '~/types/orb'
-import { ORB_CONFIG, DEFAULT_VALIDATOR_COLOR, THEME_PALETTES } from './orb-constants'
+import { ORB_CONFIG, DEFAULT_VALIDATOR_COLOR } from './orb-constants'
 
-export function generateGraph(validators: ValidatorAPIResponse[], peerCount: number, theme: 'dunesOfDessert' | 'qinim') {
+export function generateGraph(validators: ValidatorAPIResponse[], peerCount: number) {
   const nodes: Array<ValidatorNode | PeerNode> = []
   const links: LinkData[] = []
   const validatorMap = new Map<string, number>()
 
-  const palette = THEME_PALETTES[theme].peer
+  const palette = ['#00E5FF', '#7C4DFF', '#D500F9', '#3D5AFE']
 
   // Generate validators
   for (let i = 0; i < validators.length; i++) {

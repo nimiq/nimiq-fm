@@ -3,14 +3,13 @@ import { shallowRef, watchEffect } from 'vue'
 import { useLoop } from '@tresjs/core'
 import * as THREE from 'three'
 import type { ValidatorNode, PeerNode, LinkData, Beam } from '~/types/orb'
-import { ORB_CONFIG, THEME_PALETTES } from '~/utils/orb-constants'
+import { ORB_CONFIG } from '~/utils/orb-constants'
 
 const props = defineProps<{
   nodes: Array<ValidatorNode | PeerNode>
   links: LinkData[]
   validatorMap: Map<string, number>
   beams: Beam[]
-  theme: 'dunesOfDessert' | 'qinim'
   validatorCount: number
 }>()
 
@@ -20,7 +19,7 @@ const groupRef = shallowRef<THREE.Group>()
 
 const tempColor = new THREE.Color()
 const tempMatrix = new THREE.Matrix4()
-const beamColor = new THREE.Color(THEME_PALETTES[props.theme].beam)
+const beamColor = new THREE.Color('#00E5FF')
 
 // Initialize line buffers
 watchEffect(() => {
@@ -40,7 +39,7 @@ onBeforeRender(({ delta, elapsed }) => {
   const lineColors = linesRef.value.geometry.getAttribute('color') as THREE.BufferAttribute
   if (!linePositions || !lineColors) return
 
-  const time = elapsed
+  const time = Date.now() / 1000
   const dt = delta * 1000
 
   if (groupRef.value) groupRef.value.rotation.y += delta * 0.04
@@ -123,93 +122,93 @@ onBeforeRender(({ delta, elapsed }) => {
       }
     }
 
-    // Scale
-    let scale = 'address' in n ? 2.2 : 0.4
-    if (beamIntensity > 0) scale *= (1 + beamIntensity * 0.8)
-    if (blockFlash > 0) scale *= (1 + blockFlash * 0.5)
-    scale *= opacity
-    if (scale < 0.01) scale = 0
+        // Scale
+        let scale = 'address' in n ? 3.0 : 0.8
+        if (beamIntensity > 0) scale *= (1 + beamIntensity * 0.8)
+        if (blockFlash > 0) scale *= (1 + blockFlash * 0.5)
+        scale *= opacity
+        if (scale < 0.01) scale = 0
 
-    tempMatrix.makeScale(scale, scale, scale)
-    const pos = 'address' in n ? n.position : n.currentPosition
-    tempMatrix.setPosition(pos)
-    nodesMeshRef.value.setMatrixAt(i, tempMatrix)
+        tempMatrix.makeScale(scale, scale, scale)
+        const pos = 'address' in n ? n.position : n.currentPosition
+        tempMatrix.setPosition(pos)
+        nodesMeshRef.value.setMatrixAt(i, tempMatrix)
 
-    // Color
-    if (blockFlash > 0) {
-      tempColor.copy(beamColor).lerp('address' in n ? new THREE.Color(n.accentColor) : n.baseColor, 0.3)
-      tempColor.multiplyScalar(3 + blockFlash * 20.0)
-    }
-    else if (beamIntensity > 0) {
-      tempColor.copy(beamColor)
-      tempColor.multiplyScalar(2 + beamIntensity * 15.0)
-    }
-    else {
-      tempColor.copy('address' in n ? new THREE.Color(n.accentColor) : n.baseColor)
-      tempColor.multiplyScalar('address' in n ? 3.0 : 1.5)
-    }
+        // Color
+        if (blockFlash > 0) {
+          tempColor.copy(beamColor).lerp('address' in n ? new THREE.Color(n.accentColor) : n.baseColor, 0.3)
+          tempColor.multiplyScalar(3 + blockFlash * 20.0)
+        }
+        else if (beamIntensity > 0) {
+          tempColor.copy(beamColor)
+          tempColor.multiplyScalar(2 + beamIntensity * 15.0)
+        }
+        else {
+          tempColor.copy('address' in n ? new THREE.Color(n.accentColor) : n.baseColor)
+          tempColor.multiplyScalar('address' in n ? 1.5 : 1.0)
+        }
 
-    nodesMeshRef.value.setColorAt(i, tempColor)
-  }
-
-  nodesMeshRef.value.instanceMatrix.needsUpdate = true
-  if (nodesMeshRef.value.instanceColor) nodesMeshRef.value.instanceColor.needsUpdate = true
-
-  // Update links
-  for (let i = 0; i < props.links.length; i++) {
-    const link = props.links[i]
-    const n1 = props.nodes[link.sourceIndex]
-    const n2 = props.nodes[link.targetIndex]
-    const pos1 = 'address' in n1 ? n1.position : n1.currentPosition
-    const pos2 = 'address' in n2 ? n2.position : n2.currentPosition
-    const dist = pos1.distanceTo(pos2)
-
-    const op1 = 'opacity' in n1 ? n1.opacity : 1
-    const op2 = 'opacity' in n2 ? n2.opacity : 1
-    let alpha = Math.min(op1, op2)
-    if (dist > 7.0) alpha = 0
-
-    if (alpha < 0.01) {
-      linePositions.setXYZ(i * 2, 0, 0, 0)
-      linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
-      continue
-    }
-
-    linePositions.setXYZ(i * 2, pos1.x, pos1.y, pos1.z)
-    linePositions.setXYZ(i * 2 + 1, pos2.x, pos2.y, pos2.z)
-
-    // Beam on link
-    let beamHit = 0
-    const mid = new THREE.Vector3().lerpVectors(pos1, pos2, 0.5)
-    for (const beam of props.beams) {
-      const validatorIdx = props.validatorMap.get(beam.originAddress)
-      if (validatorIdx === undefined) continue
-      const originNode = props.nodes[validatorIdx]
-      const origin = 'address' in originNode ? originNode.position : originNode.currentPosition
-      const d = mid.distanceTo(origin)
-      const waveDist = (time - beam.startTime) * ORB_CONFIG.BEAM_SPEED
-      if (d < waveDist && d > waveDist - 6.0) {
-        beamHit = Math.max(beamHit, 1 - (waveDist - d) / 6.0)
+        nodesMeshRef.value.setColorAt(i, tempColor)
       }
-    }
 
-    if (beamHit > 0) {
-      tempColor.copy(beamColor)
-      tempColor.multiplyScalar(2 + beamHit * 10.0)
-    }
-    else {
-      tempColor.set('#4FC3F7')
-      tempColor.multiplyScalar(link.isValidatorLink ? 2.0 : 1.5)
-    }
+      nodesMeshRef.value.instanceMatrix.needsUpdate = true
+      if (nodesMeshRef.value.instanceColor) nodesMeshRef.value.instanceColor.needsUpdate = true
 
-    tempColor.multiplyScalar(alpha)
-    lineColors.setXYZ(i * 2, tempColor.r, tempColor.g, tempColor.b)
-    lineColors.setXYZ(i * 2 + 1, tempColor.r, tempColor.g, tempColor.b)
-  }
+      // Update links
+      for (let i = 0; i < props.links.length; i++) {
+        const link = props.links[i]
+        const n1 = props.nodes[link.sourceIndex]
+        const n2 = props.nodes[link.targetIndex]
+        const pos1 = 'address' in n1 ? n1.position : n1.currentPosition
+        const pos2 = 'address' in n2 ? n2.position : n2.currentPosition
+        const dist = pos1.distanceTo(pos2)
 
-  linePositions.needsUpdate = true
-  lineColors.needsUpdate = true
-})
+        const op1 = 'opacity' in n1 ? n1.opacity : 1
+        const op2 = 'opacity' in n2 ? n2.opacity : 1
+        let alpha = Math.min(op1, op2)
+        if (dist > 7.0) alpha = 0
+
+        if (alpha < 0.01) {
+          linePositions.setXYZ(i * 2, 0, 0, 0)
+          linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
+          continue
+        }
+
+        linePositions.setXYZ(i * 2, pos1.x, pos1.y, pos1.z)
+        linePositions.setXYZ(i * 2 + 1, pos2.x, pos2.y, pos2.z)
+
+        // Beam on link
+        let beamHit = 0
+        const mid = new THREE.Vector3().lerpVectors(pos1, pos2, 0.5)
+        for (const beam of props.beams) {
+          const validatorIdx = props.validatorMap.get(beam.originAddress)
+          if (validatorIdx === undefined) continue
+          const originNode = props.nodes[validatorIdx]
+          const origin = 'address' in originNode ? originNode.position : originNode.currentPosition
+          const d = mid.distanceTo(origin)
+          const waveDist = (time - beam.startTime) * ORB_CONFIG.BEAM_SPEED
+          if (d < waveDist && d > waveDist - 6.0) {
+            beamHit = Math.max(beamHit, 1 - (waveDist - d) / 6.0)
+          }
+        }
+
+        if (beamHit > 0) {
+          tempColor.copy(beamColor)
+          tempColor.multiplyScalar(2 + beamHit * 10.0)
+        }
+        else {
+          tempColor.set('#00E5FF')
+          tempColor.multiplyScalar(link.isValidatorLink ? 2.0 : 1.5)
+        }
+
+        tempColor.multiplyScalar(alpha)
+        lineColors.setXYZ(i * 2, tempColor.r, tempColor.g, tempColor.b)
+        lineColors.setXYZ(i * 2 + 1, tempColor.r, tempColor.g, tempColor.b)
+      }
+
+      linePositions.needsUpdate = true
+      lineColors.needsUpdate = true
+    })
 </script>
 
 <template>
@@ -218,10 +217,9 @@ onBeforeRender(({ delta, elapsed }) => {
       <TresSphereGeometry :args="[0.15, 16, 16]" />
       <TresMeshStandardMaterial :tone-mapped="false" :roughness="0.9" :metalness="0.1" emissive="#000000" :emissive-intensity="0" />
     </TresInstancedMesh>
-
     <TresLineSegments ref="linesRef">
       <TresBufferGeometry />
-      <TresLineBasicMaterial vertex-colors :transparent="true" :opacity="0.4" :blending="THREE.AdditiveBlending" :depth-write="false" :tone-mapped="false" />
+      <TresLineBasicMaterial vertex-colors :transparent="true" :opacity="0.2" :blending="THREE.AdditiveBlending" :depth-write="false" :tone-mapped="false" />
     </TresLineSegments>
   </TresGroup>
 </template>
