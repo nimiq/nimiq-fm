@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BlockType } from 'nimiq-rpc-client-ts'
 
 const { block } = storeToRefs(useBlocks())
 const { playNotes, playBass, playMacroBlock, start, addEffects, removeEffects } = useTone()
@@ -13,7 +12,7 @@ const clicked = ref(false)
 watch(block, (_block) => {
   if (!clicked.value || !_block)
     return
-  if (_block.type === BlockType.Macro) {
+  if (_block.type === 'macro') {
     playMacroBlock()
     return
   }

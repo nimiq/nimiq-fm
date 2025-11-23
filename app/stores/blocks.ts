@@ -1,6 +1,5 @@
 import type { Block } from 'nimiq-rpc-client-ts/types'
 import { createIdenticon } from 'identicons-esm'
-import { BlockType } from 'nimiq-rpc-client-ts/types'
 
 export const useBlocks = defineStore('blocks', () => {
   const url = '/api/blocks'
@@ -16,7 +15,7 @@ export const useBlocks = defineStore('blocks', () => {
   watch(block, async (b) => {
     if (!b)
       return
-    if (b.type === BlockType.Macro)
+    if (b.type === 'macro')
       return
     micro.value = b
     svg.value = createIdenticon(b.producer.validator)
