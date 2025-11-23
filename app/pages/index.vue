@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
-import OrbOverlay from '~/components/OrbOverlay.vue'
-import OrbScene from '~/components/OrbScene.vue'
-import { useBlockchain } from '~/composables/useBlockchain'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { AudioSimulator } from '~/utils/audio-simulator'
 import { BLOCK_INTERVAL_MS } from '~/utils/orb-constants'
+import { useBlockchain } from '~/composables/useBlockchain'
+import OrbScene from '~/components/OrbScene.vue'
+import OrbOverlay from '~/components/OrbOverlay.vue'
 
 const audioSim = new AudioSimulator()
 const audioData = ref(0)

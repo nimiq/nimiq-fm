@@ -3,8 +3,10 @@ import { initRpcClient } from 'nimiq-rpc-client-ts/client'
 import { BlockType } from 'nimiq-rpc-client-ts/types'
 import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
 
-interface StreamedBlock {
+export interface StreamedBlock {
   number: number
+  epoch: number
+  batch: number
   validator?: string
 }
 
@@ -29,6 +31,8 @@ export default defineWebSocketHandler({
 
           const streamedBlock: StreamedBlock = {
             number: block.number,
+            epoch: block.epoch,
+            batch: block.batch,
             validator:
                             block.type === BlockType.Micro
                               ? (block as MicroBlock).producer.validator

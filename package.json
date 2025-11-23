@@ -18,6 +18,7 @@
     "@nuxt/hints": "1.0.0-alpha.1",
     "@nuxt/ui": "4.1.0",
     "@strudel/core": "^1.2.5",
+    "@strudel/web": "^1.2.6",
     "@strudel/webaudio": "^1.2.6",
     "@tresjs/cientos": "^5.1.1",
     "@tresjs/core": "^5.1.1",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
     "@tresjs/nuxt": "^5.1.1",
+    "@types/node": "^24.10.1",
     "@types/three": "^0.181.0",
     "tailwindcss": "^4.1.17"
   }

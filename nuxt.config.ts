@@ -30,4 +30,7 @@ export default defineNuxtConfig({
     },
   },
   css: ['./app/assets/css/main.css'],
+  runtimeConfig: {
+    nimiqRpcUrl: process.env.NIMIQ_RPC_URL || 'http://localhost:8648',
+  },
 })

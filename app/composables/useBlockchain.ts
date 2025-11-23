@@ -3,6 +3,8 @@ import { readonly, ref, watch } from 'vue'
 
 export interface BlockEvent {
   blockNumber: number
+  epoch: number
+  batch: number
   timestamp: number
   validatorAddress?: string
   type: 'micro' | 'macro'
@@ -35,6 +37,8 @@ export function useBlockchain() {
           const block = parsed.data
           const blockEvent: BlockEvent = {
             blockNumber: block.number,
+            epoch: block.epoch,
+            batch: block.batch,
             timestamp: Date.now(),
             validatorAddress: block.validator,
             type: block.validator ? 'micro' : 'macro',
