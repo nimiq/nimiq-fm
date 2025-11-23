@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import * as THREE from 'three'
-import { TresCanvas } from '@tresjs/core'
 import { Environment, OrbitControls, Sparkles, Stars } from '@tresjs/cientos'
+import { TresCanvas } from '@tresjs/core'
 import { BloomPmndrs, EffectComposer, NoisePmndrs, VignettePmndrs } from '@tresjs/post-processing'
 import OrbMesh from './OrbMesh.vue'
 
@@ -21,6 +20,7 @@ defineProps<{
         <TresGroup>
           <TresPerspectiveCamera :position="[0, 0, 90]" :fov="35" make-default />
           <!-- High-contrast studio environment -->
+          <!-- @vue-ignore -->
           <Environment preset="warehouse" :blur="0.6" :background="false" />
 
           <TresAmbientLight :intensity="0.4" color="#ffffff" />

@@ -1,13 +1,12 @@
+import type { LinkData, NodeData } from '~/types/orb'
 import * as THREE from 'three'
-import type { NodeData, LinkData } from '~/types/orb'
 import { NodeType } from '~/types/orb'
 import {
   NODE_COUNT,
-  VALIDATOR_COUNT,
-  ORB_RADIUS,
   NODE_PALETTE,
+  ORB_RADIUS,
   PEER_LIFETIME_MS,
-  PEER_TRANSITION_MS,
+  VALIDATOR_COUNT,
 } from './orb-constants'
 
 // Extend NodeData to store a specific base color for that node
@@ -15,7 +14,7 @@ interface ExtendedNodeData extends NodeData {
   baseColor: THREE.Color
 }
 
-export const generateGraph = () => {
+export function generateGraph() {
   const nodes: ExtendedNodeData[] = []
   const links: LinkData[] = []
 
@@ -111,17 +110,18 @@ export const generateGraph = () => {
   for (let i = 0; i < VALIDATOR_COUNT; i++) {
     const distances = []
     for (let j = 0; j < VALIDATOR_COUNT; j++) {
-      if (i === j) continue
-      distances.push({ id: j, dist: nodes[i].targetPosition.distanceTo(nodes[j].targetPosition) })
+      if (i === j)
+        continue
+      distances.push({ id: j, dist: nodes[i]!.targetPosition.distanceTo(nodes[j]!.targetPosition) })
     }
     distances.sort((a, b) => a.dist - b.dist)
 
     const connectionCount = 2
     for (let k = 0; k < connectionCount; k++) {
-      const targetId = distances[k].id
-      if (!nodes[i].connections.includes(targetId)) {
-        nodes[i].connections.push(targetId)
-        nodes[targetId].connections.push(i)
+      const targetId = distances[k]!.id
+      if (!nodes[i]!.connections.includes(targetId)) {
+        nodes[i]!.connections.push(targetId)
+        nodes[targetId]!.connections.push(i)
         links.push({
           sourceIndex: Math.min(i, targetId),
           targetIndex: Math.max(i, targetId),
@@ -140,19 +140,20 @@ export const generateGraph = () => {
     // Connect to nearby validators
     const valCandidates = []
     for (let vIdx = 0; vIdx < VALIDATOR_COUNT; vIdx++) {
-      const d = nodes[i].targetPosition.distanceTo(nodes[vIdx].targetPosition)
+      const d = nodes[i]!.targetPosition.distanceTo(nodes[vIdx]!.targetPosition)
       valCandidates.push({ id: vIdx, dist: d })
     }
     valCandidates.sort((a, b) => a.dist - b.dist)
 
     let valConnections = 0
     for (let k = 0; k < valCandidates.length; k++) {
-      if (valConnections >= 1) break
-      const v = valCandidates[k]
+      if (valConnections >= 1)
+        break
+      const v = valCandidates[k]!
       if (v.dist < ORB_RADIUS * 2.5) {
-        if (!nodes[i].connections.includes(v.id)) {
-          nodes[i].connections.push(v.id)
-          nodes[v.id].connections.push(i)
+        if (!nodes[i]!.connections.includes(v.id)) {
+          nodes[i]!.connections.push(v.id)
+          nodes[v.id]!.connections.push(i)
           links.push({
             sourceIndex: v.id,
             targetIndex: i,
@@ -174,20 +175,24 @@ export const generateGraph = () => {
     const endScan = Math.min(NODE_COUNT, i + scanRange)
 
     for (let j = startScan; j < endScan; j++) {
-      if (i === j) continue
-      peerDistances.push({ id: j, dist: nodes[i].targetPosition.distanceTo(nodes[j].targetPosition) })
+      if (i === j)
+        continue
+      peerDistances.push({ id: j, dist: nodes[i]!.targetPosition.distanceTo(nodes[j]!.targetPosition) })
     }
     peerDistances.sort((a, b) => a.dist - b.dist)
 
     let peerConnections = 0
     for (let k = 0; k < 8; k++) {
-      if (peerConnections >= 2) break
-      if (k >= peerDistances.length) break
-      const targetId = peerDistances[k].id
-      if (peerDistances[k].dist > 6.0) continue
-      if (!nodes[i].connections.includes(targetId)) {
-        nodes[i].connections.push(targetId)
-        nodes[targetId].connections.push(i)
+      if (peerConnections >= 2)
+        break
+      if (k >= peerDistances.length)
+        break
+      const targetId = peerDistances[k]!.id
+      if (peerDistances[k]!.dist > 6.0)
+        continue
+      if (!nodes[i]!.connections.includes(targetId)) {
+        nodes[i]!.connections.push(targetId)
+        nodes[targetId]!.connections.push(i)
         links.push({
           sourceIndex: i,
           targetIndex: targetId,

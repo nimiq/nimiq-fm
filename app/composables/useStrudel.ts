@@ -10,7 +10,8 @@ export function useStrudel() {
   const audioData = ref<Float32Array>(new Float32Array(512))
 
   const init = async () => {
-    if (isInitialized || !import.meta.client) return
+    if (isInitialized || !import.meta.client)
+      return
 
     try {
       const { repl } = await import('@strudel/core')
@@ -20,7 +21,8 @@ export function useStrudel() {
       const ctx = getAudioContext()
       audioContext = ctx
 
-      if (ctx.state === 'suspended') await ctx.resume()
+      if (ctx.state === 'suspended')
+        await ctx.resume()
 
       await samples('github:tidalcycles/dirt-samples')
 
@@ -29,18 +31,19 @@ export function useStrudel() {
 
       // Setup analyser for audio visualization
       analyser = ctx.createAnalyser()
-      analyser.fftSize = 1024
-      analyser.smoothingTimeConstant = 0.8
+      analyser!.fftSize = 1024
+      analyser!.smoothingTimeConstant = 0.8
 
       // Connect destination to analyser
       if (ctx.destination) {
         const source = ctx.createMediaStreamDestination()
-        analyser.connect(ctx.destination)
+        analyser!.connect(ctx.destination)
       }
 
       // Start audio analysis loop
       const updateAudioData = () => {
-        if (!analyser) return
+        if (!analyser)
+          return
         const dataArray = new Uint8Array(analyser.frequencyBinCount)
         analyser.getByteFrequencyData(dataArray)
         audioData.value = new Float32Array(dataArray)
@@ -56,7 +59,8 @@ export function useStrudel() {
   }
 
   const playBlockSound = async ({ validatorAddress }: { validatorAddress: string }) => {
-    if (!scheduler || !import.meta.client) return
+    if (!scheduler || !import.meta.client)
+      return
 
     try {
       const { note } = await import('@strudel/core')

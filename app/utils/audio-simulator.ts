@@ -11,7 +11,7 @@ export class AudioSimulator {
 
     // Normalize roughly to 0-1 range, emphasizing the "kick"
     let val = Math.max(0, base + fast + slow)
-    val = Math.pow(val, 2) // make it punchier
+    val = val ** 2 // make it punchier
 
     // Clip
     return Math.min(1, val)

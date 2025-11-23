@@ -1,5 +1,5 @@
-import { ref, computed, readonly, watch } from 'vue'
 import { useWebSocket } from '@vueuse/core'
+import { readonly, ref, watch } from 'vue'
 
 export interface BlockEvent {
   blockNumber: number
@@ -25,7 +25,8 @@ export function useBlockchain() {
     })
 
     watch(socket.data, (message: string | null) => {
-      if (!message) return
+      if (!message)
+        return
 
       try {
         const parsed = JSON.parse(message)
@@ -51,7 +52,8 @@ export function useBlockchain() {
   }
 
   const startListening = () => {
-    if (socket) socket.open()
+    if (socket)
+      socket.open()
   }
 
   const onBlockEvent = (callback: (event: BlockEvent) => void) => {

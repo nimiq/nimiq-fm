@@ -205,9 +205,9 @@ git commit -m "feat: add validators composable"
 Create `app/utils/generate-graph.ts`:
 
 ```ts
+import type { LinkData, PeerNode, ValidatorAPIResponse, ValidatorNode } from '~/types/orb'
 import * as THREE from 'three'
-import type { ValidatorNode, PeerNode, LinkData, ValidatorAPIResponse } from '~/types/orb'
-import { ORB_CONFIG, DEFAULT_VALIDATOR_COLOR, THEME_PALETTES } from './orb-constants'
+import { DEFAULT_VALIDATOR_COLOR, ORB_CONFIG, THEME_PALETTES } from './orb-constants'
 
 export function generateGraph(validators: ValidatorAPIResponse[], peerCount: number, theme: 'dunesOfDessert' | 'qinim') {
   const nodes: Array<ValidatorNode | PeerNode> = []
@@ -297,7 +297,8 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
   for (let i = 0; i < validators.length; i++) {
     const distances = []
     for (let j = 0; j < validators.length; j++) {
-      if (i === j) continue
+      if (i === j)
+        continue
       const n1 = nodes[i] as ValidatorNode
       const n2 = nodes[j] as ValidatorNode
       distances.push({ id: j, dist: n1.position.distanceTo(n2.position) })
@@ -347,7 +348,8 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
     const endScan = Math.min(nodes.length, i + scanRange)
 
     for (let j = startScan; j < endScan; j++) {
-      if (i === j) continue
+      if (i === j)
+        continue
       const pNode = nodes[j] as PeerNode
       peerDistances.push({ id: j, dist: node.targetPosition.distanceTo(pNode.targetPosition) })
     }
@@ -356,7 +358,8 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
     let peerConnections = 0
     for (let k = 0; k < 8 && peerConnections < 2 && k < peerDistances.length; k++) {
       const targetId = peerDistances[k].id
-      if (peerDistances[k].dist > 5.0) continue
+      if (peerDistances[k].dist > 5.0)
+        continue
       links.push({ sourceIndex: i, targetIndex: targetId, isValidatorLink: false, phaseOffset: 0 })
       peerConnections++
     }
@@ -386,10 +389,10 @@ Create `app/components/OrbMesh.vue`:
 
 ```vue
 <script setup lang="ts">
-import { shallowRef, watchEffect } from 'vue'
+import type { Beam, LinkData, PeerNode, ValidatorNode } from '~/types/orb'
 import { useRenderLoop } from '@tresjs/core'
 import * as THREE from 'three'
-import type { ValidatorNode, PeerNode, LinkData, Beam } from '~/types/orb'
+import { shallowRef, watchEffect } from 'vue'
 import { ORB_CONFIG, THEME_PALETTES } from '~/utils/orb-constants'
 
 const props = defineProps<{
@@ -411,7 +414,8 @@ const beamColor = new THREE.Color(THEME_PALETTES[props.theme].beam)
 
 // Initialize line buffers
 watchEffect(() => {
-  if (!linesRef.value || !props.links.length) return
+  if (!linesRef.value || !props.links.length)
+    return
   const positions = new Float32Array(props.links.length * 6)
   const colors = new Float32Array(props.links.length * 6)
   linesRef.value.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -421,16 +425,19 @@ watchEffect(() => {
 const { onLoop } = useRenderLoop()
 
 onLoop(({ delta, elapsed }) => {
-  if (!nodesMeshRef.value || !linesRef.value || !props.nodes.length) return
+  if (!nodesMeshRef.value || !linesRef.value || !props.nodes.length)
+    return
 
   const linePositions = linesRef.value.geometry.getAttribute('position') as THREE.BufferAttribute
   const lineColors = linesRef.value.geometry.getAttribute('color') as THREE.BufferAttribute
-  if (!linePositions || !lineColors) return
+  if (!linePositions || !lineColors)
+    return
 
   const time = elapsed
   const dt = delta * 1000
 
-  if (groupRef.value) groupRef.value.rotation.y += delta * 0.04
+  if (groupRef.value)
+    groupRef.value.rotation.y += delta * 0.04
 
   // Update nodes
   for (let i = 0; i < props.nodes.length; i++) {
@@ -470,7 +477,7 @@ onLoop(({ delta, elapsed }) => {
       }
       else if (n.state === 'spawning') {
         const p = 1 - (n.timer / ORB_CONFIG.PEER_TRANSITION_MS)
-        n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - Math.pow(1 - p, 3))
+        n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
         if (n.timer <= 0) { n.state = 'active'; n.timer = ORB_CONFIG.PEER_LIFETIME_MS + Math.random() * 5000 }
       }
@@ -487,7 +494,8 @@ onLoop(({ delta, elapsed }) => {
     if (opacity > 0.01) {
       for (const beam of props.beams) {
         const validatorIdx = props.validatorMap.get(beam.originAddress)
-        if (validatorIdx === undefined) continue
+        if (validatorIdx === undefined)
+          continue
         const originNode = props.nodes[validatorIdx]
         const pos = 'address' in originNode ? originNode.position : originNode.currentPosition
         const dist = ('address' in n ? n.position : n.currentPosition).distanceTo(pos)
@@ -496,7 +504,7 @@ onLoop(({ delta, elapsed }) => {
 
         if (dist < waveDist && dist > waveDist - waveWidth) {
           const p = 1 - (waveDist - dist) / waveWidth
-          beamIntensity = Math.max(beamIntensity, Math.pow(p, 2))
+          beamIntensity = Math.max(beamIntensity, p ** 2)
         }
       }
     }
@@ -506,16 +514,19 @@ onLoop(({ delta, elapsed }) => {
     if ('address' in n) {
       const timeSinceBlock = time - n.lastBlockTime
       if (timeSinceBlock < 1.5 && timeSinceBlock >= 0) {
-        blockFlash = Math.pow(1 - (timeSinceBlock / 1.5), 3)
+        blockFlash = (1 - (timeSinceBlock / 1.5)) ** 3
       }
     }
 
     // Scale
     let scale = 'address' in n ? 2.2 : 0.4
-    if (beamIntensity > 0) scale *= (1 + beamIntensity * 0.8)
-    if (blockFlash > 0) scale *= (1 + blockFlash * 0.5)
+    if (beamIntensity > 0)
+      scale *= (1 + beamIntensity * 0.8)
+    if (blockFlash > 0)
+      scale *= (1 + blockFlash * 0.5)
     scale *= opacity
-    if (scale < 0.01) scale = 0
+    if (scale < 0.01)
+      scale = 0
 
     tempMatrix.makeScale(scale, scale, scale)
     const pos = 'address' in n ? n.position : n.currentPosition
@@ -540,7 +551,8 @@ onLoop(({ delta, elapsed }) => {
   }
 
   nodesMeshRef.value.instanceMatrix.needsUpdate = true
-  if (nodesMeshRef.value.instanceColor) nodesMeshRef.value.instanceColor.needsUpdate = true
+  if (nodesMeshRef.value.instanceColor)
+    nodesMeshRef.value.instanceColor.needsUpdate = true
 
   // Update links
   for (let i = 0; i < props.links.length; i++) {
@@ -554,7 +566,8 @@ onLoop(({ delta, elapsed }) => {
     const op1 = 'opacity' in n1 ? n1.opacity : 1
     const op2 = 'opacity' in n2 ? n2.opacity : 1
     let alpha = Math.min(op1, op2)
-    if (dist > 7.0) alpha = 0
+    if (dist > 7.0)
+      alpha = 0
 
     if (alpha < 0.01) {
       linePositions.setXYZ(i * 2, 0, 0, 0)
@@ -570,7 +583,8 @@ onLoop(({ delta, elapsed }) => {
     const mid = new THREE.Vector3().lerpVectors(pos1, pos2, 0.5)
     for (const beam of props.beams) {
       const validatorIdx = props.validatorMap.get(beam.originAddress)
-      if (validatorIdx === undefined) continue
+      if (validatorIdx === undefined)
+        continue
       const originNode = props.nodes[validatorIdx]
       const origin = 'address' in originNode ? originNode.position : originNode.currentPosition
       const d = mid.distanceTo(origin)
@@ -634,11 +648,11 @@ Create `app/components/OrbScene.vue`:
 
 ```vue
 <script setup lang="ts">
+import type { Beam, LinkData, PeerNode, ValidatorNode } from '~/types/orb'
+import { OrbitControls, Sparkles, Stars } from '@tresjs/cientos'
 import { TresCanvas } from '@tresjs/core'
-import { OrbitControls, Stars, Sparkles } from '@tresjs/cientos'
-import { EffectComposer, Bloom, Noise, Vignette } from '@tresjs/post-processing'
+import { Bloom, EffectComposer, Noise, Vignette } from '@tresjs/post-processing'
 import * as THREE from 'three'
-import type { ValidatorNode, PeerNode, LinkData, Beam } from '~/types/orb'
 import { THEME_PALETTES } from '~/utils/orb-constants'
 
 const props = defineProps<{
@@ -655,7 +669,7 @@ const themeColors = computed(() => THEME_PALETTES[props.theme])
 
 <template>
   <TresCanvas
-    :clear-color="'#000000'"
+    clear-color="#000000"
     :tone-mapping="THREE.ACESFilmicToneMapping"
     :tone-mapping-exposure="1.2"
   >
@@ -674,7 +688,7 @@ const themeColors = computed(() => THEME_PALETTES[props.theme])
 
     <Suspense>
       <EffectComposer>
-        <Bloom :luminance-threshold="0.2" :intensity="1.0" :radius="0.5" :levels="8" mipmapBlur />
+        <Bloom :luminance-threshold="0.2" :intensity="1.0" :radius="0.5" :levels="8" mipmap-blur />
         <Noise :opacity="0.05" />
         <Vignette :offset="0.1" :darkness="0.6" />
       </EffectComposer>
@@ -733,19 +747,22 @@ watchEffect(() => {
 
 // Watch peer count changes
 watch(() => props.peerCount, (newCount) => {
-  if (!graphData.value || validators.value.length === 0) return
+  if (!graphData.value || validators.value.length === 0)
+    return
   graphData.value = generateGraph(validators.value, newCount, props.songTheme)
 })
 
 // Watch theme changes
 watch(() => props.songTheme, (newTheme) => {
-  if (!graphData.value || validators.value.length === 0) return
+  if (!graphData.value || validators.value.length === 0)
+    return
   graphData.value = generateGraph(validators.value, props.peerCount, newTheme)
 })
 
 // Trigger block (called from parent)
-const triggerBlock = (validatorAddress?: string) => {
-  if (!graphData.value) return
+function triggerBlock(validatorAddress?: string) {
+  if (!graphData.value)
+    return
 
   let address = validatorAddress
   if (!address) {
@@ -754,7 +771,8 @@ const triggerBlock = (validatorAddress?: string) => {
     address = randomValidator?.address
   }
 
-  if (!address) return
+  if (!address)
+    return
 
   const validatorIdx = graphData.value.validatorMap.get(address)
   if (validatorIdx !== undefined && graphData.value.nodes[validatorIdx]) {

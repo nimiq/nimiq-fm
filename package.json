@@ -1,8 +1,8 @@
 {
   "name": "song",
   "type": "module",
-  "homepage": "https://post-processing.tresjs.org/",
   "private": true,
+  "homepage": "https://post-processing.tresjs.org/",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
     "@tresjs/nuxt": "^5.1.1",
+    "@types/three": "^0.181.0",
     "tailwindcss": "^4.1.17"
   }
 }

@@ -13,7 +13,7 @@ Visualize Nimiq blockchain network as 3D orb with:
 ### Components
 
 **DataOrb.vue** - Data fetching, exposes `triggerBlock()` method
-**OrbScene.vue** - TresJS Canvas, camera, lights, effects, controls  
+**OrbScene.vue** - TresJS Canvas, camera, lights, effects, controls
 **OrbMesh.vue** - 3D rendering: instanced meshes, connections, beams
 
 ### Props
