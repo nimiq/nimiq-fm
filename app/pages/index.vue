@@ -22,14 +22,15 @@ async function togglePlay() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Initialize composables (client-side only)
   strudel = useStrudel()
   blockchain = useBlockchain()
 
-  // Initialize Strudel in background (waits for first user interaction)
-  // Will complete when user clicks Play button
-  strudel.init()
+  // Initialize and auto-start playback
+  await strudel.init()
+  await strudel.start()
+  isPlaying.value = true
 
   // Start listening to blockchain events
   blockchain.startListening()
