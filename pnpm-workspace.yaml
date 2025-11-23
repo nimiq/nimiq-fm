@@ -1,0 +1,14 @@
+ignoredBuiltDependencies:
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - bufferutil
+  - es5-ext
+  - esbuild
+  - sharp
+  - simple-git-hooks
+  - utf-8-validate
+  - vue-demi
+  - workerd
