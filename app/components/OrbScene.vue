@@ -46,7 +46,7 @@ const glowMaterial = new THREE.ShaderMaterial({
     :tone-mapping-exposure="1.2"
   >
     <TresMesh :position="[0, 0, 0]">
-      <TresSphereGeometry :args="[18, 32, 32]" />
+      <TresSphereGeometry :args="[7, 32, 32]" />
       <primitive :object="glowMaterial" />
     </TresMesh>
 
