@@ -1,68 +1,85 @@
 import * as THREE from 'three'
-import type { ValidatorNode, PeerNode, LinkData, ValidatorAPIResponse } from '~/types/orb'
-import { ORB_CONFIG, DEFAULT_VALIDATOR_COLOR } from './orb-constants'
+import type { NodeData, LinkData } from '~/types/orb'
+import { NodeType } from '~/types/orb'
+import {
+  NODE_COUNT,
+  VALIDATOR_COUNT,
+  ORB_RADIUS,
+  NODE_PALETTE,
+  PEER_LIFETIME_MS,
+  PEER_TRANSITION_MS,
+} from './orb-constants'
 
-export function generateGraph(validators: ValidatorAPIResponse[], peerCount: number) {
-  const nodes: Array<ValidatorNode | PeerNode> = []
+// Extend NodeData to store a specific base color for that node
+interface ExtendedNodeData extends NodeData {
+  baseColor: THREE.Color
+}
+
+export const generateGraph = () => {
+  const nodes: ExtendedNodeData[] = []
   const links: LinkData[] = []
-  const validatorMap = new Map<string, number>()
 
-  const palette = ['#ECEFF1', '#CFD8DC', '#B0BEC5', '#90A4AE', '#78909C', '#546E7A']
+  // Helper to get random palette color
+  const getRandomColor = () => new THREE.Color(NODE_PALETTE[Math.floor(Math.random() * NODE_PALETTE.length)])
 
-  // Generate validators
-  for (let i = 0; i < validators.length; i++) {
-    const v = validators[i]
+  // --- 1. Generate Validators ---
+  for (let i = 0; i < VALIDATOR_COUNT; i++) {
     const u = Math.random()
-    const vSphere = Math.random()
+    const v = Math.random()
     const theta = 2 * Math.PI * u
-    const phi = Math.acos(2 * vSphere - 1)
-    const r = ORB_CONFIG.ORB_RADIUS * (0.95 + Math.random() * 0.05) // Tighter shell
+    const phi = Math.acos(2 * v - 1)
+
+    const r = ORB_RADIUS * (0.85 + Math.random() * 0.10)
 
     const x = r * Math.sin(phi) * Math.cos(theta)
     const y = r * Math.sin(phi) * Math.sin(theta)
     const z = r * Math.cos(phi)
     const pos = new THREE.Vector3(x, y, z)
 
-    const node: ValidatorNode = {
-      address: v.address,
-      name: v.name,
-      balance: v.balance,
-      accentColor: v.accentColor || DEFAULT_VALIDATOR_COLOR,
-      position: pos,
+    nodes.push({
+      id: i,
+      targetPosition: pos,
+      startPosition: pos,
+      currentPosition: pos.clone(),
+      type: NodeType.VALIDATOR,
+      connections: [],
+      stake: 1.0,
+      state: 'ACTIVE',
+      timer: 0,
+      opacity: 1,
+      validatorPhase: Math.random() * Math.PI * 2,
       phi,
       theta,
       radius: r,
       lastBlockTime: -999,
-    }
-
-    nodes.push(node)
-    validatorMap.set(v.address, i)
+      // Validators: slightly brighter base
+      baseColor: new THREE.Color('#ffffff'),
+    })
   }
 
-  // Generate peers
-  for (let i = validators.length; i < validators.length + peerCount; i++) {
+  // --- 2. Generate Peers ---
+  for (let i = VALIDATOR_COUNT; i < NODE_COUNT; i++) {
     const u = Math.random()
-    const vSphere = Math.random()
+    const v = Math.random()
     const theta = 2 * Math.PI * u
-    const phi = Math.acos(2 * vSphere - 1)
-    const r = ORB_CONFIG.ORB_RADIUS * (0.9 + Math.random() * 0.1)
+    const phi = Math.acos(2 * v - 1)
+    const r = ORB_RADIUS * (0.9 + Math.random() * 0.2)
 
     const x = r * Math.sin(phi) * Math.cos(theta)
     const y = r * Math.sin(phi) * Math.sin(theta)
     const z = r * Math.cos(phi)
     const targetPos = new THREE.Vector3(x, y, z)
-    // Reduce spawn distance to 1.15x for subtle entry
-    const startPos = targetPos.clone().normalize().multiplyScalar(ORB_CONFIG.ORB_RADIUS * 1.15)
+    const startPos = targetPos.clone().normalize().multiplyScalar(ORB_RADIUS * 1.8)
 
     const initialLife = Math.random()
-    let initialState: 'hidden' | 'spawning' | 'active' | 'dying' = 'hidden'
+    let initialState: 'HIDDEN' | 'SPAWNING' | 'ACTIVE' | 'DYING' = 'HIDDEN'
     let initialTimer = 0
     let initialOpacity = 0
     let currentPos = startPos.clone()
 
     if (initialLife > 0.1) {
-      initialState = 'active'
-      initialTimer = Math.random() * ORB_CONFIG.PEER_LIFETIME_MS
+      initialState = 'ACTIVE'
+      initialTimer = Math.random() * PEER_LIFETIME_MS
       initialOpacity = 1
       currentPos = targetPos.clone()
     }
@@ -70,92 +87,120 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
       initialTimer = Math.random() * 5000
     }
 
-    const node: PeerNode = {
+    nodes.push({
       id: i,
       targetPosition: targetPos,
       startPosition: startPos,
       currentPosition: currentPos,
+      type: NodeType.PEER,
+      connections: [],
+      stake: 1.0,
       state: initialState,
       timer: initialTimer,
       opacity: initialOpacity,
-      linkOpacity: initialOpacity,
       phi,
       theta,
       radius: r,
-      baseColor: new THREE.Color(palette[Math.floor(Math.random() * palette.length)]),
-    }
-
-    nodes.push(node)
+      lastBlockTime: 0,
+      baseColor: getRandomColor(),
+    })
   }
 
-  // Generate validator mesh links
-  for (let i = 0; i < validators.length; i++) {
+  // --- 3. Generate Links ---
+  // Validators Mesh
+  for (let i = 0; i < VALIDATOR_COUNT; i++) {
     const distances = []
-    for (let j = 0; j < validators.length; j++) {
+    for (let j = 0; j < VALIDATOR_COUNT; j++) {
       if (i === j) continue
-      const n1 = nodes[i] as ValidatorNode
-      const n2 = nodes[j] as ValidatorNode
-      distances.push({ id: j, dist: n1.position.distanceTo(n2.position) })
+      distances.push({ id: j, dist: nodes[i].targetPosition.distanceTo(nodes[j].targetPosition) })
     }
     distances.sort((a, b) => a.dist - b.dist)
 
     const connectionCount = 2
-    for (let k = 0; k < connectionCount && k < distances.length; k++) {
+    for (let k = 0; k < connectionCount; k++) {
       const targetId = distances[k].id
-      if (!links.find(l => (l.sourceIndex === i && l.targetIndex === targetId) || (l.sourceIndex === targetId && l.targetIndex === i))) {
+      if (!nodes[i].connections.includes(targetId)) {
+        nodes[i].connections.push(targetId)
+        nodes[targetId].connections.push(i)
         links.push({
           sourceIndex: Math.min(i, targetId),
           targetIndex: Math.max(i, targetId),
           isValidatorLink: true,
           phaseOffset: Math.random() * Math.PI * 2,
+          connectionState: 'CONNECTED',
+          reconnectProgress: 1.0,
+          disconnectTimer: 0,
         })
       }
     }
   }
 
-  // Generate peer connections
-  for (let i = validators.length; i < nodes.length; i++) {
-    const node = nodes[i] as PeerNode
-
+  // Peers
+  for (let i = VALIDATOR_COUNT; i < NODE_COUNT; i++) {
     // Connect to nearby validators
     const valCandidates = []
-    for (let vIdx = 0; vIdx < validators.length; vIdx++) {
-      const vNode = nodes[vIdx] as ValidatorNode
-      const d = node.targetPosition.distanceTo(vNode.position)
+    for (let vIdx = 0; vIdx < VALIDATOR_COUNT; vIdx++) {
+      const d = nodes[i].targetPosition.distanceTo(nodes[vIdx].targetPosition)
       valCandidates.push({ id: vIdx, dist: d })
     }
     valCandidates.sort((a, b) => a.dist - b.dist)
 
     let valConnections = 0
-    for (let k = 0; k < valCandidates.length && valConnections < 1; k++) {
+    for (let k = 0; k < valCandidates.length; k++) {
+      if (valConnections >= 1) break
       const v = valCandidates[k]
-      if (v.dist < ORB_CONFIG.ORB_RADIUS * 2.0) {
-        links.push({ sourceIndex: v.id, targetIndex: i, isValidatorLink: false, phaseOffset: 0 })
-        valConnections++
+      if (v.dist < ORB_RADIUS * 2.5) {
+        if (!nodes[i].connections.includes(v.id)) {
+          nodes[i].connections.push(v.id)
+          nodes[v.id].connections.push(i)
+          links.push({
+            sourceIndex: v.id,
+            targetIndex: i,
+            isValidatorLink: false,
+            phaseOffset: 0,
+            connectionState: 'CONNECTED',
+            reconnectProgress: 1.0,
+            disconnectTimer: 0,
+          })
+          valConnections++
+        }
       }
     }
 
     // Connect to nearby peers
     const peerDistances = []
     const scanRange = 60
-    const startScan = Math.max(validators.length, i - scanRange)
-    const endScan = Math.min(nodes.length, i + scanRange)
+    const startScan = Math.max(VALIDATOR_COUNT, i - scanRange)
+    const endScan = Math.min(NODE_COUNT, i + scanRange)
 
     for (let j = startScan; j < endScan; j++) {
       if (i === j) continue
-      const pNode = nodes[j] as PeerNode
-      peerDistances.push({ id: j, dist: node.targetPosition.distanceTo(pNode.targetPosition) })
+      peerDistances.push({ id: j, dist: nodes[i].targetPosition.distanceTo(nodes[j].targetPosition) })
     }
     peerDistances.sort((a, b) => a.dist - b.dist)
 
     let peerConnections = 0
-    for (let k = 0; k < 8 && peerConnections < 2 && k < peerDistances.length; k++) {
+    for (let k = 0; k < 8; k++) {
+      if (peerConnections >= 2) break
+      if (k >= peerDistances.length) break
       const targetId = peerDistances[k].id
-      if (peerDistances[k].dist > 5.0) continue
-      links.push({ sourceIndex: i, targetIndex: targetId, isValidatorLink: false, phaseOffset: 0 })
-      peerConnections++
+      if (peerDistances[k].dist > 6.0) continue
+      if (!nodes[i].connections.includes(targetId)) {
+        nodes[i].connections.push(targetId)
+        nodes[targetId].connections.push(i)
+        links.push({
+          sourceIndex: i,
+          targetIndex: targetId,
+          isValidatorLink: false,
+          phaseOffset: 0,
+          connectionState: 'CONNECTED',
+          reconnectProgress: 1.0,
+          disconnectTimer: 0,
+        })
+        peerConnections++
+      }
     }
   }
 
-  return { nodes, links, validatorMap }
+  return { nodes, links }
 }

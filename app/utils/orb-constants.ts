@@ -1,14 +1,35 @@
-import type { OrbConstants } from '~/types/orb'
+// Visual Configuration
+export const ORB_RADIUS = 14
+export const NODE_COUNT = 800
+export const VALIDATOR_COUNT = 40
 
-export const ORB_CONFIG: OrbConstants = {
-  VALIDATOR_COUNT: 2000,
-  ORB_RADIUS: 10,
-  VALIDATOR_ROTATION_SPEED: 0.05,
-  BEAM_SPEED: 8,
-  PEER_LIFETIME_MS: 30000,
-  PEER_TRANSITION_MS: 5000,
-}
+// Animation Timings
+export const BLOCK_INTERVAL_MS = 1200
+export const BEAM_PROPAGATION_TIME_MS = 1000
+export const BEAM_SPEED = (ORB_RADIUS * 2.5) / (BEAM_PROPAGATION_TIME_MS / 1000)
 
+// Peer Lifecycle
+export const PEER_LIFETIME_MS = 30000
+export const PEER_TRANSITION_MS = 2000
 
+// Rotation
+export const VALIDATOR_ROTATION_SPEED = 0.1
 
-export const DEFAULT_VALIDATOR_COLOR = '#00BCD4'
+// Colors
+export const COLOR_BG = '#020617' // Deepest Slate/Black
+export const COLOR_LINK = '#64748b' // Slate 500 (Lighter for better visibility)
+
+// "Minimalistic Premium" Palette: Silver, Platinum, White, Soft Blue-Grey
+// Removing Cyan entirely.
+export const NODE_PALETTE = [
+  '#FFFFFF', // Pure White
+  '#F8FAFC', // Slate 50
+  '#E2E8F0', // Slate 200
+  '#CBD5E1', // Slate 300
+  '#94A3B8', // Slate 400 (Darker Metal)
+]
+
+// Beam Color - Vibrant Orange
+export const BEAM_COLOR = '#FF6000'
+
+export const MOCK_AUDIO_DATA_SIZE = 32

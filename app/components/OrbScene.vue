@@ -14,13 +14,14 @@ defineProps<{
   <TresCanvas
     :dpr="[1, 2]"
     :gl="{ antialias: false, alpha: true, toneMappingExposure: 1.0 }"
+    :clear-alpha="0"
   >
     <Suspense>
       <template #default>
         <TresGroup>
-          <TresPerspectiveCamera :position="[0, 0, 32]" :fov="35" make-default />
+          <TresPerspectiveCamera :position="[0, 0, 90]" :fov="35" make-default />
           <!-- High-contrast studio environment -->
-          <Environment preset="warehouse" :blur="0.6" />
+          <Environment preset="warehouse" :blur="0.6" :background="false" />
 
           <TresAmbientLight :intensity="0.4" color="#ffffff" />
 
@@ -47,8 +48,9 @@ defineProps<{
           <OrbitControls
             :enable-pan="false"
             :enable-zoom="true"
+            :enable-rotate="true"
             :min-distance="15"
-            :max-distance="70"
+            :max-distance="100"
             auto-rotate
             :auto-rotate-speed="0.1"
           />

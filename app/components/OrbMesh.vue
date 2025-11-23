@@ -29,26 +29,23 @@ watchEffect(() => {
 })
 
 const nodesMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
+const beamMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const linesRef = shallowRef<THREE.LineSegments | null>(null)
 const groupRef = shallowRef<THREE.Group | null>(null)
 const beams = ref<Beam[]>([])
 
 const tempColor = new THREE.Color()
 const tempMatrix = new THREE.Matrix4()
+const tempStart = new THREE.Vector3()
+const tempEnd = new THREE.Vector3()
 const cLink = new THREE.Color(COLOR_LINK)
 const cBeam = new THREE.Color(BEAM_COLOR)
 
 // Initialize Line Buffers
 watchEffect(() => {
   if (!linesRef.current || !graphData.value) return
-  // Note: In Vue with TresJS, we might need to access the instance via .value if using ref, 
-  // but here we are inside a watcher.
-  // Actually, we should probably do this in onMounted or a watcher that checks for both.
 })
 
-// We can't easily access the geometry in a watcher before mount if we rely on the template ref being populated.
-// But we can do it inside the loop or a specific watcher on the ref.
-// Let's use a watcher on linesRef.
 watch(linesRef, (lines) => {
   if (lines && graphData.value) {
     const { links } = graphData.value
@@ -87,8 +84,6 @@ const { onBeforeRender } = useLoop()
 
 onBeforeRender(({ delta, elapsed }) => {
     // Cleanup beams
-    const now = elapsed + (Date.now() / 1000 - elapsed) // This logic in React was: state.clock.elapsedTime + (Date.now()/1000 - state.clock.elapsedTime) which effectively is Date.now()/1000.
-    // Actually, let's just use Date.now() / 1000 consistent with creation
     const currentTime = Date.now() / 1000
     beams.value = beams.value.filter(b => (currentTime - b.startTime) * BEAM_SPEED < b.maxDistance + 5)
 
@@ -155,6 +150,8 @@ onBeforeRender(({ delta, elapsed }) => {
                 if (n.timer <= 0) { n.state = 'ACTIVE'; n.timer = PEER_LIFETIME_MS + Math.random() * 5000 }
             } else if (n.state === 'DYING') {
                 const p = n.timer / PEER_TRANSITION_MS
+                // Move back to start position (outwards)
+                n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - Math.pow(1-p, 3))
                 n.opacity = p
                 if (n.timer <= 0) { n.state = 'HIDDEN'; n.timer = Math.random() * 5000 }
             }
@@ -237,7 +234,7 @@ onBeforeRender(({ delta, elapsed }) => {
         } else if (beamIntensity > 0) {
             // Beam hit - White but softer
             tempColor.copy(cBeam)
-            const intensity = 1 + beamIntensity * 1.5
+            const intensity = 1 + beamIntensity * 8.0
             tempColor.multiplyScalar(intensity)
         } else {
             // Standard State
@@ -296,46 +293,117 @@ onBeforeRender(({ delta, elapsed }) => {
         // Skip rendering if fully disconnected or nodes invisible
         if (link.reconnectProgress < 0.01 || alpha < 0.01) {
              linePositions.setXYZ(i*2, 0,0,0); linePositions.setXYZ(i*2+1, 0,0,0)
+             
+             // Hide beam instance if link is hidden
+             if (beamMeshRef.value) {
+                 tempMatrix.makeScale(0, 0, 0)
+                 beamMeshRef.value.setMatrixAt(i, tempMatrix)
+             }
              continue
         }
 
         // Calculate geometry: Grow line from Source to Target based on reconnectProgress
-        const startX = n1.currentPosition.x
-        const startY = n1.currentPosition.y
-        const startZ = n1.currentPosition.z
+        let startX = n1.currentPosition.x
+        let startY = n1.currentPosition.y
+        let startZ = n1.currentPosition.z
 
-        const endX = startX + (n2.currentPosition.x - startX) * link.reconnectProgress
-        const endY = startY + (n2.currentPosition.y - startY) * link.reconnectProgress
-        const endZ = startZ + (n2.currentPosition.z - startZ) * link.reconnectProgress
+        let endX = n2.currentPosition.x
+        let endY = n2.currentPosition.y
+        let endZ = n2.currentPosition.z
+
+        // Retraction for dying nodes (Close connections nicely)
+        if (n1.state === 'DYING') {
+            const t = 1 - n1.opacity // 0 -> 1
+            startX += (endX - startX) * t
+            startY += (endY - startY) * t
+            startZ += (endZ - startZ) * t
+        }
+        if (n2.state === 'DYING') {
+            const t = 1 - n2.opacity // 0 -> 1
+            endX += (startX - endX) * t
+            endY += (startY - endY) * t
+            endZ += (startZ - endZ) * t
+        }
+
+        // Reconnect Progress (Network Instability)
+        if (link.reconnectProgress < 1.0) {
+            endX = startX + (endX - startX) * link.reconnectProgress
+            endY = startY + (endY - startY) * link.reconnectProgress
+            endZ = startZ + (endZ - startZ) * link.reconnectProgress
+        }
 
         linePositions.setXYZ(i*2, startX, startY, startZ)
         linePositions.setXYZ(i*2+1, endX, endY, endZ)
 
         // Beam on link
         let beamHit = 0
-        const mid = new THREE.Vector3(startX + (endX - startX)*0.5, startY + (endY - startY)*0.5, startZ + (endZ - startZ)*0.5)
+        
+        // Skip beams for spawning nodes
+        if (n1.state !== 'SPAWNING' && n2.state !== 'SPAWNING') {
+            const mid = new THREE.Vector3(startX + (endX - startX)*0.5, startY + (endY - startY)*0.5, startZ + (endZ - startZ)*0.5)
 
-        // Calculate standard link color
-        for (const beam of beams.value) {
-            const origin = nodes[beam.originIndex].currentPosition
-            const d = mid.distanceTo(origin)
-            const waveDist = (time - beam.startTime) * BEAM_SPEED
-            if (d < waveDist && d > waveDist - 6.0) {
-                const p = 1 - (waveDist - d)/6.0
-                const decay = Math.max(0, 1 - (d / beam.maxDistance))
-                beamHit = Math.max(beamHit, p * decay)
+            // Calculate standard link color
+            for (const beam of beams.value) {
+                const origin = nodes[beam.originIndex].currentPosition
+                const d = mid.distanceTo(origin)
+                const waveDist = (time - beam.startTime) * BEAM_SPEED
+                // Make wave wider for the "thick" beam effect
+                const waveWidth = 10.0 
+                
+                if (d < waveDist && d > waveDist - waveWidth) {
+                    // Calculate progress through the wave (0 to 1)
+                    const progress = 1 - (waveDist - d) / waveWidth
+                    
+                    // Sine wave for thickness: starts at 0, peaks at 1, ends at 0
+                    const thicknessPulse = Math.sin(progress * Math.PI)
+                    
+                    const decay = Math.max(0, 1 - (d / beam.maxDistance))
+                    beamHit = Math.max(beamHit, thicknessPulse * decay)
+                }
             }
+        }
+
+        if (beamHit > 0.01) {
+            // Update Beam Instance
+            tempStart.set(startX, startY, startZ)
+            tempEnd.set(endX, endY, endZ)
+            
+            const len = tempStart.distanceTo(tempEnd)
+            
+            // Align cylinder to link
+            const sub = new THREE.Vector3().subVectors(tempEnd, tempStart)
+            const up = new THREE.Vector3(0, 1, 0)
+            const quaternion = new THREE.Quaternion().setFromUnitVectors(up, sub.normalize())
+            
+            // Scale: Thickness based on beamHit, Length matches link
+            // Reduced thickness as requested (0.8 multiplier)
+            const thickness = beamHit * 0.8
+            
+            tempMatrix.makeRotationFromQuaternion(quaternion)
+            tempMatrix.scale(new THREE.Vector3(thickness, len, thickness))
+            tempMatrix.setPosition(new THREE.Vector3((startX+endX)/2, (startY+endY)/2, (startZ+endZ)/2))
+            
+            beamMeshRef.value.setMatrixAt(i, tempMatrix)
+            
+            // Color: Beam Color but brighter
+            tempColor.copy(cBeam)
+            tempColor.multiplyScalar(1.2) // Reduced glow intensity
+            beamMeshRef.value.setColorAt(i, tempColor)
+        } else {
+            // Hide beam instance
+            tempMatrix.makeScale(0, 0, 0)
+            beamMeshRef.value.setMatrixAt(i, tempMatrix)
         }
 
         if (beamHit > 0) {
             tempColor.copy(cBeam)
-            tempColor.multiplyScalar(0.2 + beamHit * 0.5) // softer beam on links
+            tempColor.multiplyScalar(0.5 + beamHit * 3.0) // softer beam on links
         } else {
             tempColor.copy(cLink)
             if (link.isValidatorLink) {
-                 tempColor.multiplyScalar(1.2)
+                 tempColor.multiplyScalar(1.5)
             } else {
-                tempColor.multiplyScalar(0.4)
+                tempColor.multiplyScalar(0.8)
             }
         }
         tempColor.multiplyScalar(alpha)
@@ -351,6 +419,11 @@ onBeforeRender(({ delta, elapsed }) => {
             lineColors.setXYZ(i*2+1, tempColor.r, tempColor.g, tempColor.b)
         }
     }
+    
+    if (beamMeshRef.value) {
+        beamMeshRef.value.instanceMatrix.needsUpdate = true
+        if (beamMeshRef.value.instanceColor) beamMeshRef.value.instanceColor.needsUpdate = true
+    }
 
     linePositions.needsUpdate = true
     lineColors.needsUpdate = true
@@ -364,12 +437,25 @@ onBeforeRender(({ delta, elapsed }) => {
       <TresDodecahedronGeometry :args="[0.32, 0]" />
       <TresMeshStandardMaterial
         :tone-mapped="false"
-        :roughness="0.4"
+        :roughness="0.2"
         :metalness="0.0"
         :flat-shading="true"
         emissive="#ffffff"
-        :emissive-intensity="0.3"
-        color="#aaaaaa"
+        :emissive-intensity="0.4"
+        color="#666666"
+      />
+    </TresInstancedMesh>
+    
+    <!-- Energy Beams (Thick Links) -->
+    <TresInstancedMesh ref="beamMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
+      <TresCylinderGeometry :args="[0.1, 0.1, 1, 6, 1]" />
+      <TresMeshBasicMaterial 
+        :color="BEAM_COLOR" 
+        transparent 
+        :opacity="0.6" 
+        :blending="THREE.AdditiveBlending"
+        :depth-write="false"
+        :tone-mapped="false"
       />
     </TresInstancedMesh>
 
@@ -378,7 +464,7 @@ onBeforeRender(({ delta, elapsed }) => {
       <TresLineBasicMaterial
         vertex-colors
         transparent
-        :opacity="0.15"
+        :opacity="0.3"
         :blending="THREE.AdditiveBlending"
         :depth-write="false"
         :tone-mapped="false"

@@ -1,62 +1,62 @@
 import type * as THREE from 'three'
 
-export type LifeCycleState = 'hidden' | 'spawning' | 'connecting' | 'active' | 'disconnecting' | 'dying'
-
-export interface ValidatorNode {
-  address: string
-  name: string
-  balance: number
-  accentColor: string
-  position: THREE.Vector3
-  phi: number
-  theta: number
-  radius: number
-  lastBlockTime: number
+export enum NodeType {
+  PEER,
+  VALIDATOR,
 }
 
-export interface PeerNode {
+export type LifeCycleState = 'HIDDEN' | 'SPAWNING' | 'ACTIVE' | 'DYING'
+export type ConnectionState = 'CONNECTED' | 'DISCONNECTED' | 'RECONNECTING'
+
+export interface NodeData {
   id: number
-  targetPosition: THREE.Vector3
-  startPosition: THREE.Vector3
-  currentPosition: THREE.Vector3
+  // Positions
+  targetPosition: THREE.Vector3 // The final resting spot in the shell
+  startPosition: THREE.Vector3 // The outer spawning spot
+  currentPosition: THREE.Vector3 // Current animated position
+
+  type: NodeType
+  connections: number[] // Indices of connected nodes
+  stake: number // For validators
+
+  // Animation State
   state: LifeCycleState
-  timer: number
-  opacity: number
-  linkOpacity: number
-  phi: number
-  theta: number
-  radius: number
-  baseColor: THREE.Color
+  timer: number // Time remaining in current state
+  opacity: number // Current opacity
+
+  // Validator specific
+  validatorPhase?: number // For rotating connections
+
+  // New: Rotation & Highlighting
+  phi: number // Spherical coordinate for rotation
+  theta: number // Spherical coordinate for rotation
+  radius: number // Distance from center
+  lastBlockTime: number // Timestamp of last block generation
+
+  // From ExtendedNodeData in Orb.tsx
+  baseColor?: THREE.Color
 }
 
 export interface LinkData {
   sourceIndex: number
   targetIndex: number
-  isValidatorLink: boolean
-  phaseOffset: number
+  isValidatorLink: boolean // To identify validator-validator links for rotation
+  phaseOffset: number // For animating opacity
+
+  // Connection Simulation
+  connectionState: ConnectionState
+  reconnectProgress: number // 0.0 to 1.0 (for growing animation)
+  disconnectTimer: number // Time in seconds to remain disconnected
 }
 
 export interface Beam {
   id: string
-  originAddress: string
+  originIndex: number
   startTime: number
   maxDistance: number
 }
 
-export interface OrbConstants {
-  VALIDATOR_COUNT: number
-  ORB_RADIUS: number
-  VALIDATOR_ROTATION_SPEED: number
-  BEAM_SPEED: number
-  PEER_LIFETIME_MS: number
-  PEER_TRANSITION_MS: number
-}
-
-export interface ValidatorAPIResponse {
-  id: number
-  name: string
-  address: string
-  accentColor: string
-  balance: number
-  stakers: number
+export interface SimulationState {
+  blockHeight: number
+  lastBlockTime: number
 }
