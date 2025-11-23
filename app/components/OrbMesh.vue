@@ -175,7 +175,7 @@ onBeforeRender(({ delta, elapsed }) => {
     }
 
         // Scale
-        let scale = 'address' in n ? 3.0 : 0.8
+        let scale = 'address' in n ? 0.5 : 0.8
         if (beamIntensity > 0) scale *= (1 + beamIntensity * 0.8)
         if (blockFlash > 0) scale *= (1 + blockFlash * 0.5)
         scale *= opacity
@@ -267,7 +267,7 @@ onBeforeRender(({ delta, elapsed }) => {
   <TresGroup ref="groupRef">
     <TresInstancedMesh ref="nodesMeshRef" :args="[undefined, undefined, nodes.length]">
       <TresSphereGeometry :args="[0.15, 16, 16]" />
-      <TresMeshStandardMaterial :tone-mapped="false" :roughness="0.9" :metalness="0.1" emissive="#000000" :emissive-intensity="0" />
+      <TresMeshStandardMaterial :tone-mapped="false" :roughness="0.2" :metalness="0.8" emissive="#000000" :emissive-intensity="0" />
     </TresInstancedMesh>
     <TresLineSegments ref="linesRef">
       <TresBufferGeometry />

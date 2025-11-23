@@ -7,7 +7,7 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
   const links: LinkData[] = []
   const validatorMap = new Map<string, number>()
 
-  const palette = ['#F5F5F5', '#CFD8DC', '#B0BEC5', '#90CAF9', '#B39DDB']
+  const palette = ['#ECEFF1', '#CFD8DC', '#B0BEC5', '#90A4AE', '#78909C', '#546E7A']
 
   // Generate validators
   for (let i = 0; i < validators.length; i++) {
@@ -16,7 +16,7 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
     const vSphere = Math.random()
     const theta = 2 * Math.PI * u
     const phi = Math.acos(2 * vSphere - 1)
-    const r = ORB_CONFIG.ORB_RADIUS * (0.85 + Math.random() * 0.10)
+    const r = ORB_CONFIG.ORB_RADIUS * (0.95 + Math.random() * 0.05) // Tighter shell
 
     const x = r * Math.sin(phi) * Math.cos(theta)
     const y = r * Math.sin(phi) * Math.sin(theta)
@@ -45,13 +45,14 @@ export function generateGraph(validators: ValidatorAPIResponse[], peerCount: num
     const vSphere = Math.random()
     const theta = 2 * Math.PI * u
     const phi = Math.acos(2 * vSphere - 1)
-    const r = ORB_CONFIG.ORB_RADIUS * (0.85 + Math.random() * 0.15)
+    const r = ORB_CONFIG.ORB_RADIUS * (0.9 + Math.random() * 0.1)
 
     const x = r * Math.sin(phi) * Math.cos(theta)
     const y = r * Math.sin(phi) * Math.sin(theta)
     const z = r * Math.cos(phi)
     const targetPos = new THREE.Vector3(x, y, z)
-    const startPos = targetPos.clone().normalize().multiplyScalar(ORB_CONFIG.ORB_RADIUS * 1.5)
+    // Reduce spawn distance to 1.15x for subtle entry
+    const startPos = targetPos.clone().normalize().multiplyScalar(ORB_CONFIG.ORB_RADIUS * 1.15)
 
     const initialLife = Math.random()
     let initialState: 'hidden' | 'spawning' | 'active' | 'dying' = 'hidden'
