@@ -5,7 +5,7 @@ let initPromise: Promise<void> | null = null
 export function useStrudel() {
   const nowPlaying = ref('')
 
-  const init = async () => {
+  async function init() {
     if (!import.meta.client)
       return
 
@@ -57,7 +57,7 @@ export function useStrudel() {
     return initPromise
   }
 
-  const start = async () => {
+  async function start() {
     if (!import.meta.client)
       return
 
@@ -86,6 +86,7 @@ export function useStrudel() {
       return
 
     try {
+      // TODO We lazy load this for nothing? we should use loadSong('desertDune') and then use it. Lazy load the songs does nothing
       const { desertDune } = await import('~/songs/desert-dune')
       const { milkyWay } = await import('~/songs/milky-way')
       const { acid } = await import('~/songs/acid')

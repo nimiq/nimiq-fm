@@ -1,4 +1,4 @@
-import type { StreamedBlock } from '~~/server/routes/blocks'
+import { createSharedComposable } from '@vueuse/core'
 
 export interface BlockEvent {
   blockNumber: number
@@ -10,27 +10,15 @@ export interface BlockEvent {
   hash: string
 }
 
-export function useBlockchain() {
+function _useBlockchain() {
   const latestBlock = ref<BlockEvent | null>(null)
   const listeners = new Set<(event: BlockEvent) => void>()
 
-  const url = computed(() => {
-    if (!import.meta.client)
-      return ''
-    return `${window.location.protocol}//${window.location.host}/blocks`
-  })
-
-  const { data, open } = useEventSource(url, [], {
-    autoReconnect: true,
-    autoConnect: true,
-    serializer: {
-      read: rawData => JSON.parse(rawData!),
-    },
-  })
+  const url = `${useRequestURL().origin}/blocks`
+  const { data, open } = useEventSource(url, [], { autoReconnect: true, autoConnect: false })
 
   const startListening = () => {
-    if (!import.meta.client)
-      return
+    if (!import.meta.client) return
     open()
   }
 
@@ -39,33 +27,33 @@ export function useBlockchain() {
     return () => listeners.delete(callback)
   }
 
-  watch(data, (message) => {
-    if (!message)
-      return
+  watch(data, (rawData) => {
+    if (!rawData) return
 
     try {
-      const parsed = message as { type: 'block', data: StreamedBlock } | { type: 'error', message: string }
+      const parsed = JSON.parse(rawData) as { type: 'block', data: FmBlock } | { type: 'error', message: string }
+      if (parsed.type !== 'block') return
 
-      if (parsed.type === 'block') {
-        const block = parsed.data
-        const blockEvent: BlockEvent = {
-          blockNumber: block.number,
-          epoch: block.epoch,
-          batch: block.batch,
-          timestamp: Date.now(),
-          validatorAddress: block.validator,
-          type: block.validator ? 'micro' : 'macro',
-          hash: block.number.toString(),
-        }
-
-        latestBlock.value = blockEvent
-        listeners.forEach(listener => listener(blockEvent))
+      const block = parsed.data
+      const blockEvent: BlockEvent = {
+        blockNumber: block.number,
+        epoch: block.epoch,
+        batch: block.batch,
+        timestamp: Date.now(),
+        validatorAddress: block.validator,
+        type: block.validator ? 'micro' : 'macro',
+        hash: block.number.toString(),
       }
+
+      latestBlock.value = blockEvent
+      listeners.forEach(listener => listener(blockEvent))
     }
     catch (err) {
-      console.error('Failed to parse WebSocket message:', err)
+      console.error('Failed to parse SSE message:', err)
     }
   })
 
   return { latestBlock: readonly(latestBlock), startListening, onBlockEvent }
 }
+
+export const useBlockchain = createSharedComposable(_useBlockchain)

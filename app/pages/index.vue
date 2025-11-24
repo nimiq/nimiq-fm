@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { makeHash } from 'identicons-esm/core'
-
 const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
+const playbackProgress = ref(0)
+const lastBlockTimestamp = ref<number | null>(null)
+const averageBlockDuration = ref(18000)
+const playlist = ['Desert Dune', 'Milky Way', 'Acid', 'Qimin', 'Running Away'] as const
+const cycleTitle = 'Macroblock Song Cycle'
 
 // Initialize composables only on client-side
 let strudel: ReturnType<typeof useStrudel> | null = null
@@ -19,6 +22,7 @@ async function togglePlay() {
   else {
     strudel.stop()
     isPlaying.value = false
+    playbackProgress.value = 0
   }
 }
 
@@ -36,6 +40,15 @@ onMounted(async () => {
   blockchain.startListening()
 
   blockchain.onBlockEvent((blockEvent) => {
+    const now = Date.now()
+    if (lastBlockTimestamp.value) {
+      const delta = now - lastBlockTimestamp.value
+      const clampedDelta = Math.min(Math.max(delta, 4000), 60000)
+      averageBlockDuration.value = (averageBlockDuration.value * 0.8) + (clampedDelta * 0.2)
+    }
+
+    lastBlockTimestamp.value = now
+    playbackProgress.value = 0
     currentBlock.value = blockEvent
 
     if (!isPlaying.value || !strudel)
@@ -44,38 +57,116 @@ onMounted(async () => {
     strudel.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
 })
+
+if (import.meta.client) {
+  useRafFn(() => {
+    if (!lastBlockTimestamp.value || !isPlaying.value)
+      return
+
+    const elapsed = Date.now() - lastBlockTimestamp.value
+    const duration = Math.min(Math.max(averageBlockDuration.value, 6000), 60000)
+    playbackProgress.value = Math.min(100, (elapsed / duration) * 100)
+  }, { immediate: true })
+}
+
+const nowPlayingTitle = computed(() => (strudel as any)?.nowPlaying?.value || '')
+const currentSongIndex = computed(() => {
+  const index = playlist.findIndex(title => title === nowPlayingTitle.value)
+  return index === -1 ? 0 : index
+})
+const nextSongTitle = computed(() => playlist[(currentSongIndex.value + 1) % playlist.length])
+const displayNowPlaying = computed(() => nowPlayingTitle.value || 'Tuning in...')
+const progressLabel = computed(() => `${Math.round(playbackProgress.value)}%`)
+const blockMeta = computed(() => {
+  if (!currentBlock.value)
+    return 'Waiting for blocks...'
+
+  return `Epoch ${currentBlock.value.epoch} · Batch ${currentBlock.value.batch}`
+})
 </script>
 
 <template>
-  <UContainer>
-    <UPageHero title="Nimiq Song" description="Listen to the blockchain" align="center">
-      <template #links>
-        <UButton :label="isPlaying ? 'Stop' : 'Play'" size="xl" :color="isPlaying ? 'error' : 'primary'" @click="togglePlay" />
-      </template>
-    </UPageHero>
-    <UPageSection v-if="currentBlock?.validatorAddress" class="text-center">
-      <div class="text-sm text-gray-500 mb-2">
-        Now Playing: {{ strudel?.nowPlaying }}
+  <div class="relative min-h-screen bg-slate-900 overflow-hidden text-white">
+    <!-- Background Orb Visualization -->
+    <ClientOnly>
+      <div class="absolute inset-0 z-0">
+        <OrbScene :audio-data="0" />
       </div>
-      <div class="text-sm text-gray-500 mb-2">
-        Latest Block Validator
-      </div>
-      <div class="font-mono text-2xl font-bold break-all">
-        {{ currentBlock.validatorAddress }}
-      </div>
-      <div class="font-mono text-2xl font-bold break-all">
-        {{ makeHash(currentBlock.validatorAddress) }}
+    </ClientOnly>
+
+    <!-- Main Content -->
+    <div class="relative z-10 flex flex-col min-h-screen pointer-events-none">
+      <!-- Play/Stop Button - Top Right -->
+      <div class="absolute top-8 right-8 pointer-events-auto">
+        <UButton :label="isPlaying ? 'Stop' : 'Tune in'" size="lg" :color="isPlaying ? 'error' : 'primary'" @click="togglePlay" />
       </div>
 
-      <div>
-        Block #{{ currentBlock.blockNumber }} (Epoch {{ currentBlock.epoch }}, Batch {{ currentBlock.batch }})
-      </div>
-    </UPageSection>
-  </UContainer>
+      <div class="flex-1" />
 
-  <UFooter>
-    <p>
-      Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline">Strudel</a>
-    </p>
-  </UFooter>
+      <div class="pointer-events-auto px-4 sm:px-8 pb-6">
+        <div class="max-w-4xl mx-auto bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_30px_120px_rgba(0,0,0,0.45)] ring-1 ring-white/5">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-5 sm:p-6">
+            <button
+              class="w-12 h-12 rounded-full border border-amber-200/60 bg-black/30 hover:border-white/70 hover:shadow-[0_0_30px_rgba(251,191,36,0.45)] transition-all duration-300 flex items-center justify-center text-amber-200"
+              @click="togglePlay"
+            >
+              <span class="sr-only">Toggle playback</span>
+              <UIcon :name="isPlaying ? 'i-heroicons-pause-20-solid' : 'i-heroicons-play-20-solid'" class="w-6 h-6" />
+            </button>
+
+            <div class="flex-1 w-full space-y-3">
+              <div class="flex items-center gap-3 text-[0.75rem] uppercase tracking-[0.12em] text-white/70 font-semibold">
+                <span class="text-white/80">{{ cycleTitle }}</span>
+                <span class="ml-auto text-xs text-white/80">{{ progressLabel }}</span>
+              </div>
+
+              <UProgress
+                :model-value="playbackProgress"
+                :max="100"
+                :status="false"
+                color="primary"
+                class="w-full"
+                :ui="{
+                  base: 'h-2 rounded-full bg-white/10 overflow-hidden',
+                  indicator: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-200 shadow-[0_0_25px_rgba(56,189,248,0.35)] rounded-full'
+                }"
+              />
+
+              <div class="space-y-1">
+                <div class="text-lg sm:text-xl font-semibold text-white">
+                  Now Playing: {{ displayNowPlaying }}
+                </div>
+                <div class="text-sm text-white/60">
+                  Up Next: {{ nextSongTitle }}
+                </div>
+                <div class="text-xs text-white/50">
+                  {{ blockMeta }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blockchain Viewer at Bottom -->
+      <div class="pointer-events-auto z-20 w-full pt-12 pb-4 relative overflow-hidden">
+        <!-- Gradient Background -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
+        
+        <!-- Blockchain Content -->
+        <div class="relative z-10">
+          <BlockchainViewer />
+        </div>
+        
+        <!-- Left Curtain (Desktop only) - On top -->
+        <div class="hidden lg:block absolute left-0 top-0 bottom-0 w-[calc((100vw-800px)/2)] bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent pointer-events-none z-20" />
+      </div>
+
+      <UFooter class="pointer-events-auto bg-transparent border-t-0">
+        <p class="text-white/50 text-xs">
+          Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Strudel</a>
+        </p>
+      </UFooter>
+    </div>
+  </div>
 </template>

@@ -3,13 +3,6 @@ import { initRpcClient } from 'nimiq-rpc-client-ts/client'
 import { BlockType } from 'nimiq-rpc-client-ts/types'
 import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
 
-export interface StreamedBlock {
-  number: number
-  epoch: number
-  batch: number
-  validator?: string
-}
-
 export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event)
 
@@ -26,7 +19,7 @@ export default defineEventHandler(async (event) => {
       if (!block)
         return
 
-      const streamedBlock: StreamedBlock = {
+      const streamedBlock: FmBlock = {
         number: block.number,
         batch: block.batch,
         epoch: block.epoch,
