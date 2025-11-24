@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+
+const BATCHES_PER_SONG = 3
+const BLOCKS_PER_SONG = BLOCKS_PER_BATCH * BATCHES_PER_SONG // 180 blocks
 
 const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
@@ -50,17 +53,16 @@ const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')
 const displayNowPlaying = computed(() => nowPlayingTitle.value || 'Tuning in...')
 const nextSongTitle = computed(() => currentBlock.value ? getNextSongName(currentBlock.value.blockNumber) : '')
 
-const blocksLeftInBatch = computed(() => {
-  if (!currentBlock.value)
-    return BLOCKS_PER_BATCH
-  return BLOCKS_PER_BATCH - 1 - batchIndexAt(currentBlock.value.blockNumber)
+// Progress within 3-batch song cycle (180 blocks total)
+const blocksElapsedInSong = computed(() => {
+  if (!currentBlock.value) return 0
+  const globalBatch = batchAt(currentBlock.value.blockNumber)
+  const batchInSong = globalBatch % BATCHES_PER_SONG // 0, 1, or 2
+  const blockInBatch = batchIndexAt(currentBlock.value.blockNumber) // 0-59
+  return batchInSong * BLOCKS_PER_BATCH + blockInBatch
 })
-const playbackProgress = computed(() => {
-  if (!currentBlock.value)
-    return 0
-  return batchIndexAt(currentBlock.value.blockNumber)
-})
-const progressLabel = computed(() => `${blocksLeftInBatch.value} blocks left`)
+const blocksLeftInSong = computed(() => BLOCKS_PER_SONG - blocksElapsedInSong.value - 1)
+const progressLabel = computed(() => `${blocksLeftInSong.value} blocks left`)
 const blockMeta = computed(() => {
   if (!currentBlock.value)
     return 'Waiting for blocks...'
@@ -105,8 +107,8 @@ const blockMeta = computed(() => {
               </div>
 
               <UProgress
-                :model-value="playbackProgress"
-                :max="BLOCKS_PER_BATCH - 1"
+                :model-value="blocksElapsedInSong"
+                :max="BLOCKS_PER_SONG - 1"
                 :status="false"
                 color="primary"
                 class="w-full"
