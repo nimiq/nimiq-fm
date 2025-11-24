@@ -87,14 +87,12 @@ export function useStrudel() {
 
     try {
       const { makeHash } = await import('identicons-esm/core')
-
       const hashStr = makeHash(validatorAddress || '')
       const digits = hashStr.split('').map(Number).map(n => n + 32)
 
-      const song = await loadSong(blockNumber)
-      nowPlaying.value = song.name
-
-      let pattern = song.fn(digits, batch, blockNumber)
+      const songInfo = await loadSong(blockNumber)
+      nowPlaying.value = songInfo.name
+      let pattern = songInfo.fn(digits, batch, blockNumber)
 
       const bNum = blockNumber % 60
       if (bNum < 4) {

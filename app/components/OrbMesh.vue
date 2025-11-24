@@ -2,13 +2,14 @@
 import type { Beam, LinkData, NodeData } from '~/types/orb'
 import { useLoop } from '@tresjs/core'
 import * as THREE from 'three'
-import { onMounted, onUnmounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { useBlockchain } from '~/composables/useBlockchain'
 import { NodeType } from '~/types/orb'
 import { generateGraph } from '~/utils/generate-graph'
+
 import {
   BEAM_COLOR,
   BEAM_SPEED,
-  BLOCK_INTERVAL_MS,
   COLOR_LINK,
   NODE_COUNT,
   ORB_RADIUS,
@@ -17,8 +18,6 @@ import {
   VALIDATOR_COUNT,
   VALIDATOR_ROTATION_SPEED,
 } from '~/utils/orb-constants'
-
-import { useBlockchain } from '~/composables/useBlockchain'
 
 defineProps<{
   audioData: number
@@ -66,7 +65,7 @@ const { onBlockEvent } = useBlockchain()
 onMounted(() => {
   onBlockEvent((block) => {
     const now = Date.now() / 1000
-    
+
     // Select validator based on address hash or random
     let validatorIdx = Math.floor(Math.random() * VALIDATOR_COUNT)
     if (block.validatorAddress) {

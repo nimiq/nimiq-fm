@@ -39,7 +39,8 @@ let frame: number | null = null
 const chainElement = ref<HTMLElement>()
 
 function startAnimation() {
-  if (frame) return
+  if (frame)
+    return
 
   function loop() {
     frame = requestAnimationFrame(loop)
@@ -55,7 +56,8 @@ function startAnimation() {
 }
 
 function stopAnimation() {
-  if (!frame) return
+  if (!frame)
+    return
   cancelAnimationFrame(frame)
   frame = null
 }
@@ -69,7 +71,8 @@ onBeforeUnmount(() => {
 })
 
 watch(latestBlock, (newBlock) => {
-  if (!newBlock) return
+  if (!newBlock)
+    return
 
   // On first block, replace all placeholders with real blocks counting backwards
   if (!firstBlockReceived.value) {
