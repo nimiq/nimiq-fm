@@ -2,14 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: [
-    '@nuxt/eslint',
-    '@nuxt/hints',
-    '@nuxt/ui',
-    '@vueuse/nuxt',
-    '@tresjs/nuxt',
-    'motion-v/nuxt',
-  ],
+  modules: ['@nuxt/eslint', '@nuxt/hints', '@nuxt/ui', '@vueuse/nuxt', '@tresjs/nuxt', 'motion-v/nuxt', '@nuxthub/core'],
   eslint: {
     config: {
       standalone: false,
@@ -31,6 +24,6 @@ export default defineNuxtConfig({
   },
   css: ['./app/assets/css/main.css'],
   runtimeConfig: {
-    nimiqRpcUrl: process.env.NIMIQ_RPC_URL || 'http://localhost:8648',
+    nimiqRpcUrl: import.meta.env.NIMIQ_RPC_URL || 'http://localhost:8648',
   },
 })

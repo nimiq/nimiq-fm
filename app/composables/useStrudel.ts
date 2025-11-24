@@ -4,7 +4,6 @@ import { makeHash } from 'identicons-esm/core'
 let scheduler: any = null
 let isInitialized = false
 let analyser: AnalyserNode | null = null
-let audioContext: AudioContext | null = null
 
 export function useStrudel() {
   const audioData = ref<Float32Array>(new Float32Array(512))
@@ -19,7 +18,6 @@ export function useStrudel() {
 
       await initAudioOnFirstClick()
       const ctx = getAudioContext()
-      audioContext = ctx
 
       if (ctx.state === 'suspended')
         await ctx.resume()
@@ -35,10 +33,8 @@ export function useStrudel() {
       analyser!.smoothingTimeConstant = 0.8
 
       // Connect destination to analyser
-      if (ctx.destination) {
-        const source = ctx.createMediaStreamDestination()
+      if (ctx.destination)
         analyser!.connect(ctx.destination)
-      }
 
       // Start audio analysis loop
       const updateAudioData = () => {

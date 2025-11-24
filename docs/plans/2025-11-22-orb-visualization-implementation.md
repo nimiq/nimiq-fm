@@ -465,7 +465,10 @@ onLoop(({ delta, elapsed }) => {
         n.currentPosition.y += noiseY
         n.currentPosition.z += noiseZ
         n.opacity = 1
-        if (n.timer <= 0) { n.state = 'dying'; n.timer = ORB_CONFIG.PEER_TRANSITION_MS }
+        if (n.timer <= 0) {
+          n.state = 'dying'
+          n.timer = ORB_CONFIG.PEER_TRANSITION_MS
+        }
       }
       else if (n.state === 'hidden') {
         if (n.timer <= 0) {
@@ -479,12 +482,18 @@ onLoop(({ delta, elapsed }) => {
         const p = 1 - (n.timer / ORB_CONFIG.PEER_TRANSITION_MS)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'active'; n.timer = ORB_CONFIG.PEER_LIFETIME_MS + Math.random() * 5000 }
+        if (n.timer <= 0) {
+          n.state = 'active'
+          n.timer = ORB_CONFIG.PEER_LIFETIME_MS + Math.random() * 5000
+        }
       }
       else if (n.state === 'dying') {
         const p = n.timer / ORB_CONFIG.PEER_TRANSITION_MS
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'hidden'; n.timer = Math.random() * 5000 }
+        if (n.timer <= 0) {
+          n.state = 'hidden'
+          n.timer = Math.random() * 5000
+        }
       }
     }
 

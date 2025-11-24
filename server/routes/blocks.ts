@@ -45,7 +45,7 @@ export default defineWebSocketHandler({
         },
       )
 
-      eventEmitter.addEventListener('error', (event: CustomEvent) => {
+      eventEmitter.addEventListener('error', (_event: CustomEvent) => {
         peer.send(
           JSON.stringify({
             type: 'error',

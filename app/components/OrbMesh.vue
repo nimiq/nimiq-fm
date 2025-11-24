@@ -18,10 +18,6 @@ import {
   VALIDATOR_ROTATION_SPEED,
 } from '~/utils/orb-constants'
 
-const props = defineProps<{
-  audioData: number
-}>()
-
 // Generate Graph
 const graphData = shallowRef<{ nodes: NodeData[], links: LinkData[] } | null>(null)
 watchEffect(() => {
@@ -43,8 +39,9 @@ const cBeam = new THREE.Color(BEAM_COLOR)
 
 // Initialize Line Buffers
 watchEffect(() => {
-  if (!linesRef.value || !graphData.value)
-    return
+  if (!linesRef.value || !graphData.value) {
+    //
+  }
 })
 
 watch(linesRef, (lines) => {
@@ -83,7 +80,7 @@ onUnmounted(() => {
 // Cleanup beams
 const { onBeforeRender } = useLoop()
 
-onBeforeRender(({ delta, elapsed }) => {
+onBeforeRender(({ delta }) => {
   // Cleanup beams
   const currentTime = Date.now() / 1000
   beams.value = beams.value.filter(b => (currentTime - b.startTime) * BEAM_SPEED < b.maxDistance + 5)
@@ -142,11 +139,15 @@ onBeforeRender(({ delta, elapsed }) => {
         n.currentPosition.y += noiseY
         n.currentPosition.z += noiseZ
         n.opacity = 1
-        if (n.timer <= 0) { n.state = 'DYING'; n.timer = PEER_TRANSITION_MS }
+        if (n.timer <= 0) {
+          n.state = 'DYING'
+          n.timer = PEER_TRANSITION_MS
+        }
       }
       else if (n.state === 'HIDDEN') {
         if (n.timer <= 0) {
-          n.state = 'SPAWNING'; n.timer = PEER_TRANSITION_MS
+          n.state = 'SPAWNING'
+          n.timer = PEER_TRANSITION_MS
           n.startPosition.copy(n.targetPosition).normalize().multiplyScalar(ORB_RADIUS * 1.6)
           n.currentPosition.copy(n.startPosition)
         }
@@ -155,14 +156,20 @@ onBeforeRender(({ delta, elapsed }) => {
         const p = 1 - (n.timer / PEER_TRANSITION_MS)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'ACTIVE'; n.timer = PEER_LIFETIME_MS + Math.random() * 5000 }
+        if (n.timer <= 0) {
+          n.state = 'ACTIVE'
+          n.timer = PEER_LIFETIME_MS + Math.random() * 5000
+        }
       }
       else if (n.state === 'DYING') {
         const p = n.timer / PEER_TRANSITION_MS
         // Move back to start position (outwards)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
-        if (n.timer <= 0) { n.state = 'HIDDEN'; n.timer = Math.random() * 5000 }
+        if (n.timer <= 0) {
+          n.state = 'HIDDEN'
+          n.timer = Math.random() * 5000
+        }
       }
     }
 
@@ -315,7 +322,8 @@ onBeforeRender(({ delta, elapsed }) => {
 
     // Skip rendering if fully disconnected or nodes invisible
     if (link.reconnectProgress < 0.01 || alpha < 0.01) {
-      linePositions.setXYZ(i * 2, 0, 0, 0); linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
+      linePositions.setXYZ(i * 2, 0, 0, 0)
+      linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
 
       // Hide beam instance if link is hidden
       if (beamMeshRef.value) {

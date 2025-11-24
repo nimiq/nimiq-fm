@@ -1,4 +1,4 @@
-import { note, pure, rand, sound, stack, time } from '@strudel/web'
+import { note, pure, rand, sound, stack } from '@strudel/web'
 
 export function qimin(digits: number[], batch: number, blockNumber: number) {
   const seedSequence = digits.slice(0, 16).join(' ')
