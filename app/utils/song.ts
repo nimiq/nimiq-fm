@@ -23,6 +23,19 @@ export function getSongNameByIndex(index: number): string {
   return SONG_LIST[index % SONG_LIST.length]!.name
 }
 
+export function getCurrentSongName(blockNumber: number, batchesPerSong = 3): string {
+  const currentBatch = batchAt(blockNumber)
+  const songCycleIndex = Math.floor(currentBatch / batchesPerSong)
+  return SONG_LIST[songCycleIndex % SONG_LIST.length]!.name
+}
+
+export function getNextSongName(blockNumber: number, batchesPerSong = 3): string {
+  const currentBatch = batchAt(blockNumber)
+  const songCycleIndex = Math.floor(currentBatch / batchesPerSong)
+  const nextIndex = (songCycleIndex + 1) % SONG_LIST.length
+  return SONG_LIST[nextIndex]!.name
+}
+
 export async function loadSong(blockNumber: number, batchesPerSong = 3): Promise<SongInfo> {
   const currentBatch = batchAt(blockNumber)
   const songCycleIndex = Math.floor(currentBatch / batchesPerSong)

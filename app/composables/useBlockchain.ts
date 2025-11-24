@@ -18,7 +18,8 @@ function _useBlockchain() {
   const { data, open } = useEventSource(url, [], { autoReconnect: true, autoConnect: false })
 
   const startListening = () => {
-    if (!import.meta.client) return
+    if (!import.meta.client)
+      return
     open()
   }
 
@@ -28,11 +29,13 @@ function _useBlockchain() {
   }
 
   watch(data, (rawData) => {
-    if (!rawData) return
+    if (!rawData)
+      return
 
     try {
       const parsed = JSON.parse(rawData) as { type: 'block', data: FmBlock } | { type: 'error', message: string }
-      if (parsed.type !== 'block') return
+      if (parsed.type !== 'block')
+        return
 
       const block = parsed.data
       const blockEvent: BlockEvent = {

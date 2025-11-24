@@ -86,47 +86,13 @@ export function useStrudel() {
       return
 
     try {
-      // TODO We lazy load this for nothing? we should use loadSong('desertDune') and then use it. Lazy load the songs does nothing
-      const { desertDune } = await import('~/songs/desert-dune')
-      const { milkyWay } = await import('~/songs/milky-way')
-      const { acid } = await import('~/songs/acid')
-      const { qimin } = await import('~/songs/qimin')
-      const { runningAway } = await import('~/songs/running-away')
-
       const { makeHash } = await import('identicons-esm/core')
-
       const hashStr = makeHash(validatorAddress || '')
       const digits = hashStr.split('').map(Number).map(n => n + 32)
 
-      // Play each pattern for 3 batches
-      const patternIndex = Math.floor(batch / 3) % 5
-
-      let pattern
-      switch (patternIndex) {
-        case 0:
-          nowPlaying.value = 'Desert Dune'
-          pattern = desertDune(digits, batch, blockNumber)
-          break
-        case 1:
-          nowPlaying.value = 'Milky Way'
-          pattern = milkyWay(digits, batch, blockNumber)
-          break
-        case 2:
-          nowPlaying.value = 'Acid'
-          pattern = acid(digits, batch, blockNumber)
-          break
-        case 3:
-          nowPlaying.value = 'Qimin'
-          pattern = qimin(digits, batch, blockNumber)
-          break
-        case 4:
-          nowPlaying.value = 'Running Away'
-          pattern = runningAway(digits, batch, blockNumber)
-          break
-        default:
-          nowPlaying.value = 'Desert Dune'
-          pattern = desertDune(digits, batch, blockNumber)
-      }
+      const songInfo = await loadSong(blockNumber)
+      nowPlaying.value = songInfo.name
+      let pattern = songInfo.fn(digits, batch, blockNumber)
 
       const bNum = blockNumber % 60
       if (bNum < 4) {

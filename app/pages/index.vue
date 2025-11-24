@@ -1,10 +1,8 @@
 <script setup lang="ts">
+import { batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+
 const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
-const playbackProgress = ref(0)
-const lastBlockTimestamp = ref<number | null>(null)
-const averageBlockDuration = ref(18000)
-const playlist = ['Desert Dune', 'Milky Way', 'Acid', 'Qimin', 'Running Away'] as const
 const cycleTitle = 'Macroblock Song Cycle'
 
 // Initialize composables only on client-side
@@ -22,7 +20,6 @@ async function togglePlay() {
   else {
     strudel.stop()
     isPlaying.value = false
-    playbackProgress.value = 0
   }
 }
 
@@ -40,15 +37,6 @@ onMounted(async () => {
   blockchain.startListening()
 
   blockchain.onBlockEvent((blockEvent) => {
-    const now = Date.now()
-    if (lastBlockTimestamp.value) {
-      const delta = now - lastBlockTimestamp.value
-      const clampedDelta = Math.min(Math.max(delta, 4000), 60000)
-      averageBlockDuration.value = (averageBlockDuration.value * 0.8) + (clampedDelta * 0.2)
-    }
-
-    lastBlockTimestamp.value = now
-    playbackProgress.value = 0
     currentBlock.value = blockEvent
 
     if (!isPlaying.value || !strudel)
@@ -58,30 +46,26 @@ onMounted(async () => {
   })
 })
 
-if (import.meta.client) {
-  useRafFn(() => {
-    if (!lastBlockTimestamp.value || !isPlaying.value)
-      return
-
-    const elapsed = Date.now() - lastBlockTimestamp.value
-    const duration = Math.min(Math.max(averageBlockDuration.value, 6000), 60000)
-    playbackProgress.value = Math.min(100, (elapsed / duration) * 100)
-  }, { immediate: true })
-}
-
 const nowPlayingTitle = computed(() => (strudel as any)?.nowPlaying?.value || '')
-const currentSongIndex = computed(() => {
-  const index = playlist.findIndex(title => title === nowPlayingTitle.value)
-  return index === -1 ? 0 : index
-})
-const nextSongTitle = computed(() => playlist[(currentSongIndex.value + 1) % playlist.length])
 const displayNowPlaying = computed(() => nowPlayingTitle.value || 'Tuning in...')
-const progressLabel = computed(() => `${Math.round(playbackProgress.value)}%`)
+const nextSongTitle = computed(() => currentBlock.value ? getNextSongName(currentBlock.value.blockNumber) : '')
+
+const blocksLeftInBatch = computed(() => {
+  if (!currentBlock.value)
+    return BLOCKS_PER_BATCH
+  return BLOCKS_PER_BATCH - 1 - batchIndexAt(currentBlock.value.blockNumber)
+})
+const playbackProgress = computed(() => {
+  if (!currentBlock.value)
+    return 0
+  return batchIndexAt(currentBlock.value.blockNumber)
+})
+const progressLabel = computed(() => `${blocksLeftInBatch.value} blocks left`)
 const blockMeta = computed(() => {
   if (!currentBlock.value)
     return 'Waiting for blocks...'
 
-  return `Epoch ${currentBlock.value.epoch} · Batch ${currentBlock.value.batch}`
+  return `Block ${currentBlock.value.blockNumber} · Batch ${currentBlock.value.batch} · Epoch ${currentBlock.value.epoch}`
 })
 </script>
 
@@ -122,13 +106,13 @@ const blockMeta = computed(() => {
 
               <UProgress
                 :model-value="playbackProgress"
-                :max="100"
+                :max="BLOCKS_PER_BATCH - 1"
                 :status="false"
                 color="primary"
                 class="w-full"
                 :ui="{
                   base: 'h-2 rounded-full bg-white/10 overflow-hidden',
-                  indicator: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-200 shadow-[0_0_25px_rgba(56,189,248,0.35)] rounded-full'
+                  indicator: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-200 shadow-[0_0_25px_rgba(56,189,248,0.35)] rounded-full',
                 }"
               />
 
@@ -152,12 +136,12 @@ const blockMeta = computed(() => {
       <div class="pointer-events-auto z-20 w-full pt-12 pb-4 relative overflow-hidden">
         <!-- Gradient Background -->
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
-        
+
         <!-- Blockchain Content -->
         <div class="relative z-10">
           <BlockchainViewer />
         </div>
-        
+
         <!-- Left Curtain (Desktop only) - On top -->
         <div class="hidden lg:block absolute left-0 top-0 bottom-0 w-[calc((100vw-800px)/2)] bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent pointer-events-none z-20" />
       </div>
