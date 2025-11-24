@@ -1,4 +1,4 @@
-import type { Block } from 'nimiq-rpc-client-ts/types'
+import type { MicroBlock } from 'nimiq-rpc-client-ts/types'
 import { initRpcClient } from 'nimiq-rpc-client-ts/client'
 import { BlockType } from 'nimiq-rpc-client-ts/types'
 import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
@@ -10,43 +10,62 @@ export interface StreamedBlock {
   validator?: string
 }
 
-export default defineEventHandler(async (event) => {
-  const eventStream = createEventStream(event)
+export default defineWebSocketHandler({
+  async open(peer) {
+    peer.send(JSON.stringify({ type: 'connected' }))
 
-  const config = useRuntimeConfig()
-  const nodeRpcUrl = config.nimiqRpcUrl
+    const config = useRuntimeConfig()
+    const nodeRpcUrl = config.nimiqRpcUrl
 
-  try {
-    initRpcClient({ url: nodeRpcUrl })
+    try {
+      initRpcClient({ url: nodeRpcUrl as string })
 
-    const eventEmitter = await subscribeForHeadBlock(true)
+      const eventEmitter = await subscribeForHeadBlock(true)
 
-    eventEmitter.addEventListener('data', async (event: CustomEvent) => {
-      const { data: block } = event.detail as { data: Block | null }
-      if (!block)
-        return
+      eventEmitter.addEventListener(
+        'data',
+        async (event: CustomEvent) => {
+          const { data: block } = event.detail
+          if (!block)
+            return
 
-      const streamedBlock: StreamedBlock = {
-        number: block.number,
-        batch: block.batch,
-        epoch: block.epoch,
-        validator: block.type === BlockType.Micro ? block.producer.validator : undefined,
-      }
+          const streamedBlock: StreamedBlock = {
+            number: block.number,
+            epoch: block.epoch,
+            batch: block.batch,
+            validator:
+                            block.type === BlockType.Micro
+                              ? (block as MicroBlock).producer.validator
+                              : undefined,
+          }
 
-      eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
-    })
+          peer.send(
+            JSON.stringify({ type: 'block', data: streamedBlock }),
+          )
+        },
+      )
 
-    eventEmitter.addEventListener('error', () => {
-      eventStream.push(JSON.stringify({ type: 'error', message: 'Subscription error' }))
-    })
-  }
-  catch {
-    eventStream.push(JSON.stringify({ type: 'error', message: 'Failed to subscribe' }))
-  }
+      eventEmitter.addEventListener('error', (_event: CustomEvent) => {
+        peer.send(
+          JSON.stringify({
+            type: 'error',
+            message: 'Subscription error',
+          }),
+        )
+      })
+    }
+    catch {
+      peer.send(
+        JSON.stringify({
+          type: 'error',
+          message: 'Failed to subscribe',
+        }),
+      )
+    }
+  },
 
-  eventStream.onClosed(async () => {
-    await eventStream.close()
-  })
-
-  return eventStream.send()
+  async close() {},
+  async error(peer, error) {
+    console.error('WS error:', error)
+  },
 })

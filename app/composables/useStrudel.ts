@@ -1,150 +1,80 @@
+// makeHash converts any string to consistent numeric hash for generating identicons
+import { makeHash } from 'identicons-esm/core'
+
 let scheduler: any = null
 let isInitialized = false
-let initPromise: Promise<void> | null = null
+let analyser: AnalyserNode | null = null
 
 export function useStrudel() {
-  const nowPlaying = ref('')
+  const audioData = ref<Float32Array>(new Float32Array(512))
 
   const init = async () => {
-    if (!import.meta.client)
-      return
-
-    if (initPromise)
-      return initPromise
-
-    if (isInitialized)
-      return
-
-    initPromise = (async () => {
-      try {
-        // Dynamic import to avoid SSR issues
-        const { getAudioContext, initAudioOnFirstClick, initStrudel, repl, webaudioOutput, samples } = await import('@strudel/web')
-
-        const ds = 'https://raw.githubusercontent.com/felixroos/dough-samples/main/'
-        await initStrudel({
-          prebake: () => [
-            samples('github:tidalcycles/dirt-samples'),
-            samples('github:bubobubobubobubo/dough-waveforms'),
-            samples('github:tidalcycles/uzu-wavetables'),
-            samples(`${ds}/tidal-drum-machines.json`),
-            samples(`${ds}/piano.json`),
-            samples(`${ds}/Dirt-Samples.json`),
-            samples(`${ds}/EmuSP12.json`),
-            samples(`${ds}/vcsl.json`),
-            samples(`${ds}/mridangam.json`),
-            samples('https://sound.intercrap.com/strudel/mellotron/strudel.json'),
-            samples('github:yaxu/spicule'),
-          ],
-        })
-
-        await initAudioOnFirstClick()
-        const ctx = getAudioContext()
-
-        const { scheduler: replScheduler } = repl({
-          defaultOutput: webaudioOutput,
-          getTime: () => ctx.currentTime,
-        })
-        scheduler = replScheduler
-        scheduler.setCps(140 / 60 / 4) // 140 BPM, 4 beats per measure
-        isInitialized = true
-      }
-      catch (error) {
-        console.error('Strudel init failed:', error)
-        throw error
-      }
-    })()
-
-    return initPromise
-  }
-
-  const start = async () => {
-    if (!import.meta.client)
+    if (isInitialized || !import.meta.client)
       return
 
     try {
-      if (initPromise)
-        await initPromise
+      const { repl } = await import('@strudel/core')
+      const { webaudioOutput, initAudioOnFirstClick, getAudioContext, samples } = await import('@strudel/webaudio')
 
-      if (!scheduler)
-        return
-
-      const { getAudioContext } = await import('@strudel/web')
+      await initAudioOnFirstClick()
       const ctx = getAudioContext()
 
       if (ctx.state === 'suspended')
         await ctx.resume()
 
-      scheduler.start()
+      await samples('github:tidalcycles/dirt-samples')
+
+      const replInstance = repl({ defaultOutput: webaudioOutput, getTime: () => ctx.currentTime })
+      scheduler = replInstance.scheduler
+
+      // Setup analyser for audio visualization
+      analyser = ctx.createAnalyser()
+      analyser!.fftSize = 1024
+      analyser!.smoothingTimeConstant = 0.8
+
+      // Connect destination to analyser
+      if (ctx.destination)
+        analyser!.connect(ctx.destination)
+
+      // Start audio analysis loop
+      const updateAudioData = () => {
+        if (!analyser)
+          return
+        const dataArray = new Uint8Array(analyser.frequencyBinCount)
+        analyser.getByteFrequencyData(dataArray)
+        audioData.value = new Float32Array(dataArray)
+        requestAnimationFrame(updateAudioData)
+      }
+      updateAudioData()
+
+      isInitialized = true
     }
     catch (error) {
-      console.error('Failed to start playback:', error)
+      console.error('Strudel init failed:', error)
     }
   }
 
-  const playBlockSound = async ({ validatorAddress, batch, blockNumber }: { validatorAddress?: string, epoch: number, batch: number, blockNumber: number }) => {
+  const playBlockSound = async ({ validatorAddress }: { validatorAddress: string }) => {
     if (!scheduler || !import.meta.client)
       return
 
     try {
-      const { desertDune } = await import('~/songs/desert-dune')
-      const { milkyWay } = await import('~/songs/milky-way')
-      const { acid } = await import('~/songs/acid')
-      const { qimin } = await import('~/songs/qimin')
-      const { runningAway } = await import('~/songs/running-away')
+      const { note } = await import('@strudel/core')
 
-      const { makeHash } = await import('identicons-esm/core')
+      // Map validator address to note
+      const hashStr = makeHash(validatorAddress)
+      const hash = Number.parseInt(hashStr, 10)
+      const notes = ['c3', 'd3', 'e3', 'f3', 'g3', 'a3', 'b3', 'c4']
+      const selectedNote = notes[Math.abs(hash) % notes.length]
 
-      const hashStr = makeHash(validatorAddress || '')
-      const digits = hashStr.split('').map(Number).map(n => n + 32)
+      const pattern = note(selectedNote).s('triangle').gain(0.7).supradough()
 
-      // Play each pattern for 3 batches
-      const patternIndex = Math.floor(batch / 3) % 5
-
-      let pattern
-      switch (patternIndex) {
-        case 0:
-          nowPlaying.value = 'Desert Dune'
-          pattern = desertDune(digits, batch, blockNumber)
-          break
-        case 1:
-          nowPlaying.value = 'Milky Way'
-          pattern = milkyWay(digits, batch, blockNumber)
-          break
-        case 2:
-          nowPlaying.value = 'Acid'
-          pattern = acid(digits, batch, blockNumber)
-          break
-        case 3:
-          nowPlaying.value = 'Qimin'
-          pattern = qimin(digits, batch, blockNumber)
-          break
-        case 4:
-          nowPlaying.value = 'Running Away'
-          pattern = runningAway(digits, batch, blockNumber)
-          break
-        default:
-          nowPlaying.value = 'Desert Dune'
-          pattern = desertDune(digits, batch, blockNumber)
-      }
-
-      const bNum = blockNumber % 60
-      if (bNum < 4) {
-        const lpfCutoff = 100 + (bNum / 4) * 3900
-        const hpfCutoff = 4000 - (bNum / 4) * 3900
-        pattern = pattern.lpf(lpfCutoff).hpf(hpfCutoff)
-      }
-
-      if (bNum >= 56) {
-        const hpfCutoff = 100 + ((bNum - 55) / 4) * 3900
-        pattern = pattern.hpf(hpfCutoff)
-      }
-
-      scheduler.setPattern(pattern, true)
+      scheduler.setPattern(pattern, false)
     }
     catch (error) {
       console.error('Failed to play sound:', error)
     }
   }
 
-  return { init, start, playBlockSound, stop: () => scheduler?.stop(), nowPlaying }
+  return { init, playBlockSound, audioData: readonly(audioData) }
 }

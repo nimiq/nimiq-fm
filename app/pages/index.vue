@@ -1,81 +1,60 @@
 <script setup lang="ts">
-import { makeHash } from 'identicons-esm/core'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import OrbOverlay from '~/components/OrbOverlay.vue'
+import OrbScene from '~/components/OrbScene.vue'
+import { useBlockchain } from '~/composables/useBlockchain'
+import { AudioSimulator } from '~/utils/audio-simulator'
+import { BLOCK_INTERVAL_MS } from '~/utils/orb-constants'
 
-const currentBlock = ref<BlockEvent | null>(null)
-const isPlaying = ref(false)
+const audioSim = new AudioSimulator()
+const audioData = ref(0)
+const blockHeight = ref(35678581) // Start with a realistic number
 
-// Initialize composables only on client-side
-let strudel: ReturnType<typeof useStrudel> | null = null
-let blockchain: ReturnType<typeof useBlockchain> | null = null
+const { startListening, latestBlock } = useBlockchain()
 
-async function togglePlay() {
-  if (!strudel)
-    return
+let audioFrameId: number
+let blockIntervalId: ReturnType<typeof setInterval>
 
-  if (!isPlaying.value) {
-    await strudel.start()
-    isPlaying.value = true
+onMounted(() => {
+  startListening()
+
+  // Audio Loop
+  const loop = () => {
+    const data = audioSim.getAudioData()
+    audioData.value = data
+    audioFrameId = requestAnimationFrame(loop)
   }
-  else {
-    strudel.stop()
-    isPlaying.value = false
+  loop()
+
+  // Fallback Block Height Loop (stops if real blocks arrive)
+  blockIntervalId = setInterval(() => {
+    if (!latestBlock.value) {
+      blockHeight.value += 1
+    }
+  }, BLOCK_INTERVAL_MS)
+})
+
+watch(latestBlock, (block) => {
+  if (block) {
+    blockHeight.value = block.blockNumber
   }
-}
+})
 
-onMounted(async () => {
-  // Initialize composables (client-side only)
-  strudel = useStrudel()
-  blockchain = useBlockchain()
-
-  // Initialize and auto-start playback
-  await strudel.init()
-  await strudel.start()
-  isPlaying.value = true
-
-  // Start listening to blockchain events
-  blockchain.startListening()
-
-  blockchain.onBlockEvent((blockEvent) => {
-    currentBlock.value = blockEvent
-
-    if (!isPlaying.value || !strudel)
-      return
-
-    strudel.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
-  })
+onUnmounted(() => {
+  cancelAnimationFrame(audioFrameId)
+  clearInterval(blockIntervalId)
 })
 </script>
 
 <template>
-  <UContainer>
-    <UPageHero title="Nimiq Song" description="Listen to the blockchain" align="center">
-      <template #links>
-        <UButton :label="isPlaying ? 'Stop' : 'Play'" size="xl" :color="isPlaying ? 'error' : 'primary'" @click="togglePlay" />
-      </template>
-    </UPageHero>
-    <UPageSection v-if="currentBlock?.validatorAddress" class="text-center">
-      <div class="text-sm text-gray-500 mb-2">
-        Now Playing: {{ strudel?.nowPlaying }}
-      </div>
-      <div class="text-sm text-gray-500 mb-2">
-        Latest Block Validator
-      </div>
-      <div class="font-mono text-2xl font-bold break-all">
-        {{ currentBlock.validatorAddress }}
-      </div>
-      <div class="font-mono text-2xl font-bold break-all">
-        {{ makeHash(currentBlock.validatorAddress) }}
-      </div>
+  <!-- Background: Very deep, neutral dark grey/black gradient. Minimalistic. -->
+  <div class="relative w-full h-full bg-[radial-gradient(circle_at_center,#0f172a_0%,#000000_100%)] overflow-hidden h-screen">
+    <div class="absolute inset-0 z-0">
+      <OrbScene :audio-data="audioData" />
+    </div>
 
-      <div>
-        Block #{{ currentBlock.blockNumber }} (Epoch {{ currentBlock.epoch }}, Batch {{ currentBlock.batch }})
-      </div>
-    </UPageSection>
-  </UContainer>
-
-  <UFooter>
-    <p>
-      Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline">Strudel</a>
-    </p>
-  </UFooter>
+    <div class="absolute inset-0 z-10 pointer-events-none">
+      <OrbOverlay :block-height="blockHeight" />
+    </div>
+  </div>
 </template>
