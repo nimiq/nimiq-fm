@@ -1,4 +1,3 @@
-import { useWebSocket } from '@vueuse/core'
 import { readonly, ref, watch } from 'vue'
 
 export interface BlockEvent {
