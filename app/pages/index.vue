@@ -5,32 +5,32 @@ const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
 const cycleTitle = 'Macroblock Song Cycle'
 
-// Initialize composables only on client-side
-let strudel: ReturnType<typeof useStrudel> | null = null
+// Initialize composables only on client-side (shallowRef for reactivity)
+const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
 let blockchain: ReturnType<typeof useBlockchain> | null = null
 
 async function togglePlay() {
-  if (!strudel)
+  if (!strudel.value)
     return
 
   if (!isPlaying.value) {
-    await strudel.start()
+    await strudel.value.start()
     isPlaying.value = true
   }
   else {
-    strudel.stop()
+    strudel.value.stop()
     isPlaying.value = false
   }
 }
 
 onMounted(async () => {
   // Initialize composables (client-side only)
-  strudel = useStrudel()
+  strudel.value = useStrudel()
   blockchain = useBlockchain()
 
   // Initialize and auto-start playback
-  await strudel.init()
-  await strudel.start()
+  await strudel.value.init()
+  await strudel.value.start()
   isPlaying.value = true
 
   // Start listening to blockchain events
@@ -39,14 +39,14 @@ onMounted(async () => {
   blockchain.onBlockEvent((blockEvent) => {
     currentBlock.value = blockEvent
 
-    if (!isPlaying.value || !strudel)
+    if (!isPlaying.value || !strudel.value)
       return
 
-    strudel.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
+    strudel.value.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
 })
 
-const nowPlayingTitle = computed(() => (strudel as any)?.nowPlaying?.value || '')
+const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')
 const displayNowPlaying = computed(() => nowPlayingTitle.value || 'Tuning in...')
 const nextSongTitle = computed(() => currentBlock.value ? getNextSongName(currentBlock.value.blockNumber) : '')
 
