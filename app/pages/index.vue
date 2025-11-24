@@ -55,7 +55,8 @@ const nextSongTitle = computed(() => currentBlock.value ? getNextSongName(curren
 
 // Progress within 3-batch song cycle (180 blocks total)
 const blocksElapsedInSong = computed(() => {
-  if (!currentBlock.value) return 0
+  if (!currentBlock.value)
+    return 0
   const globalBatch = batchAt(currentBlock.value.blockNumber)
   const batchInSong = globalBatch % BATCHES_PER_SONG // 0, 1, or 2
   const blockInBatch = batchIndexAt(currentBlock.value.blockNumber) // 0-59
@@ -69,6 +70,7 @@ const blockMeta = computed(() => {
 
   return `Block ${currentBlock.value.blockNumber} · Batch ${currentBlock.value.batch} · Epoch ${currentBlock.value.epoch}`
 })
+const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.validatorAddress : '')
 </script>
 
 <template>
@@ -127,6 +129,9 @@ const blockMeta = computed(() => {
                 </div>
                 <div class="text-xs text-white/50">
                   {{ blockMeta }}
+                </div>
+                <div class="text-xs text-white/50">
+                  {{ validatorAddress }}
                 </div>
               </div>
             </div>
