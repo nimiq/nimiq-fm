@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
 
-  compatibilityDate: '2024-08-31',
+  compatibilityDate: '2025-07-15',
+  ssr: false,
 
   modules: [
     '@vueuse/nuxt',
@@ -29,8 +30,10 @@ export default defineNuxtConfig({
     url: 'https://nimiq-nuxt-template.nuxt.dev/',
     name: 'Nimiq Song',
     description: 'Welcome to Nimiq Song site!',
-    defaultLocale: 'en', // not needed if you have @nuxtjs/i18n installed
+    defaultLocale: 'en',
   },
+
+  ogImage: { enabled: false },
 
   devtools: {
     enabled: true,

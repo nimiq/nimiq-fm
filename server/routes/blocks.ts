@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event)
 
   const config = useRuntimeConfig()
-  const nodeRpcUrl = config.nimiqRpcUrl
+  const nodeRpcUrl = config.nodeRpcUrl as string
 
   try {
     initRpcClient({ url: nodeRpcUrl })
