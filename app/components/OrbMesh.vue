@@ -24,11 +24,11 @@ defineProps<{
   audioData: number
 }>()
 
-// Generate Graph
+// Generate Graph (only once, not reactively - so lastBlockTime persists)
 const graphData = shallowRef<{ nodes: NodeData[], links: LinkData[] } | null>(null)
-watchEffect(() => {
+if (import.meta.client) {
   graphData.value = generateGraph()
-})
+}
 
 const nodesMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const nodeWireframeMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
@@ -467,9 +467,8 @@ onBeforeRender(({ delta }) => {
 
     if (n.type === NodeType.VALIDATOR) {
       const timeSinceBlock = time - n.lastBlockTime
-      // A 2-second lifecycle for the flash
-      const flashDuration = 2.0
-      const growTime = 0.4 // 0.4s to fully grow
+      const flashDuration = 1.5
+      const growTime = 0.8
 
       if (timeSinceBlock >= 0 && timeSinceBlock < flashDuration) {
         if (timeSinceBlock < growTime) {
@@ -492,7 +491,7 @@ onBeforeRender(({ delta }) => {
 
     // Scale modification for beam hit
     if (beamIntensity > 0)
-      scale *= (1 + beamIntensity * 1.5)
+      scale *= (1 + beamIntensity * 1.0)
 
     // Scale modification for block generation
     if (blockFlash > 0)
@@ -514,6 +513,17 @@ onBeforeRender(({ delta }) => {
     nodesMeshRef.value.setMatrixAt(i, tempMatrix)
 
     // --- Color Logic ---
+    // Check if this node is the origin of an active beam
+    let isBeamOrigin = false
+    if (n.type === NodeType.VALIDATOR && beams.value.length > 0) {
+      for (const beam of beams.value) {
+        if (beam.originIndex === i) {
+          isBeamOrigin = true
+          break
+        }
+      }
+    }
+
     if (blockFlash > 0) {
       // Source of Energy: Intense White
       tempColor.setHex(0xFFFFFF)
@@ -521,6 +531,11 @@ onBeforeRender(({ delta }) => {
       // Base 1.5 + variable 5.5 = max 7.0 (Very bright, triggers bloom halo)
       // This creates the "glow" without physically growing the mesh too much.
       tempColor.multiplyScalar(1.5 + blockFlash * 5.5)
+    }
+    else if (isBeamOrigin) {
+      // Beam origin node - use beam color (orange)
+      tempColor.copy(cBeam)
+      tempColor.multiplyScalar(1.5)
     }
     else if (beamIntensity > 0) {
       // Beam hit - White but softer
@@ -683,7 +698,7 @@ onBeforeRender(({ delta }) => {
         const origin = nodes[beam.originIndex]!.currentPosition
         const d = tempVec3.distanceTo(origin)
         // Make wave wider for the "thick" beam effect
-        const waveWidth = 10.0
+        const waveWidth = 8.0
 
         if (d < waveDist && d > waveDist - waveWidth) {
           // Calculate progress through the wave (0 to 1)
@@ -862,7 +877,7 @@ onBeforeRender(({ delta }) => {
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
-        :opacity="0.15"
+        :opacity="0.2"
         :blending="THREE.AdditiveBlending"
         :depth-write="false"
         :tone-mapped="false"
@@ -874,7 +889,7 @@ onBeforeRender(({ delta }) => {
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
-        :opacity="0.6"
+        :opacity="0.5"
         :blending="THREE.NormalBlending"
         :depth-write="false"
         :tone-mapped="false"
@@ -886,7 +901,7 @@ onBeforeRender(({ delta }) => {
       <TresLineBasicMaterial
         vertex-colors
         transparent
-        :opacity="0.7"
+        :opacity="1"
         :blending="THREE.NormalBlending"
         :depth-write="false"
         :tone-mapped="false"
