@@ -886,8 +886,8 @@ onBeforeRender(({ delta }) => {
       <TresLineBasicMaterial
         vertex-colors
         transparent
-        :opacity="0.3"
-        :blending="THREE.AdditiveBlending"
+        :opacity="0.7"
+        :blending="THREE.NormalBlending"
         :depth-write="false"
         :tone-mapped="false"
       />
