@@ -125,7 +125,7 @@ watch(latestBlock, (newBlock) => {
           <div
             v-for="block in blocks"
             :key="block.id"
-            class="relative flex-shrink-0 w-24 h-32 block-enter"
+            class="relative shrink-0 w-24 h-32 block-enter rounded-xl"
           >
             <!-- Macro Block -->
             <div
@@ -190,7 +190,7 @@ watch(latestBlock, (newBlock) => {
     box-shadow: 0 0 0 0 rgba(255, 96, 0, 0.7);
   }
   50% {
-    box-shadow: 0 0 30px 15px rgba(255, 96, 0, 0.4);
+    box-shadow: 0 0 20px 10px rgba(255, 96, 0, 0.4);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(255, 96, 0, 0);
