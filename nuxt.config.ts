@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@vueuse/nuxt',
     '@tresjs/nuxt',
+    '@nuxthub/core',
   ],
   eslint: {
     config: {

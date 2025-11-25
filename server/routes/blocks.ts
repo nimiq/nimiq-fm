@@ -1,6 +1,6 @@
 import type { Block } from 'nimiq-rpc-client-ts/types'
 import { initRpcClient } from 'nimiq-rpc-client-ts/client'
-import { BlockType } from 'nimiq-rpc-client-ts/types'
+import { BlockTypeEnum } from 'nimiq-rpc-client-ts/types'
 import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
 
 export default defineEventHandler(async (event) => {
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
         number: block.number,
         batch: block.batch,
         epoch: block.epoch,
-        validator: block.type === BlockType.Micro ? block.producer.validator : undefined,
+        validator: block.type === BlockTypeEnum.Micro ? block.producer.validator : undefined,
       }
 
       eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
