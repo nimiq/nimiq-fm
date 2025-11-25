@@ -262,12 +262,25 @@ const hexagonEdgesGeometry = (() => {
   return geometry
 })()
 
+// Pre-allocated objects to avoid garbage collection in render loop
 const tempColor = new THREE.Color()
 const tempMatrix = new THREE.Matrix4()
 const tempStart = new THREE.Vector3()
 const tempEnd = new THREE.Vector3()
 const cLink = new THREE.Color(COLOR_LINK)
 const cBeam = new THREE.Color(BEAM_COLOR)
+
+// Additional pre-allocated objects for render loop optimization
+const tempQuaternion = new THREE.Quaternion()
+const tempEuler = new THREE.Euler()
+const tempVec3 = new THREE.Vector3()
+const tempVec3_2 = new THREE.Vector3()
+const tempScale = new THREE.Vector3()
+const tempRotMatrix = new THREE.Matrix4()
+const wireMatrix = new THREE.Matrix4()
+const glowMatrix = new THREE.Matrix4()
+const midGlowMatrix = new THREE.Matrix4()
+const upVector = new THREE.Vector3(0, 1, 0)
 
 // Initialize Line Buffers
 watchEffect(() => {
@@ -346,8 +359,8 @@ onBeforeRender(({ delta }) => {
     groupRef.value.rotation.z = Math.cos(t) * 0.1
   }
 
-  // 1. Dynamic Rewiring
-  if (Math.random() > 0.2) {
+  // 1. Dynamic Rewiring - throttled to reduce computation
+  if (Math.random() > 0.85) { // Reduced from 0.2 to 0.85 (only 15% of frames)
     const linkIdx = Math.floor(Math.random() * links.length)
     const link = links[linkIdx]
     if (link && !link.isValidatorLink && nodes[link.sourceIndex]!.state === 'ACTIVE' && link.connectionState === 'CONNECTED') {
@@ -421,10 +434,19 @@ onBeforeRender(({ delta }) => {
 
     // --- Beams Logic with Softer Decay ---
     let beamIntensity = 0
-    if (n.opacity > 0.01) {
-      for (const beam of beams.value) {
-        const dist = n.currentPosition.distanceTo(nodes[beam.originIndex]!.currentPosition)
+    // Skip beam calculation for hidden nodes
+    if (n.opacity > 0.01 && n.state !== 'HIDDEN' && beams.value.length > 0) {
+      // Early exit if no active beams
+      const activeBeams = beams.value
+      const beamCount = activeBeams.length
+      for (let b = 0; b < beamCount; b++) {
+        const beam = activeBeams[b]!
         const waveDist = (time - beam.startTime) * BEAM_SPEED
+        // Early skip if beam hasn't reached this distance yet
+        if (waveDist < 0)
+          continue
+
+        const dist = n.currentPosition.distanceTo(nodes[beam.originIndex]!.currentPosition)
         const waveWidth = 8.0
 
         if (dist < waveDist && dist > waveDist - waveWidth) {
@@ -485,7 +507,9 @@ onBeforeRender(({ delta }) => {
 
     // Rotation for "Gem" look
     const rot = (time * 0.5) + (n.id * 1.1)
-    tempMatrix.multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rot, rot, rot)))
+    tempEuler.set(rot, rot, rot)
+    tempRotMatrix.makeRotationFromEuler(tempEuler)
+    tempMatrix.multiply(tempRotMatrix)
 
     nodesMeshRef.value.setMatrixAt(i, tempMatrix)
 
@@ -523,21 +547,19 @@ onBeforeRender(({ delta }) => {
       if (n.type === NodeType.VALIDATOR && scale > 0.01) {
         // Scale wireframe slightly larger to prevent z-fighting
         const wireScale = scale * 1.01
-        const wireMatrix = new THREE.Matrix4()
         wireMatrix.makeScale(wireScale, wireScale, wireScale)
         wireMatrix.setPosition(n.currentPosition)
-        // Apply same rotation
-        const rotW = (time * 0.5) + (n.id * 1.1)
-        wireMatrix.multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rotW, rotW, rotW)))
+        // Apply same rotation (reuse tempEuler already set above)
+        wireMatrix.multiply(tempRotMatrix)
         nodeWireframeMeshRef.value.setMatrixAt(i, wireMatrix)
-        // Use edge color for hexagon outlines
-        const wireColor = new THREE.Color(EDGE_COLOR)
-        nodeWireframeMeshRef.value.setColorAt(i, wireColor)
+        // Use pre-set edge color for hexagon outlines
+        tempColor.setHex(0x00D9FF) // EDGE_COLOR
+        nodeWireframeMeshRef.value.setColorAt(i, tempColor)
       }
       else {
         // Hide wireframe for non-validators
-        const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0)
-        nodeWireframeMeshRef.value.setMatrixAt(i, hideMatrix)
+        wireMatrix.makeScale(0, 0, 0)
+        nodeWireframeMeshRef.value.setMatrixAt(i, wireMatrix)
       }
     }
   }
@@ -556,11 +578,11 @@ onBeforeRender(({ delta }) => {
   for (let i = 0; i < links.length; i++) {
     const link = links[i]!
 
-    // --- Network Instability Simulation ---
+    // --- Network Instability Simulation (throttled) ---
     if (!link.isValidatorLink) {
       if (link.connectionState === 'CONNECTED') {
-        // Random chance to drop connection
-        if (Math.random() < 0.0003) {
+        // Random chance to drop connection (reduced frequency)
+        if (Math.random() < 0.0001) { // Reduced from 0.0003
           link.connectionState = 'DISCONNECTED'
           link.disconnectTimer = 1.0 + Math.random() * 2.0 // 1-3s downtime
           link.reconnectProgress = 0
@@ -581,10 +603,7 @@ onBeforeRender(({ delta }) => {
         }
       }
     }
-    else {
-      // Validators always connected
-      link.reconnectProgress = 1.0
-    }
+    // Skip setting validator reconnect progress if already 1 (avoid unnecessary assignment)
 
     const n1 = nodes[link.sourceIndex]!
     const n2 = nodes[link.targetIndex]!
@@ -646,15 +665,23 @@ onBeforeRender(({ delta }) => {
     // Beam on link
     let beamHit = 0
 
-    // Skip beams for spawning nodes
-    if (n1.state !== 'SPAWNING' && n2.state !== 'SPAWNING') {
-      const mid = new THREE.Vector3(startX + (endX - startX) * 0.5, startY + (endY - startY) * 0.5, startZ + (endZ - startZ) * 0.5)
+    // Skip beams for spawning nodes or if no active beams
+    if (n1.state !== 'SPAWNING' && n2.state !== 'SPAWNING' && beams.value.length > 0) {
+      // Use pre-allocated vector for midpoint
+      tempVec3.set(startX + (endX - startX) * 0.5, startY + (endY - startY) * 0.5, startZ + (endZ - startZ) * 0.5)
 
-      // Calculate standard link color
-      for (const beam of beams.value) {
-        const origin = nodes[beam.originIndex]!.currentPosition
-        const d = mid.distanceTo(origin)
+      // Calculate standard link color - use indexed loop for better performance
+      const activeBeams = beams.value
+      const beamCount = activeBeams.length
+      for (let b = 0; b < beamCount; b++) {
+        const beam = activeBeams[b]!
         const waveDist = (time - beam.startTime) * BEAM_SPEED
+        // Early skip if beam hasn't started
+        if (waveDist < 0)
+          continue
+
+        const origin = nodes[beam.originIndex]!.currentPosition
+        const d = tempVec3.distanceTo(origin)
         // Make wave wider for the "thick" beam effect
         const waveWidth = 10.0
 
@@ -678,20 +705,20 @@ onBeforeRender(({ delta }) => {
 
       const len = tempStart.distanceTo(tempEnd)
 
-      // Align cylinder to link
-      const sub = new THREE.Vector3().subVectors(tempEnd, tempStart)
-      const up = new THREE.Vector3(0, 1, 0)
-      const quaternion = new THREE.Quaternion().setFromUnitVectors(up, sub.normalize())
+      // Align cylinder to link (use pre-allocated objects)
+      tempVec3.subVectors(tempEnd, tempStart).normalize()
+      tempQuaternion.setFromUnitVectors(upVector, tempVec3)
 
       // Scale: Thickness based on beamHit, Length matches link
       // Reduced thickness as requested (0.8 multiplier)
       const thickness = beamHit * 0.8
-      const centerPos = new THREE.Vector3((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2)
+      tempVec3_2.set((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2)
 
       // Core beam
-      tempMatrix.makeRotationFromQuaternion(quaternion)
-      tempMatrix.scale(new THREE.Vector3(thickness, len, thickness))
-      tempMatrix.setPosition(centerPos)
+      tempMatrix.makeRotationFromQuaternion(tempQuaternion)
+      tempScale.set(thickness, len, thickness)
+      tempMatrix.scale(tempScale)
+      tempMatrix.setPosition(tempVec3_2)
 
       if (beamMeshRef.value) {
         beamMeshRef.value.setMatrixAt(i, tempMatrix)
@@ -703,10 +730,10 @@ onBeforeRender(({ delta }) => {
       }
 
       // Middle glow layer (larger, softer)
-      const midGlowMatrix = new THREE.Matrix4()
-      midGlowMatrix.makeRotationFromQuaternion(quaternion)
-      midGlowMatrix.scale(new THREE.Vector3(thickness * 1.8, len, thickness * 1.8))
-      midGlowMatrix.setPosition(centerPos)
+      midGlowMatrix.makeRotationFromQuaternion(tempQuaternion)
+      tempScale.set(thickness * 1.8, len, thickness * 1.8)
+      midGlowMatrix.scale(tempScale)
+      midGlowMatrix.setPosition(tempVec3_2)
 
       if (beamMidGlowMeshRef.value) {
         beamMidGlowMeshRef.value.setMatrixAt(i, midGlowMatrix)
@@ -716,10 +743,10 @@ onBeforeRender(({ delta }) => {
       }
 
       // Outer glow layer (largest, most diffuse)
-      const glowMatrix = new THREE.Matrix4()
-      glowMatrix.makeRotationFromQuaternion(quaternion)
-      glowMatrix.scale(new THREE.Vector3(thickness * 3.0, len, thickness * 3.0))
-      glowMatrix.setPosition(centerPos)
+      glowMatrix.makeRotationFromQuaternion(tempQuaternion)
+      tempScale.set(thickness * 3.0, len, thickness * 3.0)
+      glowMatrix.scale(tempScale)
+      glowMatrix.setPosition(tempVec3_2)
 
       if (beamGlowMeshRef.value) {
         beamGlowMeshRef.value.setMatrixAt(i, glowMatrix)
@@ -819,7 +846,7 @@ onBeforeRender(({ delta }) => {
     <!-- Energy Beams (Thick Links) with blur effect -->
     <!-- Outer glow layer (blur effect) -->
     <TresInstancedMesh ref="beamGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.25, 0.25, 1, 8, 1]" />
+      <TresCylinderGeometry :args="[0.25, 0.25, 1, 4, 1]" />
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
@@ -831,7 +858,7 @@ onBeforeRender(({ delta }) => {
     </TresInstancedMesh>
     <!-- Middle glow layer -->
     <TresInstancedMesh ref="beamMidGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.16, 0.16, 1, 8, 1]" />
+      <TresCylinderGeometry :args="[0.16, 0.16, 1, 4, 1]" />
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent

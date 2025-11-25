@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Environment, OrbitControls, Sparkles, Stars } from '@tresjs/cientos'
 import { TresCanvas } from '@tresjs/core'
-import { BloomPmndrs, EffectComposer, NoisePmndrs, VignettePmndrs } from '@tresjs/post-processing'
+import { BloomPmndrs, EffectComposer, VignettePmndrs } from '@tresjs/post-processing'
 import OrbMesh from './OrbMesh.vue'
 
 defineProps<{
@@ -11,8 +11,8 @@ defineProps<{
 
 <template>
   <TresCanvas
-    :dpr="[1, 2]"
-    :gl="{ antialias: false, alpha: true, toneMappingExposure: 1.0 }"
+    :dpr="[1, 1.5]"
+    :gl="{ antialias: false, alpha: true, toneMappingExposure: 1.0, powerPreference: 'high-performance' }"
     :clear-alpha="0"
   >
     <Suspense>
@@ -36,13 +36,13 @@ defineProps<{
 
           <EffectComposer :enable-normal-pass="false">
             <BloomPmndrs
-              :luminance-threshold="1.1"
+              :luminance-threshold="1.2"
               mipmap-blur
-              :intensity="0.5"
-              :radius="0.3"
+              :intensity="0.4"
+              :radius="0.2"
+              :levels="4"
             />
-            <NoisePmndrs :opacity="0.04" />
-            <VignettePmndrs :eskil="false" :offset="0.1" :darkness="0.6" />
+            <VignettePmndrs :eskil="false" :offset="0.1" :darkness="0.5" />
           </EffectComposer>
 
           <OrbitControls
