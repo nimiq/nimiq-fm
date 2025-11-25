@@ -5,14 +5,10 @@ export interface SongInfo {
   fn: (digits: number[], batch: number, blockNumber: number) => any
 }
 
-export type SongName = 'milky-way' | 'acid' | 'desert-dune' | 'running-away' | 'qimin'
+export type SongName = 'milky-way' | 'acid' | 'desert-dune' | 'running-away' | 'qimin' | 'late-night'
 
 const SONG_LIST: Array<{ name: string, key: SongName }> = [
-  { name: 'Milky Way', key: 'milky-way' },
-  { name: 'Acid', key: 'acid' },
-  { name: 'Desert Dune', key: 'desert-dune' },
-  { name: 'Running Away', key: 'running-away' },
-  { name: 'Qimin', key: 'qimin' },
+  { name: 'Late Night', key: 'late-night' },
 ]
 
 export function getSongCount() {
@@ -62,6 +58,10 @@ export async function loadSong(blockNumber: number, batchesPerSong = 3): Promise
     case 'qimin': {
       const { qimin } = await import('~/utils/songs/qimin')
       return { name: song.name, fn: qimin }
+    }
+    case 'late-night': {
+      const { lateNight } = await import('~/utils/songs/late-night')
+      return { name: song.name, fn: lateNight }
     }
     default:
       throw new Error(`Unknown song: ${song.key}`)
