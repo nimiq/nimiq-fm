@@ -15,10 +15,40 @@ const BLOCK_WIDTH = 112 // 96px + 16px gap
 const TARGET_OFFSET = -BLOCK_WIDTH / 4
 const CHAIN_SPEED_FACTOR = 0.55
 const MAX_BLOCKS = 30 // Enough to fill wide screens
+const FADE_DISTANCE = 50 // Distance from left edge where fade starts
 
 const { latestBlock } = useBlockchain()
 const blocks = ref<DisplayBlock[]>([])
 const firstBlockReceived = ref(false)
+const blockOpacities = ref<number[]>(Array.from({ length: MAX_BLOCKS }, () => 1))
+const blockBlurs = ref<number[]>(Array.from({ length: MAX_BLOCKS }, () => 0))
+const blockElements = ref<HTMLElement[]>([])
+
+function updateBlockOpacities() {
+  if (!blockElements.value.length)
+    return
+
+  for (let i = 0; i < blockElements.value.length; i++) {
+    const el = blockElements.value[i]
+    if (!el)
+      continue
+
+    const rect = el.getBoundingClientRect()
+    const leftEdge = rect.left
+
+    if (leftEdge < FADE_DISTANCE) {
+      // Calculate opacity: 0 at left edge (0), 1 at FADE_DISTANCE
+      const ratio = Math.max(0, leftEdge / FADE_DISTANCE)
+      blockOpacities.value[i] = ratio
+      // Blur increases as opacity decreases (max 8px blur at edge)
+      blockBlurs.value[i] = (1 - ratio) * 8
+    }
+    else {
+      blockOpacities.value[i] = 1
+      blockBlurs.value[i] = 0
+    }
+  }
+}
 
 // Prefill with placeholder blocks
 for (let i = 0; i < MAX_BLOCKS; i++) {
@@ -50,6 +80,8 @@ function startAnimation() {
     if (chainElement.value) {
       chainElement.value.style.transform = `translate3d(${offset}px, 0, 0)`
     }
+
+    updateBlockOpacities()
   }
 
   loop()
@@ -113,8 +145,8 @@ watch(latestBlock, (newBlock) => {
 </script>
 
 <template>
-  <div class="w-full overflow-hidden py-8">
-    <div class="flex items-center justify-end px-8 min-h-32">
+  <div class="w-full overflow-hidden py-10">
+    <div class="flex items-center justify-end px-10 min-h-32">
       <div ref="chainElement" class="flex items-center justify-end" style="will-change: transform">
         <TransitionGroup
           tag="div"
@@ -123,9 +155,11 @@ watch(latestBlock, (newBlock) => {
           enter-active-class="transition-opacity duration-400 ease-in"
         >
           <div
-            v-for="block in blocks"
+            v-for="(block, index) in blocks"
             :key="block.id"
-            class="relative shrink-0 w-24 h-32 block-enter rounded-xl"
+            :ref="(el) => { if (el) blockElements[index] = el as HTMLElement }"
+            class="relative shrink-0 w-24 h-32 block-enter rounded-xl backdrop-blur-xs"
+            :style="{ opacity: blockOpacities[index], filter: `blur(${blockBlurs[index]}px)` }"
           >
             <!-- Macro Block -->
             <div

@@ -140,24 +140,20 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
       </div>
 
       <!-- Blockchain Viewer at Bottom -->
-      <div class="pointer-events-auto z-20 w-full pt-12 pb-4 relative overflow-hidden">
+      <div class="pointer-events-auto z-20 w-full pt-0 pb-4 relative overflow-hidden">
         <!-- Gradient Background -->
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
+        <div class="absolute inset-0 bg-linear-to-t from-slate-900 to-transparent pointer-events-none" />
 
         <!-- Blockchain Content -->
         <div class="relative z-10">
           <BlockchainViewer />
         </div>
-
-        <!-- Left Curtain (Desktop only) - On top -->
-        <div class="hidden lg:block absolute left-0 top-0 bottom-0 w-[calc((100vw-800px)/2)] bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent pointer-events-none z-20" />
+        <UFooter class="relative pointer-events-auto bg-transparent border-t-0">
+          <p class="text-white/50 text-xs">
+            Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Strudel</a>
+          </p>
+        </UFooter>
       </div>
-
-      <UFooter class="pointer-events-auto bg-transparent border-t-0">
-        <p class="text-white/50 text-xs">
-          Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Strudel</a>
-        </p>
-      </UFooter>
     </div>
   </div>
 </template>

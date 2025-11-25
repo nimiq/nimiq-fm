@@ -11,6 +11,7 @@ import {
   BEAM_COLOR,
   BEAM_SPEED,
   COLOR_LINK,
+  EDGE_COLOR,
   NODE_COUNT,
   ORB_RADIUS,
   PEER_LIFETIME_MS,
@@ -30,10 +31,236 @@ watchEffect(() => {
 })
 
 const nodesMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
+const nodeWireframeMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const beamMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
+const beamGlowMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
+const beamMidGlowMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const linesRef = shallowRef<THREE.LineSegments | null>(null)
 const groupRef = shallowRef<THREE.Group | null>(null)
 const beams = ref<Beam[]>([])
+
+// Create Truncated Octahedron geometry (Archimedean solid with 8 hexagons and 6 squares)
+const truncatedOctahedronGeometry = (() => {
+  const r = 0.32
+  const s = r / Math.sqrt(5) // Scale factor for unit truncated octahedron
+
+  // 24 vertices: all permutations of (0, ±1, ±2), (±1, ±2, 0), (±2, 0, ±1)
+  const vertices = [
+    // (0, ±1, ±2)
+    [0, 1, 2],
+    [0, 1, -2],
+    [0, -1, 2],
+    [0, -1, -2],
+    // (0, ±2, ±1)
+    [0, 2, 1],
+    [0, 2, -1],
+    [0, -2, 1],
+    [0, -2, -1],
+    // (±1, 0, ±2)
+    [1, 0, 2],
+    [1, 0, -2],
+    [-1, 0, 2],
+    [-1, 0, -2],
+    // (±2, 0, ±1)
+    [2, 0, 1],
+    [2, 0, -1],
+    [-2, 0, 1],
+    [-2, 0, -1],
+    // (±1, ±2, 0)
+    [1, 2, 0],
+    [1, -2, 0],
+    [-1, 2, 0],
+    [-1, -2, 0],
+    // (±2, ±1, 0)
+    [2, 1, 0],
+    [2, -1, 0],
+    [-2, 1, 0],
+    [-2, -1, 0],
+  ]
+
+  const points = vertices.map(v => new THREE.Vector3(v[0]! * s, v[1]! * s, v[2]! * s))
+
+  // Create convex hull geometry from points
+  // Since we can't import ConvexGeometry easily, we'll create it manually with correct winding
+  const positions: number[] = []
+
+  // Helper to add a triangle with correct winding (CCW when viewed from outside)
+  const addTri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => {
+    // Calculate center of triangle
+    const center = new THREE.Vector3().addVectors(a, b).add(c).divideScalar(3)
+    // Calculate normal
+    const ab = new THREE.Vector3().subVectors(b, a)
+    const ac = new THREE.Vector3().subVectors(c, a)
+    const normal = new THREE.Vector3().crossVectors(ab, ac)
+    // If normal points inward (toward origin), reverse winding
+    if (normal.dot(center) < 0) {
+      positions.push(a.x, a.y, a.z, c.x, c.y, c.z, b.x, b.y, b.z)
+    }
+    else {
+      positions.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z)
+    }
+  }
+
+  // Helper to triangulate a convex polygon (fan triangulation from first vertex)
+  const addFace = (indices: number[]) => {
+    const pts = indices.map(i => points[i]!)
+    for (let i = 1; i < pts.length - 1; i++) {
+      addTri(pts[0]!, pts[i]!, pts[i + 1]!)
+    }
+  }
+
+  // 6 Square faces
+  addFace([12, 20, 13, 21]) // +X
+  addFace([14, 22, 15, 23]) // -X
+  addFace([4, 16, 5, 18]) // +Y (wrong indices, fixing)
+  addFace([6, 17, 7, 19]) // -Y
+  addFace([0, 8, 2, 10]) // +Z
+  addFace([1, 9, 3, 11]) // -Z
+
+  // 8 Hexagonal faces
+  addFace([0, 4, 16, 20, 12, 8]) // corner at +X+Y+Z
+  addFace([0, 10, 14, 22, 18, 4]) // corner at -X+Y+Z
+  addFace([2, 8, 12, 21, 17, 6]) // corner at +X-Y+Z
+  addFace([2, 6, 19, 23, 14, 10]) // corner at -X-Y+Z
+  addFace([1, 5, 16, 20, 13, 9]) // corner at +X+Y-Z
+  addFace([1, 11, 15, 22, 18, 5]) // corner at -X+Y-Z
+  addFace([3, 9, 13, 21, 17, 7]) // corner at +X-Y-Z
+  addFace([3, 7, 19, 23, 15, 11]) // corner at -X-Y-Z
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.computeVertexNormals()
+
+  return geometry
+})()
+
+// Create geometry with only hexagonal edges as thin mesh tubes (no square edges)
+const hexagonEdgesGeometry = (() => {
+  const r = 0.32
+  const s = r / Math.sqrt(5)
+  const edgeRadius = 0.008 // Thin edge thickness
+
+  // Same 24 vertices as the truncated octahedron
+  const vertices = [
+    [0, 1, 2],
+    [0, 1, -2],
+    [0, -1, 2],
+    [0, -1, -2],
+    [0, 2, 1],
+    [0, 2, -1],
+    [0, -2, 1],
+    [0, -2, -1],
+    [1, 0, 2],
+    [1, 0, -2],
+    [-1, 0, 2],
+    [-1, 0, -2],
+    [2, 0, 1],
+    [2, 0, -1],
+    [-2, 0, 1],
+    [-2, 0, -1],
+    [1, 2, 0],
+    [1, -2, 0],
+    [-1, 2, 0],
+    [-1, -2, 0],
+    [2, 1, 0],
+    [2, -1, 0],
+    [-2, 1, 0],
+    [-2, -1, 0],
+  ]
+
+  const points = vertices.map(v => new THREE.Vector3(v[0]! * s, v[1]! * s, v[2]! * s))
+
+  // 8 Hexagonal faces - only their edges
+  const hexFaces = [
+    [0, 4, 16, 20, 12, 8],
+    [0, 10, 14, 22, 18, 4],
+    [2, 8, 12, 21, 17, 6],
+    [2, 6, 19, 23, 14, 10],
+    [1, 5, 16, 20, 13, 9],
+    [1, 11, 15, 22, 18, 5],
+    [3, 9, 13, 21, 17, 7],
+    [3, 7, 19, 23, 15, 11],
+  ]
+
+  // Collect unique edges (avoid duplicates)
+  const edgeSet = new Set<string>()
+  const edges: [THREE.Vector3, THREE.Vector3][] = []
+
+  for (const face of hexFaces) {
+    for (let i = 0; i < face.length; i++) {
+      const i1 = face[i]!
+      const i2 = face[(i + 1) % face.length]!
+      const key = i1 < i2 ? `${i1}-${i2}` : `${i2}-${i1}`
+      if (!edgeSet.has(key)) {
+        edgeSet.add(key)
+        edges.push([points[i1]!, points[i2]!])
+      }
+    }
+  }
+
+  // Create mesh geometry for all edges (triangular prism for each edge)
+  const positions: number[] = []
+  const normals: number[] = []
+
+  for (const [p1, p2] of edges) {
+    // Direction along the edge
+    const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
+
+    // Find perpendicular vectors
+    const up = Math.abs(dir.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)
+    const perp1 = new THREE.Vector3().crossVectors(dir, up).normalize().multiplyScalar(edgeRadius)
+    const perp2 = new THREE.Vector3().crossVectors(dir, perp1).normalize().multiplyScalar(edgeRadius)
+
+    // Create 3 vertices around each endpoint (triangular cross-section)
+    const angle1 = 0
+    const angle2 = (Math.PI * 2) / 3
+    const angle3 = (Math.PI * 4) / 3
+
+    const getOffset = (angle: number) => {
+      return new THREE.Vector3()
+        .addScaledVector(perp1, Math.cos(angle))
+        .addScaledVector(perp2, Math.sin(angle))
+    }
+
+    const o1 = getOffset(angle1)
+    const o2 = getOffset(angle2)
+    const o3 = getOffset(angle3)
+
+    // 6 vertices: 3 at p1, 3 at p2
+    const v1a = new THREE.Vector3().addVectors(p1, o1)
+    const v1b = new THREE.Vector3().addVectors(p1, o2)
+    const v1c = new THREE.Vector3().addVectors(p1, o3)
+    const v2a = new THREE.Vector3().addVectors(p2, o1)
+    const v2b = new THREE.Vector3().addVectors(p2, o2)
+    const v2c = new THREE.Vector3().addVectors(p2, o3)
+
+    // 3 rectangular faces (each split into 2 triangles)
+    // Face 1: v1a, v2a, v2b, v1b
+    positions.push(v1a.x, v1a.y, v1a.z, v2a.x, v2a.y, v2a.z, v2b.x, v2b.y, v2b.z)
+    positions.push(v1a.x, v1a.y, v1a.z, v2b.x, v2b.y, v2b.z, v1b.x, v1b.y, v1b.z)
+    // Face 2: v1b, v2b, v2c, v1c
+    positions.push(v1b.x, v1b.y, v1b.z, v2b.x, v2b.y, v2b.z, v2c.x, v2c.y, v2c.z)
+    positions.push(v1b.x, v1b.y, v1b.z, v2c.x, v2c.y, v2c.z, v1c.x, v1c.y, v1c.z)
+    // Face 3: v1c, v2c, v2a, v1a
+    positions.push(v1c.x, v1c.y, v1c.z, v2c.x, v2c.y, v2c.z, v2a.x, v2a.y, v2a.z)
+    positions.push(v1c.x, v1c.y, v1c.z, v2a.x, v2a.y, v2a.z, v1a.x, v1a.y, v1a.z)
+
+    // Normals (pointing outward from edge center)
+    const n1 = new THREE.Vector3().addVectors(o1, o2).normalize()
+    const n2 = new THREE.Vector3().addVectors(o2, o3).normalize()
+    const n3 = new THREE.Vector3().addVectors(o3, o1).normalize()
+
+    for (let i = 0; i < 6; i++) normals.push(n1.x, n1.y, n1.z)
+    for (let i = 0; i < 6; i++) normals.push(n2.x, n2.y, n2.z)
+    for (let i = 0; i < 6; i++) normals.push(n3.x, n3.y, n3.z)
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+
+  return geometry
+})()
 
 const tempColor = new THREE.Color()
 const tempMatrix = new THREE.Matrix4()
@@ -63,7 +290,7 @@ watch(linesRef, (lines) => {
 const { onBlockEvent } = useBlockchain()
 
 onMounted(() => {
-  onBlockEvent((block) => {
+  onBlockEvent((block: BlockEvent) => {
     const now = Date.now() / 1000
 
     // Select validator based on address hash or random
@@ -110,8 +337,14 @@ onBeforeRender(({ delta }) => {
   const time = currentTime
   const dt = delta * 1000
 
-  if (groupRef.value)
-    groupRef.value.rotation.y += delta * 0.02
+  if (groupRef.value) {
+    // Infinity (lemniscate) slow rotation pattern
+    const t = time * 0.1 // Very slow base speed
+    // Parametric infinity curve mapped to rotation
+    groupRef.value.rotation.y += delta * 0.08
+    groupRef.value.rotation.x = Math.sin(t * 2) * 0.15
+    groupRef.value.rotation.z = Math.cos(t) * 0.1
+  }
 
   // 1. Dynamic Rewiring
   if (Math.random() > 0.2) {
@@ -237,10 +470,9 @@ onBeforeRender(({ delta }) => {
 
     // Scale modification for beam hit
     if (beamIntensity > 0)
-      scale *= (1 + beamIntensity * 0.2)
+      scale *= (1 + beamIntensity * 1.5)
 
     // Scale modification for block generation
-    // "Growing glow that doesn't grow much": limit scale increase to ~35%
     if (blockFlash > 0)
       scale *= (1 + blockFlash * 0.35)
 
@@ -285,11 +517,40 @@ onBeforeRender(({ delta }) => {
     }
 
     nodesMeshRef.value.setColorAt(i, tempColor)
+
+    // Update wireframe mesh for validators
+    if (nodeWireframeMeshRef.value) {
+      if (n.type === NodeType.VALIDATOR && scale > 0.01) {
+        // Scale wireframe slightly larger to prevent z-fighting
+        const wireScale = scale * 1.01
+        const wireMatrix = new THREE.Matrix4()
+        wireMatrix.makeScale(wireScale, wireScale, wireScale)
+        wireMatrix.setPosition(n.currentPosition)
+        // Apply same rotation
+        const rotW = (time * 0.5) + (n.id * 1.1)
+        wireMatrix.multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rotW, rotW, rotW)))
+        nodeWireframeMeshRef.value.setMatrixAt(i, wireMatrix)
+        // Use edge color for hexagon outlines
+        const wireColor = new THREE.Color(EDGE_COLOR)
+        nodeWireframeMeshRef.value.setColorAt(i, wireColor)
+      }
+      else {
+        // Hide wireframe for non-validators
+        const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0)
+        nodeWireframeMeshRef.value.setMatrixAt(i, hideMatrix)
+      }
+    }
   }
 
   nodesMeshRef.value.instanceMatrix.needsUpdate = true
   if (nodesMeshRef.value.instanceColor)
     nodesMeshRef.value.instanceColor.needsUpdate = true
+
+  if (nodeWireframeMeshRef.value) {
+    nodeWireframeMeshRef.value.instanceMatrix.needsUpdate = true
+    if (nodeWireframeMeshRef.value.instanceColor)
+      nodeWireframeMeshRef.value.instanceColor.needsUpdate = true
+  }
 
   // 3. Update Links
   for (let i = 0; i < links.length; i++) {
@@ -338,11 +599,14 @@ onBeforeRender(({ delta }) => {
       linePositions.setXYZ(i * 2, 0, 0, 0)
       linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
 
-      // Hide beam instance if link is hidden
-      if (beamMeshRef.value) {
-        tempMatrix.makeScale(0, 0, 0)
+      // Hide beam instances if link is hidden
+      tempMatrix.makeScale(0, 0, 0)
+      if (beamMeshRef.value)
         beamMeshRef.value.setMatrixAt(i, tempMatrix)
-      }
+      if (beamMidGlowMeshRef.value)
+        beamMidGlowMeshRef.value.setMatrixAt(i, tempMatrix)
+      if (beamGlowMeshRef.value)
+        beamGlowMeshRef.value.setMatrixAt(i, tempMatrix)
       continue
     }
 
@@ -422,10 +686,12 @@ onBeforeRender(({ delta }) => {
       // Scale: Thickness based on beamHit, Length matches link
       // Reduced thickness as requested (0.8 multiplier)
       const thickness = beamHit * 0.8
+      const centerPos = new THREE.Vector3((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2)
 
+      // Core beam
       tempMatrix.makeRotationFromQuaternion(quaternion)
       tempMatrix.scale(new THREE.Vector3(thickness, len, thickness))
-      tempMatrix.setPosition(new THREE.Vector3((startX + endX) / 2, (startY + endY) / 2, (startZ + endZ) / 2))
+      tempMatrix.setPosition(centerPos)
 
       if (beamMeshRef.value) {
         beamMeshRef.value.setMatrixAt(i, tempMatrix)
@@ -435,12 +701,42 @@ onBeforeRender(({ delta }) => {
         tempColor.multiplyScalar(1.2) // Reduced glow intensity
         beamMeshRef.value.setColorAt(i, tempColor)
       }
+
+      // Middle glow layer (larger, softer)
+      const midGlowMatrix = new THREE.Matrix4()
+      midGlowMatrix.makeRotationFromQuaternion(quaternion)
+      midGlowMatrix.scale(new THREE.Vector3(thickness * 1.8, len, thickness * 1.8))
+      midGlowMatrix.setPosition(centerPos)
+
+      if (beamMidGlowMeshRef.value) {
+        beamMidGlowMeshRef.value.setMatrixAt(i, midGlowMatrix)
+        tempColor.copy(cBeam)
+        tempColor.multiplyScalar(0.8)
+        beamMidGlowMeshRef.value.setColorAt(i, tempColor)
+      }
+
+      // Outer glow layer (largest, most diffuse)
+      const glowMatrix = new THREE.Matrix4()
+      glowMatrix.makeRotationFromQuaternion(quaternion)
+      glowMatrix.scale(new THREE.Vector3(thickness * 3.0, len, thickness * 3.0))
+      glowMatrix.setPosition(centerPos)
+
+      if (beamGlowMeshRef.value) {
+        beamGlowMeshRef.value.setMatrixAt(i, glowMatrix)
+        tempColor.copy(cBeam)
+        tempColor.multiplyScalar(0.5)
+        beamGlowMeshRef.value.setColorAt(i, tempColor)
+      }
     }
     else {
       // Hide beam instance
       tempMatrix.makeScale(0, 0, 0)
       if (beamMeshRef.value)
         beamMeshRef.value.setMatrixAt(i, tempMatrix)
+      if (beamMidGlowMeshRef.value)
+        beamMidGlowMeshRef.value.setMatrixAt(i, tempMatrix)
+      if (beamGlowMeshRef.value)
+        beamGlowMeshRef.value.setMatrixAt(i, tempMatrix)
     }
 
     if (beamHit > 0) {
@@ -477,6 +773,18 @@ onBeforeRender(({ delta }) => {
       beamMeshRef.value.instanceColor.needsUpdate = true
   }
 
+  if (beamMidGlowMeshRef.value) {
+    beamMidGlowMeshRef.value.instanceMatrix.needsUpdate = true
+    if (beamMidGlowMeshRef.value.instanceColor)
+      beamMidGlowMeshRef.value.instanceColor.needsUpdate = true
+  }
+
+  if (beamGlowMeshRef.value) {
+    beamGlowMeshRef.value.instanceMatrix.needsUpdate = true
+    if (beamGlowMeshRef.value.instanceColor)
+      beamGlowMeshRef.value.instanceColor.needsUpdate = true
+  }
+
   linePositions.needsUpdate = true
   lineColors.needsUpdate = true
 })
@@ -484,8 +792,7 @@ onBeforeRender(({ delta }) => {
 
 <template>
   <TresGroup ref="groupRef">
-    <TresInstancedMesh ref="nodesMeshRef" :args="[undefined, undefined, NODE_COUNT]">
-      <TresDodecahedronGeometry :args="[0.32, 0]" />
+    <TresInstancedMesh ref="nodesMeshRef" :args="[truncatedOctahedronGeometry, undefined, NODE_COUNT]">
       <TresMeshStandardMaterial
         :tone-mapped="false"
         :roughness="0.2"
@@ -494,17 +801,54 @@ onBeforeRender(({ delta }) => {
         emissive="#ffffff"
         :emissive-intensity="0.4"
         color="#666666"
+        :side="THREE.DoubleSide"
       />
     </TresInstancedMesh>
 
-    <!-- Energy Beams (Thick Links) -->
+    <!-- Hexagon edges overlay for validator nodes -->
+    <TresInstancedMesh ref="nodeWireframeMeshRef" :args="[hexagonEdgesGeometry, undefined, NODE_COUNT]">
+      <TresMeshBasicMaterial
+        :color="EDGE_COLOR"
+        :tone-mapped="false"
+        :transparent="true"
+        :opacity="1.0"
+        :side="THREE.DoubleSide"
+      />
+    </TresInstancedMesh>
+
+    <!-- Energy Beams (Thick Links) with blur effect -->
+    <!-- Outer glow layer (blur effect) -->
+    <TresInstancedMesh ref="beamGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
+      <TresCylinderGeometry :args="[0.25, 0.25, 1, 8, 1]" />
+      <TresMeshBasicMaterial
+        :color="BEAM_COLOR"
+        transparent
+        :opacity="0.15"
+        :blending="THREE.AdditiveBlending"
+        :depth-write="false"
+        :tone-mapped="false"
+      />
+    </TresInstancedMesh>
+    <!-- Middle glow layer -->
+    <TresInstancedMesh ref="beamMidGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
+      <TresCylinderGeometry :args="[0.16, 0.16, 1, 8, 1]" />
+      <TresMeshBasicMaterial
+        :color="BEAM_COLOR"
+        transparent
+        :opacity="0.15"
+        :blending="THREE.AdditiveBlending"
+        :depth-write="false"
+        :tone-mapped="false"
+      />
+    </TresInstancedMesh>
+    <!-- Core beam layer -->
     <TresInstancedMesh ref="beamMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.1, 0.1, 1, 6, 1]" />
+      <TresCylinderGeometry :args="[0.08, 0.08, 1, 6, 1]" />
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
         :opacity="0.6"
-        :blending="THREE.AdditiveBlending"
+        :blending="THREE.NormalBlending"
         :depth-write="false"
         :tone-mapped="false"
       />

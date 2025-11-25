@@ -18,7 +18,7 @@ defineProps<{
     <Suspense>
       <template #default>
         <TresGroup>
-          <TresPerspectiveCamera :position="[0, 0, 90]" :fov="35" make-default />
+          <TresPerspectiveCamera :position="[0, 0, 30]" :fov="60" make-default />
           <!-- High-contrast studio environment -->
           <!-- @vue-ignore -->
           <Environment preset="warehouse" :blur="0.6" :background="false" />

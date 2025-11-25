@@ -32,4 +32,7 @@ export const NODE_PALETTE = [
 // Beam Color - Vibrant Orange
 export const BEAM_COLOR = '#FF6000'
 
+// Edge Color - Cyan for validator hexagon outlines
+export const EDGE_COLOR = '#00D9FF'
+
 export const MOCK_AUDIO_DATA_SIZE = 32

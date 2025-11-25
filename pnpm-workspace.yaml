@@ -1,3 +1,6 @@
+patchedDependencies:
+  nimiq-rpc-client-ts: patches/nimiq-rpc-client-ts.patch
+
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - esbuild
