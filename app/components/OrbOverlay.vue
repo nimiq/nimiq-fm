@@ -22,7 +22,7 @@ defineProps<{
           Current Block
         </div>
         <div class="text-4xl font-['Orbitron'] text-white tabular-nums">
-          #{{ blockHeight.toLocaleString() }}
+          #{{ blockHeight.toLocaleString().replace(/,/g, ' ') }}
         </div>
         <div class="flex items-center justify-end gap-2 mt-2">
           <span class="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_#ffffff]" />
@@ -32,7 +32,7 @@ defineProps<{
     </div>
 
     <!-- Blockchain Viewer -->
-    <div class="w-full bg-gradient-to-t from-[#020617] via-[#020617]/80 to-transparent pt-12 pb-4">
+    <div class="w-full bg-linear-to-t from-[#020617] via-[#020617]/80 to-transparent pt-12 pb-4">
       <BlockchainViewer :current-block-height="blockHeight" />
     </div>
   </div>

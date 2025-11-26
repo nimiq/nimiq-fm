@@ -40,7 +40,7 @@ const nextSongName = computed(() => latestBlock.value ? getNextSongName(latestBl
 const formattedBlockDigits = computed(() => {
   if (currentBlockNumber.value === null)
     return []
-  return currentBlockNumber.value.toLocaleString('en-US').split('')
+  return currentBlockNumber.value.toLocaleString('en-US').replace(/,/g, ' ').split('')
 })
 
 // Track if this is the initial load (no animation on first render)
@@ -98,14 +98,14 @@ function getBatchBlockIndices() {
             <div class="flex justify-center">
               <template v-for="batch in visibleBatches" :key="batch.uniqueKey">
                 <!-- Macro Block -->
-                <div class="batch-item flex-shrink-0 flex items-center">
+                <div class="batch-item shrink-0 flex items-center">
                   <div class="size-6 sm:size-8 rounded bg-[#0582CA] shadow-[0_0_12px_rgba(5,130,202,0.5)] flex items-center justify-center mx-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="sm:w-3.5 sm:h-3.5"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
                 </div>
 
                 <!-- Batch Grid -->
-                <div class="flex-shrink-0 grid grid-rows-4 gap-0.5 p-2" style="grid-template-columns: repeat(15, minmax(0, 1fr));">
+                <div class="shrink-0 grid grid-rows-4 gap-0.5 p-2" style="grid-template-columns: repeat(15, minmax(0, 1fr));">
                   <div
                     v-for="blockIdx in getBatchBlockIndices()"
                     :key="blockIdx"
@@ -122,7 +122,7 @@ function getBatchBlockIndices() {
 
             <!-- Labels Row - slides with blocks -->
             <div class="flex mt-4 text-xs sm:text-sm">
-              <div class="flex-[3] text-white/80">
+              <div class="flex-3 text-white/80">
                 <span class="text-white/50">Playing: </span>{{ currentSongName }}
               </div>
               <div class="flex-1 text-right text-white/50">
@@ -134,10 +134,9 @@ function getBatchBlockIndices() {
 
         <!-- Block counter - slot machine style -->
         <div class="mt-3 text-center">
-          <div class="text-lg sm:text-xl font-mono text-white/80 tabular-nums flex justify-center overflow-hidden h-7">
+          <div class="text-lg sm:text-xl font-mono font-bold text-white/80 tabular-nums flex justify-center overflow-hidden h-7">
             <template v-for="(char, idx) in formattedBlockDigits" :key="idx">
-              <span v-if="char === ','" class="text-white/40">,</span>
-              <div v-else class="relative w-[0.6em] h-7 overflow-hidden">
+              <div class="relative w-[0.6em] h-7 overflow-hidden">
                 <AnimatePresence :initial="false" mode="popLayout">
                   <Motion
                     :key="`${idx}-${char}`"
