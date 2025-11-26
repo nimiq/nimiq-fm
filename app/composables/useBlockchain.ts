@@ -65,11 +65,11 @@ function _useBlockchain() {
   })
 
   async function getValidators() {
-    const { data } = await useFetch<{ count: number, validators: { address: string }[] }>('/api/validator-count')
-    const validators = data.value?.validators ?? []
+    const data = await $fetch<{ count: number, validators: { address: string }[] }>('/api/validator-count')
+    const validators = data?.validators ?? []
     const addresses = validators.map(v => v.address)
     return {
-      count: data.value?.count ?? 40,
+      count: data?.count ?? 40,
       addresses,
     }
   }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { AnimatePresence, Motion } from 'motion-v'
 
-const { sortedByStake, topValidators, totalStake, status } = useValidators()
+const { sortedBySlots, topValidators, status } = useValidators()
 const { latestBlock } = useBlockchain()
 
 const isExpanded = ref(false)
-const isLoaded = computed(() => status.value === 'success' && sortedByStake.value.length > 0)
+const isLoaded = computed(() => status.value === 'success' && sortedBySlots.value.length > 0)
 const gridRef = ref<HTMLElement | null>(null)
 
 // Track active validators with unique keys for animation restart
@@ -27,13 +27,6 @@ watch(latestBlock, (block) => {
 
 function getAnimationKey(address: string) {
   return activeValidators.value.get(address) || 0
-}
-
-function formatStakePercent(balance: string) {
-  if (!totalStake.value)
-    return '0%'
-  const percent = (Number(balance) / totalStake.value) * 100
-  return `${percent.toFixed(1)}%`
 }
 
 function toggleExpand() {
@@ -59,7 +52,7 @@ function toggleExpand() {
         <!-- Collapsed: clickable row of top 8 logos -->
         <button class="w-full p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-white/5 transition-colors" @click="toggleExpand">
           <div class="flex items-center gap-2">
-            <UTooltip v-for="v in topValidators" :key="v.address" :text="`${v.name} · ${formatStakePercent(v.balance)}`">
+            <UTooltip v-for="v in topValidators" :key="v.address" :text="`${v.name} · ${v.numSlots} slots`">
               <img :key="getAnimationKey(v.address)" :src="v.logo" :alt="v.name" class="size-8" :class="{ 'validator-glow': activeValidators.has(v.address) }">
             </UTooltip>
           </div>
@@ -77,9 +70,9 @@ function toggleExpand() {
             class="overflow-hidden"
           >
             <div ref="gridRef" class="border-t border-white/10 p-4 sm:p-6">
-              <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">
+              <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-10">
                 <Motion
-                  v-for="(v, index) in sortedByStake"
+                  v-for="(v, index) in sortedBySlots"
                   :key="v.address"
                   :initial="{ opacity: 0, y: 20, scale: 0.9 }"
                   :animate="{ opacity: 1, y: 0, scale: 1 }"
@@ -87,10 +80,11 @@ function toggleExpand() {
                   class="flex flex-col items-center gap-2"
                 >
                   <img :key="getAnimationKey(v.address)" :src="v.logo" :alt="v.name" class="size-10 sm:size-12" :class="{ 'validator-glow': activeValidators.has(v.address) }">
-                  <div class="text-center">
-                    <div class="text-xs truncate max-w-16 sm:max-w-20" :class="activeValidators.has(v.address) ? 'text-orange-400' : 'text-white/70'">
+                  <div class="text-center text-xs max-w-20 sm:max-w-26" :class="activeValidators.has(v.address) ? 'text-orange-400' : 'text-white/70'">
+                    <div v-if="v.name" class="truncate">
                       {{ v.name }}
                     </div>
+                    <ShortAddress v-else :address="v.address" />
                   </div>
                 </Motion>
               </div>

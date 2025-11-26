@@ -1,33 +1,54 @@
-import { defineEventHandler } from 'h3'
+import { NimiqRPCClient } from '@albermonte/nimiq-rpc-client-ts'
 
-export default defineEventHandler(async () => {
+interface ValidatorFromApi {
+  id: number
+  name: string
+  address: string
+  logo: string
+  balance: string
+  dominanceRatio: number
+}
+
+export default defineCachedEventHandler(async () => {
   const config = useRuntimeConfig()
   const nodeRpcUrl = config.nimiqRpcUrl
 
-  const response = await fetch(nodeRpcUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'getActiveValidators',
-      params: [],
-      id: 1,
-    }),
-  })
+  const client = new NimiqRPCClient(new URL(nodeRpcUrl))
 
-  const data = await response.json()
-
-  if (data.error) {
-    throw new Error(data.error.message)
+  const { data: currentBlockNumber, error: getBlockError } = await client.blockchain.getBlockNumber()
+  if (!currentBlockNumber) {
+    throw new Error(getBlockError?.message || 'Failed to get block number')
   }
 
-  const validators = data.result.data
-  const validatorCount = Array.isArray(validators) ? validators.length : 0
+  const { data: electionBlockNumber, error: electionError } = await client.policy.getLastElectionBlock(currentBlockNumber)
+  if (!electionBlockNumber) {
+    throw new Error(electionError?.message || 'Failed to get last election block number')
+  }
+
+  const [{ data: electionBlock, error: blockError }, validatorsFromApi] = await Promise.all([
+    client.blockchain.getBlockByNumber(electionBlockNumber, { includeBody: true }),
+    $fetch<ValidatorFromApi[]>('https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false'),
+  ])
+
+  if (!electionBlock || !electionBlock.isElectionBlock) {
+    throw new Error(`Failed to retrieve validators from election block. Error: ${blockError?.message}`)
+  }
+
+  console.log(`Fetching validators from election block #${electionBlockNumber}`, electionBlock)
+  const validators = electionBlock.slots.map(slot => ({ address: slot.validator, numSlots: slot.numSlots }))
 
   return {
-    count: validatorCount,
-    validators,
+    count: Array.isArray(validators) ? validators.length : 0,
+    validators: validators?.map((validator) => {
+      const apiValidator = validatorsFromApi.find(v => v.address === validator.address)
+      return {
+        ...validator,
+        name: apiValidator?.name !== 'Unknown validator' ? apiValidator?.name : undefined,
+        logo: apiValidator?.logo,
+      }
+    }) || [],
   }
+}, {
+  maxAge: 60, // Cache for 60 seconds
+  staleMaxAge: 120, // Serve stale content for up to 120 seconds while revalidating
 })
