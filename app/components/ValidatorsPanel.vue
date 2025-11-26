@@ -8,25 +8,36 @@ const isExpanded = ref(false)
 const isLoaded = computed(() => status.value === 'success' && sortedBySlots.value.length > 0)
 const gridRef = ref<HTMLElement | null>(null)
 
-// Track active validators with unique keys for animation restart
-const activeValidators = ref<Map<string, number>>(new Map())
+// Track active validators - use Map for proper reactivity
+const activeValidators = ref(new Map<string, 'glow' | 'fading'>())
 
 // Watch for new blocks and trigger glow effect
 watch(latestBlock, (block) => {
   if (block?.validatorAddress) {
     const address = block.validatorAddress
-    const key = Date.now()
-    activeValidators.value.set(address, key)
+
+    // Set to glow state immediately
+    activeValidators.value.set(address, 'glow')
+    activeValidators.value = new Map(activeValidators.value) // trigger reactivity
+
+    // After 300ms, start fading
     setTimeout(() => {
-      if (activeValidators.value.get(address) === key) {
-        activeValidators.value.delete(address)
+      if (activeValidators.value.get(address) === 'glow') {
+        activeValidators.value.set(address, 'fading')
+        activeValidators.value = new Map(activeValidators.value)
       }
-    }, 2000)
+    }, 300)
+
+    // After fade completes, remove
+    setTimeout(() => {
+      activeValidators.value.delete(address)
+      activeValidators.value = new Map(activeValidators.value)
+    }, 1300)
   }
 })
 
-function getAnimationKey(address: string) {
-  return activeValidators.value.get(address) || 0
+function getValidatorState(address: string) {
+  return activeValidators.value.get(address)
 }
 
 function toggleExpand() {
@@ -53,7 +64,7 @@ function toggleExpand() {
         <button class="w-full p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-white/5 transition-colors" @click="toggleExpand">
           <div class="flex items-center gap-2">
             <UTooltip v-for="v in topValidators" :key="v.address" :text="`${v.name} · ${v.numSlots} slots`">
-              <img :key="getAnimationKey(v.address)" :src="v.logo" :alt="v.name" class="size-8" :class="{ 'validator-glow': activeValidators.has(v.address) }">
+              <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
             </UTooltip>
           </div>
           <UIcon name="i-heroicons-chevron-down-20-solid" class="size-5 text-white/50 transition-transform duration-300" :class="{ 'rotate-180': isExpanded }" />
@@ -70,7 +81,7 @@ function toggleExpand() {
             class="overflow-hidden"
           >
             <div ref="gridRef" class="border-t border-white/10 p-4 sm:p-6">
-              <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-10">
+              <div class="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-4 xs:gap-6 sm:gap-8 md:gap-10 justify-items-center">
                 <Motion
                   v-for="(v, index) in sortedBySlots"
                   :key="v.address"
@@ -79,8 +90,8 @@ function toggleExpand() {
                   :transition="{ duration: 0.3, delay: index * 0.02, ease: 'easeOut' }"
                   class="flex flex-col items-center gap-2"
                 >
-                  <img :key="getAnimationKey(v.address)" :src="v.logo" :alt="v.name" class="size-10 sm:size-12" :class="{ 'validator-glow': activeValidators.has(v.address) }">
-                  <div class="text-center text-xs max-w-20 sm:max-w-26" :class="activeValidators.has(v.address) ? 'text-orange-400' : 'text-white/70'">
+                  <img :src="v.logo" :alt="v.name" class="size-10 sm:size-12 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
+                  <div class="text-center text-xs max-w-20 sm:max-w-26 validator-text" :class="{ 'validator-text-glow': getValidatorState(v.address) === 'glow', 'validator-text-fading': getValidatorState(v.address) === 'fading' }">
                     <div v-if="v.name" class="truncate">
                       {{ v.name }}
                     </div>
@@ -97,12 +108,32 @@ function toggleExpand() {
 </template>
 
 <style scoped>
-@keyframes validator-glow {
-  0% { filter: drop-shadow(0 0 12px rgba(255, 96, 0, 1)) drop-shadow(0 0 24px rgba(255, 96, 0, 0.8)); }
-  100% { filter: drop-shadow(0 0 2px rgba(255, 96, 0, 0.2)); }
+.validator-img {
+  filter: grayscale(60%);
+  opacity: 0.6;
 }
 
-.validator-glow {
-  animation: validator-glow 2s ease-out forwards;
+.validator-img.validator-glow {
+  filter: grayscale(0%) drop-shadow(0 0 12px rgba(255, 96, 0, 1)) drop-shadow(0 0 24px rgba(255, 96, 0, 0.6));
+  opacity: 1;
+}
+
+.validator-img.validator-fading {
+  filter: grayscale(60%);
+  opacity: 0.6;
+  transition: filter 1s ease-out, opacity 1s ease-out;
+}
+
+.validator-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.validator-text.validator-text-glow {
+  color: rgb(251, 146, 60);
+}
+
+.validator-text.validator-text-fading {
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 1s ease-out;
 }
 </style>

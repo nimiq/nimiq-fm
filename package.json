@@ -19,6 +19,7 @@
     "@nuxt/hints": "1.0.0-alpha.1",
     "@nuxt/ui": "4.1.0",
     "@nuxthub/core": "0.9.0",
+    "@nuxtjs/device": "^3.2.4",
     "@strudel/core": "^1.1.0",
     "@strudel/web": "^1.2.6",
     "@strudel/webaudio": "^1.1.0",

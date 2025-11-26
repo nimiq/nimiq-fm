@@ -109,10 +109,10 @@ function getBatchBlockIndices() {
                   <div
                     v-for="blockIdx in getBatchBlockIndices()"
                     :key="blockIdx"
-                    class="size-1.5 sm:size-2 rounded-sm transition-all duration-300"
+                    class="size-1.5 sm:size-2 rounded-sm transition-all duration-1000"
                     :class="{
                       'bg-slate-700/40': getBlockState(batch.relativeIndex, blockIdx) === 'unplayed',
-                      'bg-slate-400': getBlockState(batch.relativeIndex, blockIdx) === 'played',
+                      'bg-slate-400/60': getBlockState(batch.relativeIndex, blockIdx) === 'played',
                       'bg-orange-500 current-block-glow': getBlockState(batch.relativeIndex, blockIdx) === 'current',
                     }"
                   />
@@ -164,7 +164,12 @@ function getBatchBlockIndices() {
   100% { box-shadow: 0 0 2px 1px rgba(255, 96, 0, 0.3); }
 }
 
+@keyframes fade-to-played {
+  0% { background-color: rgb(249 115 22); } /* orange-500 */
+  100% { background-color: rgba(148, 163, 184, 0.6); } /* slate-400 */
+}
+
 .current-block-glow {
-  animation: current-glow 1s ease-out forwards;
+  animation: current-glow 1s ease-out forwards, fade-to-played 1s ease-out forwards;
 }
 </style>

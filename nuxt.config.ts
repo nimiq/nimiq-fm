@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@tresjs/nuxt',
     '@nuxthub/core',
+    '@nuxtjs/device',
   ],
   eslint: {
     config: {

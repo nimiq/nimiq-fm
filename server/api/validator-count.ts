@@ -34,7 +34,6 @@ export default defineCachedEventHandler(async () => {
     throw new Error(`Failed to retrieve validators from election block. Error: ${blockError?.message}`)
   }
 
-  console.log(`Fetching validators from election block #${electionBlockNumber}`, electionBlock)
   const validators = electionBlock.slots.map(slot => ({ address: slot.validator, numSlots: slot.numSlots }))
 
   return {

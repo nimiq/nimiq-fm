@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { config, metrics, reset, resetGroup, regenerateGraph } = useOrbConfig()
-const isOpen = ref(true)
+const isOpen = ref(false)
 const showResetAlert = ref(false)
 
 async function copyConfigAsJson() {
