@@ -38,7 +38,8 @@ const nextSongName = computed(() => latestBlock.value ? getNextSongName(latestBl
 
 // Format block number as array of characters for slot machine effect
 const formattedBlockDigits = computed(() => {
-  if (currentBlockNumber.value === null) return []
+  if (currentBlockNumber.value === null)
+    return []
   return currentBlockNumber.value.toLocaleString('en-US').split('')
 })
 
@@ -47,18 +48,24 @@ const hasInitialized = ref(false)
 watch(currentBlockNumber, () => {
   if (!hasInitialized.value && currentBlockNumber.value !== null) {
     // Small delay to mark as initialized after first render
-    nextTick(() => { hasInitialized.value = true })
+    nextTick(() => {
+      hasInitialized.value = true
+    })
   }
 })
 
 function getBlockState(batchRelativeIndex: number, blockIndexInBatch: number): 'unplayed' | 'played' | 'current' {
-  if (currentBlockNumber.value === null) return 'unplayed'
-  if (batchRelativeIndex >= BATCHES_PER_SONG) return 'unplayed'
-  
+  if (currentBlockNumber.value === null)
+    return 'unplayed'
+  if (batchRelativeIndex >= BATCHES_PER_SONG)
+    return 'unplayed'
+
   const blockPositionInSong = batchRelativeIndex * BLOCKS_PER_BATCH + blockIndexInBatch
-  
-  if (blockPositionInSong === blocksElapsedInSong.value) return 'current'
-  if (blockPositionInSong < blocksElapsedInSong.value) return 'played'
+
+  if (blockPositionInSong === blocksElapsedInSong.value)
+    return 'current'
+  if (blockPositionInSong < blocksElapsedInSong.value)
+    return 'played'
   return 'unplayed'
 }
 
@@ -124,7 +131,7 @@ function getBatchBlockIndices() {
             </div>
           </Motion>
         </AnimatePresence>
-        
+
         <!-- Block counter - slot machine style -->
         <div class="mt-3 text-center">
           <div class="text-lg sm:text-xl font-mono text-white/80 tabular-nums flex justify-center overflow-hidden h-7">

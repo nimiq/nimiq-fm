@@ -6,31 +6,32 @@ import { onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { useBlockchain } from '~/composables/useBlockchain'
 import { NodeType } from '~/types/orb'
 import { generateGraph } from '~/utils/generate-graph'
+import { VALIDATOR_COUNT } from '~/utils/orb-constants'
 
-import {
-  BEAM_COLOR,
-  BEAM_SPEED,
-  COLOR_LINK,
-  NODE_COUNT,
-  ORB_RADIUS,
-  PEER_LIFETIME_MS,
-  PEER_TRANSITION_MS,
-  VALIDATOR_COUNT,
-  VALIDATOR_ROTATION_SPEED,
-} from '~/utils/orb-constants'
+defineProps<{ audioData: number }>()
 
-defineProps<{
-  audioData: number
-}>()
+const { config, updateMetrics, graphVersion, beamSpeed } = useOrbConfig()
+
+// FPS tracking
+let lastFpsUpdate = 0
+let frameCount = 0
+let currentFps = 0
 
 // Helper to get current validator count
 const getValidatorCount = () => VALIDATOR_COUNT.value
 
-// Generate Graph (only once, not reactively - so lastBlockTime persists)
+// Generate Graph
 const graphData = shallowRef<{ nodes: NodeData[], links: LinkData[] } | null>(null)
 if (import.meta.client) {
   graphData.value = generateGraph()
 }
+
+// Regenerate graph when graphVersion changes (triggered by debug panel)
+watch(graphVersion, () => {
+  if (import.meta.client) {
+    graphData.value = generateGraph()
+  }
+})
 
 const nodesMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const nodeHaloMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
@@ -74,7 +75,7 @@ const bumpySphereGeometry = (() => {
 // Halo Sphere Geometry (larger, lower poly for performance)
 const haloSphereGeometry = new THREE.SphereGeometry(0.3, 16, 12)
 
-// Number of segments per curved link (more = smoother curve)
+// Number of segments per curved link (constant - changing requires buffer rebuild)
 const CURVE_SEGMENTS = 4
 
 // Pre-allocated objects to avoid garbage collection in render loop
@@ -82,8 +83,8 @@ const tempColor = new THREE.Color()
 const tempMatrix = new THREE.Matrix4()
 const tempStart = new THREE.Vector3()
 const tempEnd = new THREE.Vector3()
-const cLink = new THREE.Color(COLOR_LINK)
-const cBeam = new THREE.Color(BEAM_COLOR)
+const cLink = new THREE.Color()
+const cBeam = new THREE.Color()
 
 // Additional pre-allocated objects for render loop optimization
 const tempQuaternion = new THREE.Quaternion()
@@ -152,7 +153,7 @@ onMounted(() => {
       id: Math.random().toString(36).slice(2),
       originIndex: validatorIdx,
       startTime: now,
-      maxDistance: ORB_RADIUS * 2.2,
+      maxDistance: config.value.orbRadius * config.value.beamMaxDistanceMultiplier,
     }
     beams.value = [...beams.value, newBeam]
   })
@@ -164,7 +165,11 @@ const { onBeforeRender } = useLoop()
 onBeforeRender(({ delta }) => {
   // Cleanup beams
   const currentTime = Date.now() / 1000
-  beams.value = beams.value.filter(b => (currentTime - b.startTime) * BEAM_SPEED < b.maxDistance + 5)
+  beams.value = beams.value.filter(b => (currentTime - b.startTime) * beamSpeed.value < b.maxDistance + 5)
+
+  // Update colors from config
+  cLink.set(config.value.colorLink)
+  cBeam.set(config.value.beamColor)
 
   if (!graphData.value || !nodesMeshRef.value || !linesRef.value)
     return
@@ -180,11 +185,10 @@ onBeforeRender(({ delta }) => {
 
   if (groupRef.value) {
     // Infinity (lemniscate) slow rotation pattern
-    const t = time * 0.1 // Very slow base speed
-    // Parametric infinity curve mapped to rotation
-    groupRef.value.rotation.y += delta * 0.025
-    groupRef.value.rotation.x = Math.sin(t * 2) * 0.05
-    groupRef.value.rotation.z = Math.cos(t) * 0.025
+    const t = time * 0.1
+    groupRef.value.rotation.y += delta * config.value.groupRotationSpeed
+    groupRef.value.rotation.x = Math.sin(t * 2) * config.value.groupRotationXAmplitude
+    groupRef.value.rotation.z = Math.cos(t) * config.value.groupRotationZAmplitude
   }
 
   // 1. Dynamic Rewiring - throttled to reduce computation
@@ -192,10 +196,10 @@ onBeforeRender(({ delta }) => {
     const linkIdx = Math.floor(Math.random() * links.length)
     const link = links[linkIdx]
     if (link && !link.isValidatorLink && nodes[link.sourceIndex]!.state === 'ACTIVE' && link.connectionState === 'CONNECTED') {
-      const candidateId = getValidatorCount() + Math.floor(Math.random() * (NODE_COUNT - getValidatorCount()))
+      const candidateId = getValidatorCount() + Math.floor(Math.random() * (config.value.nodeCount - getValidatorCount()))
       if (candidateId !== link.sourceIndex && candidateId !== link.targetIndex) {
         const dist = nodes[link.sourceIndex]!.currentPosition.distanceTo(nodes[candidateId]!.currentPosition)
-        if (dist < 6.0)
+        if (dist < config.value.linkRewireDistance)
           link.targetIndex = candidateId
       }
     }
@@ -206,12 +210,13 @@ onBeforeRender(({ delta }) => {
     const n = nodes[i]!
 
     // --- Motion ---
-    const noiseX = Math.sin(time * 0.5 + n.id) * 0.05
-    const noiseY = Math.cos(time * 0.3 + n.id) * 0.05
-    const noiseZ = Math.sin(time * 0.4 + n.id) * 0.05
+    const noiseAmp = config.value.nodeNoiseAmplitude
+    const noiseX = Math.sin(time * 0.5 + n.id) * noiseAmp
+    const noiseY = Math.cos(time * 0.3 + n.id) * noiseAmp
+    const noiseZ = Math.sin(time * 0.4 + n.id) * noiseAmp
 
     if (n.type === NodeType.VALIDATOR) {
-      n.theta += VALIDATOR_ROTATION_SPEED * delta
+      n.theta += config.value.validatorRotationSpeed * delta
       const x = n.radius * Math.sin(n.phi) * Math.cos(n.theta)
       const y = n.radius * Math.sin(n.phi) * Math.sin(n.theta)
       const z = n.radius * Math.cos(n.phi)
@@ -228,28 +233,28 @@ onBeforeRender(({ delta }) => {
         n.opacity = 1
         if (n.timer <= 0) {
           n.state = 'DYING'
-          n.timer = PEER_TRANSITION_MS
+          n.timer = config.value.peerTransitionMs
         }
       }
       else if (n.state === 'HIDDEN') {
         if (n.timer <= 0) {
           n.state = 'SPAWNING'
-          n.timer = PEER_TRANSITION_MS
-          n.startPosition.copy(n.targetPosition).normalize().multiplyScalar(ORB_RADIUS * 1.6)
+          n.timer = config.value.peerTransitionMs
+          n.startPosition.copy(n.targetPosition).normalize().multiplyScalar(config.value.orbRadius * 1.6)
           n.currentPosition.copy(n.startPosition)
         }
       }
       else if (n.state === 'SPAWNING') {
-        const p = 1 - (n.timer / PEER_TRANSITION_MS)
+        const p = 1 - (n.timer / config.value.peerTransitionMs)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
         if (n.timer <= 0) {
           n.state = 'ACTIVE'
-          n.timer = PEER_LIFETIME_MS + Math.random() * 5000
+          n.timer = config.value.peerLifetimeMs + Math.random() * 5000
         }
       }
       else if (n.state === 'DYING') {
-        const p = n.timer / PEER_TRANSITION_MS
+        const p = n.timer / config.value.peerTransitionMs
         // Move back to start position (outwards)
         n.currentPosition.lerpVectors(n.startPosition, n.targetPosition, 1 - (1 - p) ** 3)
         n.opacity = p
@@ -269,23 +274,19 @@ onBeforeRender(({ delta }) => {
       const beamCount = activeBeams.length
       for (let b = 0; b < beamCount; b++) {
         const beam = activeBeams[b]!
-        const waveDist = (time - beam.startTime) * BEAM_SPEED
+        const waveDist = (time - beam.startTime) * beamSpeed.value
         // Early skip if beam hasn't reached this distance yet
         if (waveDist < 0)
           continue
 
         const dist = n.currentPosition.distanceTo(nodes[beam.originIndex]!.currentPosition)
-        const waveWidth = 8.0
+        const waveWidth = config.value.beamWaveWidth
 
         if (dist < waveDist && dist > waveDist - waveWidth) {
           const p = 1 - (waveDist - dist) / waveWidth
-
-          // DECAY: Smoother fade.
           const ratio = dist / beam.maxDistance
           const decay = Math.max(0, 1 - ratio)
-
-          // Reduce overall intensity (0.6 multiplier) so it's less dominant
-          beamIntensity = Math.max(beamIntensity, p ** 2 * decay * 0.6)
+          beamIntensity = Math.max(beamIntensity, p ** 2 * decay * config.value.beamIntensityMultiplier)
         }
       }
     }
@@ -295,17 +296,15 @@ onBeforeRender(({ delta }) => {
 
     if (n.type === NodeType.VALIDATOR) {
       const timeSinceBlock = time - n.lastBlockTime
-      const flashDuration = 1.5
-      const growTime = 0.8
+      const flashDuration = config.value.flashDuration
+      const growTime = config.value.flashGrowTime
 
       if (timeSinceBlock >= 0 && timeSinceBlock < flashDuration) {
         if (timeSinceBlock < growTime) {
-          // Growth Phase: Smooth sine easing for a natural "swell"
           const t = timeSinceBlock / growTime
           blockFlash = Math.sin(t * Math.PI * 0.5)
         }
         else {
-          // Decay Phase: Linear fade out
           const t = (timeSinceBlock - growTime) / (flashDuration - growTime)
           blockFlash = 1 - t
         }
@@ -313,17 +312,17 @@ onBeforeRender(({ delta }) => {
     }
 
     // --- Matrix & Scale ---
-    let scale = 0.25
+    let scale = config.value.peerNodeScale
     if (n.type === NodeType.VALIDATOR)
-      scale = 0.9 // Validators larger
+      scale = config.value.validatorNodeScale
 
     // Scale modification for beam hit
     if (beamIntensity > 0)
-      scale *= (1 + beamIntensity * 1.0)
+      scale *= (1 + beamIntensity * config.value.beamScaleMultiplier)
 
     // Scale modification for block generation
     if (blockFlash > 0)
-      scale *= (1 + blockFlash * 0.35)
+      scale *= (1 + blockFlash * config.value.flashScaleMultiplier)
 
     scale *= n.opacity
     if (scale < 0.01)
@@ -342,7 +341,7 @@ onBeforeRender(({ delta }) => {
 
     // --- Update Halo to match node ---
     if (nodeHaloMeshRef.value && scale > 0.01) {
-      const haloScale = scale * 2.5 // Larger than node
+      const haloScale = scale * config.value.nodeHaloScale
       const haloMatrix = new THREE.Matrix4()
       haloMatrix.makeScale(haloScale, haloScale, haloScale)
       haloMatrix.setPosition(n.currentPosition)
@@ -522,7 +521,7 @@ onBeforeRender(({ delta }) => {
     // Control point: push midpoint outward to create arch
     curveControl.copy(curveMid).normalize()
     const linkDist = curveStart.distanceTo(curveEnd)
-    const archHeight = linkDist * 0.18 // 18% arch
+    const archHeight = linkDist * config.value.linkArchHeight
     curveControl.multiplyScalar(archHeight).add(curveMid)
 
     // Generate CURVE_SEGMENTS curved segments using quadratic bezier
@@ -568,15 +567,14 @@ onBeforeRender(({ delta }) => {
       const beamCount = activeBeams.length
       for (let b = 0; b < beamCount; b++) {
         const beam = activeBeams[b]!
-        const waveDist = (time - beam.startTime) * BEAM_SPEED
+        const waveDist = (time - beam.startTime) * beamSpeed.value
         // Early skip if beam hasn't started
         if (waveDist < 0)
           continue
 
         const origin = nodes[beam.originIndex]!.currentPosition
         const d = tempVec3.distanceTo(origin)
-        // Make wave wider for the "thick" beam effect
-        const waveWidth = 8.0
+        const waveWidth = config.value.beamWaveWidth
 
         if (d < waveDist && d > waveDist - waveWidth) {
           // Calculate progress through the wave (0 to 1)
@@ -708,47 +706,47 @@ onBeforeRender(({ delta }) => {
 
   linePositions.needsUpdate = true
   lineColors.needsUpdate = true
+
+  // Update metrics (throttled to ~10Hz)
+  frameCount++
+  if (time - lastFpsUpdate >= 0.1) {
+    currentFps = frameCount / (time - lastFpsUpdate)
+    lastFpsUpdate = time
+    frameCount = 0
+
+    // Count active nodes and connected links
+    let activeNodes = 0
+    let connectedLinks = 0
+    for (const n of nodes) {
+      if (n.opacity > 0.1)
+        activeNodes++
+    }
+    for (const l of links) {
+      if (l.connectionState === 'CONNECTED')
+        connectedLinks++
+    }
+
+    updateMetrics({ fps: currentFps, activeBeams: beams.value.length, activeNodes, connectedLinks })
+  }
 })
 </script>
 
 <template>
   <TresGroup ref="groupRef">
     <!-- Node Halos (Glow Effect) -->
-    <TresInstancedMesh ref="nodeHaloMeshRef" :args="[haloSphereGeometry, undefined, NODE_COUNT]">
-      <TresMeshBasicMaterial
-        :tone-mapped="false"
-        transparent
-        :opacity="0.25"
-        :blending="THREE.AdditiveBlending"
-        :depth-write="false"
-        color="#0095FF"
-      />
+    <TresInstancedMesh ref="nodeHaloMeshRef" :args="[haloSphereGeometry, undefined, config.nodeCount]">
+      <TresMeshBasicMaterial :tone-mapped="false" transparent :opacity="0.25" :blending="THREE.AdditiveBlending" :depth-write="false" color="#0095FF" />
     </TresInstancedMesh>
 
     <!-- Existing nodes mesh -->
-    <TresInstancedMesh ref="nodesMeshRef" :args="[bumpySphereGeometry, undefined, NODE_COUNT]">
-      <TresMeshStandardMaterial
-        :tone-mapped="false"
-        :roughness="0.05"
-        :metalness="0.5"
-        emissive="#0095FF"
-        :emissive-intensity="1.2"
-        color="#e0f0ff"
-        :side="THREE.FrontSide"
-      />
+    <TresInstancedMesh ref="nodesMeshRef" :args="[bumpySphereGeometry, undefined, config.nodeCount]">
+      <TresMeshStandardMaterial :tone-mapped="false" :roughness="0.05" :metalness="0.5" emissive="#0095FF" :emissive-intensity="1.2" color="#e0f0ff" :side="THREE.FrontSide" />
     </TresInstancedMesh>
 
     <!-- Middle glow layer -->
     <TresInstancedMesh ref="beamMidGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
       <TresCylinderGeometry :args="[0.32, 0.32, 1, 12, 1]" />
-      <TresMeshBasicMaterial
-        :color="BEAM_COLOR"
-        transparent
-        :opacity="0.2"
-        :blending="THREE.AdditiveBlending"
-        :depth-write="false"
-        :tone-mapped="false"
-      />
+      <TresMeshBasicMaterial :color="config.beamColor" transparent :opacity="0.2" :blending="THREE.AdditiveBlending" :depth-write="false" :tone-mapped="false" />
     </TresInstancedMesh>
     <!-- Core beam layer -->
     <!-- <TresInstancedMesh ref="beamMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">

@@ -31,15 +31,13 @@ onMounted(async () => {
   strudel.value = useStrudel()
   blockchain = useBlockchain()
 
-  // Initialize and auto-start playback
+  // Initialize but don't auto-start
   await strudel.value.init()
-  await strudel.value.start()
-  isPlaying.value = true
 
   // Start listening to blockchain events
   blockchain.startListening()
 
-  blockchain.onBlockEvent((blockEvent) => {
+  blockchain.onBlockEvent((blockEvent: BlockEvent) => {
     currentBlock.value = blockEvent
 
     if (!isPlaying.value || !strudel.value)
@@ -88,13 +86,13 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
       </ClientOnly>
     </div>
 
+    <!-- Debug Panel (Dev Only) -->
+    <DevOnly>
+      <OrbDebugPanel class="fixed top-4 right-4 z-50 pointer-events-auto" />
+    </DevOnly>
+
     <!-- Main Content -->
     <div class="relative z-10 flex flex-col min-h-screen pointer-events-none">
-      <!-- Play/Stop Button - Top Right -->
-      <div class="absolute top-8 right-8 pointer-events-auto">
-        <UButton :label="isPlaying ? 'Stop' : 'Tune in'" size="lg" :color="isPlaying ? 'error' : 'primary'" @click="togglePlay" />
-      </div>
-
       <div class="flex-1" />
 
       <div class="pointer-events-auto px-4 sm:px-8 pb-6">
@@ -110,7 +108,7 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
 
             <div class="flex-1 w-full space-y-3">
               <div class="flex items-center gap-3 text-[0.75rem] uppercase tracking-[0.12em] text-white/70 font-semibold">
-                <span class="text-white/80">{{ cycleTitle }}</span>
+                <span class="text-white/80">Now Playing</span>
                 <span class="ml-auto text-xs text-white/80">{{ progressLabel }}</span>
               </div>
 

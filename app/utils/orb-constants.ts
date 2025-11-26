@@ -1,8 +1,6 @@
 import { ref } from 'vue'
 
-// Visual Configuration
-export const ORB_RADIUS = 14
-export const NODE_COUNT = 800
+// Validator state (managed by blockchain, not debug panel)
 export const VALIDATOR_COUNT = ref(40)
 export const VALIDATOR_ADDRESSES = ref<string[]>([])
 
@@ -15,39 +13,41 @@ export function setValidatorAddresses(addresses: string[]) {
   VALIDATOR_COUNT.value = addresses.length
 }
 
-// Animation Timings
+// Re-export config values - these are getters that read from useState
+// Use these in components that need reactive values
+export function getOrbConfig() {
+  const { config, beamSpeed } = useOrbConfig()
+  return {
+    get ORB_RADIUS() { return config.value.orbRadius },
+    get NODE_COUNT() { return config.value.nodeCount },
+
+    get BEAM_PROPAGATION_TIME_MS() { return config.value.beamPropagationTimeMs },
+    get BEAM_SPEED() { return beamSpeed.value },
+    get PEER_LIFETIME_MS() { return config.value.peerLifetimeMs },
+    get PEER_TRANSITION_MS() { return config.value.peerTransitionMs },
+    get VALIDATOR_ROTATION_SPEED() { return config.value.validatorRotationSpeed },
+    get COLOR_BG() { return config.value.colorBg },
+    get COLOR_LINK() { return config.value.colorLink },
+    get NODE_PALETTE() { return config.value.nodePalette },
+    get BEAM_COLOR() { return config.value.beamColor },
+    get VALIDATOR_COLOR() { return config.value.validatorColor },
+    get EDGE_COLOR() { return config.value.edgeColor },
+  }
+}
+
+// Legacy exports for backward compatibility (static defaults, not reactive)
+export const ORB_RADIUS = 14
+export const NODE_COUNT = 800
 export const BLOCK_INTERVAL_MS = 1200
 export const BEAM_PROPAGATION_TIME_MS = 1000
 export const BEAM_SPEED = (ORB_RADIUS * 2.5) / (BEAM_PROPAGATION_TIME_MS / 1000)
-
-// Peer Lifecycle
 export const PEER_LIFETIME_MS = 30000
 export const PEER_TRANSITION_MS = 2000
-
-// Rotation
 export const VALIDATOR_ROTATION_SPEED = 0.1
-
-// Colors
-export const COLOR_BG = '#0f1e3d' // Deep Navy Blue
-export const COLOR_LINK = '#64748b' // Slate 500 (Lighter for better visibility)
-
-// "Minimalistic Premium" Palette: Silver, Platinum, White, Soft Blue-Grey
-// Removing Cyan entirely.
-export const NODE_PALETTE = [
-  '#FFFFFF', // Pure White
-  '#F8FAFC', // Slate 50
-  '#E2E8F0', // Slate 200
-  '#CBD5E1', // Slate 300
-  '#94A3B8', // Slate 400 (Darker Metal)
-]
-
-// Beam Color - Amber Orange
+export const COLOR_BG = '#0f1e3d'
+export const COLOR_LINK = '#64748b'
+export const NODE_PALETTE = ['#FFFFFF', '#F8FAFC', '#E2E8F0', '#CBD5E1', '#94A3B8']
 export const BEAM_COLOR = '#FF9500'
-
-// Validator Color - Bright Purple/Violet
 export const VALIDATOR_COLOR = '#a070e0'
-
-// Edge Color - Cyan for validator hexagon outlines
 export const EDGE_COLOR = '#d400ff'
-
 export const MOCK_AUDIO_DATA_SIZE = 32

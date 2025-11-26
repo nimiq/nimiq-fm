@@ -30,7 +30,8 @@ function getAnimationKey(address: string) {
 }
 
 function formatStakePercent(balance: string) {
-  if (!totalStake.value) return '0%'
+  if (!totalStake.value)
+    return '0%'
   const percent = (Number(balance) / totalStake.value) * 100
   return `${percent.toFixed(1)}%`
 }
@@ -87,7 +88,9 @@ function toggleExpand() {
                 >
                   <img :key="getAnimationKey(v.address)" :src="v.logo" :alt="v.name" class="size-10 sm:size-12" :class="{ 'validator-glow': activeValidators.has(v.address) }">
                   <div class="text-center">
-                    <div class="text-xs truncate max-w-16 sm:max-w-20" :class="activeValidators.has(v.address) ? 'text-orange-400' : 'text-white/70'">{{ v.name }}</div>
+                    <div class="text-xs truncate max-w-16 sm:max-w-20" :class="activeValidators.has(v.address) ? 'text-orange-400' : 'text-white/70'">
+                      {{ v.name }}
+                    </div>
                   </div>
                 </Motion>
               </div>

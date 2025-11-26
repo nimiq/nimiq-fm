@@ -1,4 +1,12 @@
-import { createSharedComposable } from '@vueuse/core'
+// Simple shared composable implementation (avoids @vueuse/core dependency)
+function createSharedComposable<T>(composable: () => T): () => T {
+  let state: T | null = null
+  return () => {
+    if (!state)
+      state = composable()
+    return state
+  }
+}
 
 export interface BlockEvent {
   blockNumber: number
