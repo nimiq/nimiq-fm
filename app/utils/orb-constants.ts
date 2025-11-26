@@ -16,7 +16,7 @@ export const PEER_TRANSITION_MS = 2000
 export const VALIDATOR_ROTATION_SPEED = 0.1
 
 // Colors
-export const COLOR_BG = '#020617' // Deepest Slate/Black
+export const COLOR_BG = '#0f1e3d' // Deep Navy Blue
 export const COLOR_LINK = '#64748b' // Slate 500 (Lighter for better visibility)
 
 // "Minimalistic Premium" Palette: Silver, Platinum, White, Soft Blue-Grey
@@ -31,6 +31,9 @@ export const NODE_PALETTE = [
 
 // Beam Color - Amber Orange
 export const BEAM_COLOR = '#FF9500'
+
+// Validator Color - Bright Purple/Violet
+export const VALIDATOR_COLOR = '#a070e0'
 
 // Edge Color - Cyan for validator hexagon outlines
 export const EDGE_COLOR = '#d400ff'

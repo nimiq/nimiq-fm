@@ -11,7 +11,6 @@ import {
   BEAM_COLOR,
   BEAM_SPEED,
   COLOR_LINK,
-  EDGE_COLOR,
   NODE_COUNT,
   ORB_RADIUS,
   PEER_LIFETIME_MS,
@@ -31,7 +30,7 @@ if (import.meta.client) {
 }
 
 const nodesMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
-const nodeWireframeMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
+const nodeHaloMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const beamMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const beamGlowMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
 const beamMidGlowMeshRef = shallowRef<THREE.InstancedMesh | null>(null)
@@ -39,228 +38,41 @@ const linesRef = shallowRef<THREE.LineSegments | null>(null)
 const groupRef = shallowRef<THREE.Group | null>(null)
 const beams = ref<Beam[]>([])
 
-// Create Truncated Octahedron geometry (Archimedean solid with 8 hexagons and 6 squares)
-const truncatedOctahedronGeometry = (() => {
-  const r = 0.32
-  const s = r / Math.sqrt(5) // Scale factor for unit truncated octahedron
+// Create bumpy Sphere geometry for ball-like nodes with noise
+const bumpySphereGeometry = (() => {
+  const geometry = new THREE.SphereGeometry(0.32, 32, 24)
+  const positionAttr = geometry.getAttribute('position')
+  const vertex = new THREE.Vector3()
 
-  // 24 vertices: all permutations of (0, ±1, ±2), (±1, ±2, 0), (±2, 0, ±1)
-  const vertices = [
-    // (0, ±1, ±2)
-    [0, 1, 2],
-    [0, 1, -2],
-    [0, -1, 2],
-    [0, -1, -2],
-    // (0, ±2, ±1)
-    [0, 2, 1],
-    [0, 2, -1],
-    [0, -2, 1],
-    [0, -2, -1],
-    // (±1, 0, ±2)
-    [1, 0, 2],
-    [1, 0, -2],
-    [-1, 0, 2],
-    [-1, 0, -2],
-    // (±2, 0, ±1)
-    [2, 0, 1],
-    [2, 0, -1],
-    [-2, 0, 1],
-    [-2, 0, -1],
-    // (±1, ±2, 0)
-    [1, 2, 0],
-    [1, -2, 0],
-    [-1, 2, 0],
-    [-1, -2, 0],
-    // (±2, ±1, 0)
-    [2, 1, 0],
-    [2, -1, 0],
-    [-2, 1, 0],
-    [-2, -1, 0],
-  ]
-
-  const points = vertices.map(v => new THREE.Vector3(v[0]! * s, v[1]! * s, v[2]! * s))
-
-  // Create convex hull geometry from points
-  // Since we can't import ConvexGeometry easily, we'll create it manually with correct winding
-  const positions: number[] = []
-
-  // Helper to add a triangle with correct winding (CCW when viewed from outside)
-  const addTri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => {
-    // Calculate center of triangle
-    const center = new THREE.Vector3().addVectors(a, b).add(c).divideScalar(3)
-    // Calculate normal
-    const ab = new THREE.Vector3().subVectors(b, a)
-    const ac = new THREE.Vector3().subVectors(c, a)
-    const normal = new THREE.Vector3().crossVectors(ab, ac)
-    // If normal points inward (toward origin), reverse winding
-    if (normal.dot(center) < 0) {
-      positions.push(a.x, a.y, a.z, c.x, c.y, c.z, b.x, b.y, b.z)
-    }
-    else {
-      positions.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z)
-    }
+  // Simple 3D noise function for displacement
+  const noise3D = (x: number, y: number, z: number) => {
+    const freq = 4.0
+    return (
+      Math.sin(x * freq) * Math.cos(y * freq * 1.3) * Math.sin(z * freq * 0.8) * 0.5
+      + Math.sin(x * freq * 2.1 + 1.3) * Math.cos(z * freq * 1.7) * 0.25
+      + Math.cos(y * freq * 2.5 + 0.7) * Math.sin(x * freq * 1.9) * 0.25
+    )
   }
 
-  // Helper to triangulate a convex polygon (fan triangulation from first vertex)
-  const addFace = (indices: number[]) => {
-    const pts = indices.map(i => points[i]!)
-    for (let i = 1; i < pts.length - 1; i++) {
-      addTri(pts[0]!, pts[i]!, pts[i + 1]!)
-    }
+  // Displace vertices along their normals based on noise
+  for (let i = 0; i < positionAttr.count; i++) {
+    vertex.fromBufferAttribute(positionAttr, i)
+    const normal = vertex.clone().normalize()
+    const noiseValue = noise3D(vertex.x * 3, vertex.y * 3, vertex.z * 3)
+    const displacement = 0.03 + noiseValue * 0.025 // Subtle bumps
+    vertex.addScaledVector(normal, displacement)
+    positionAttr.setXYZ(i, vertex.x, vertex.y, vertex.z)
   }
 
-  // 6 Square faces
-  addFace([12, 20, 13, 21]) // +X
-  addFace([14, 22, 15, 23]) // -X
-  addFace([4, 16, 5, 18]) // +Y (wrong indices, fixing)
-  addFace([6, 17, 7, 19]) // -Y
-  addFace([0, 8, 2, 10]) // +Z
-  addFace([1, 9, 3, 11]) // -Z
-
-  // 8 Hexagonal faces
-  addFace([0, 4, 16, 20, 12, 8]) // corner at +X+Y+Z
-  addFace([0, 10, 14, 22, 18, 4]) // corner at -X+Y+Z
-  addFace([2, 8, 12, 21, 17, 6]) // corner at +X-Y+Z
-  addFace([2, 6, 19, 23, 14, 10]) // corner at -X-Y+Z
-  addFace([1, 5, 16, 20, 13, 9]) // corner at +X+Y-Z
-  addFace([1, 11, 15, 22, 18, 5]) // corner at -X+Y-Z
-  addFace([3, 9, 13, 21, 17, 7]) // corner at +X-Y-Z
-  addFace([3, 7, 19, 23, 15, 11]) // corner at -X-Y-Z
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
   geometry.computeVertexNormals()
-
   return geometry
 })()
 
-// Create geometry with only hexagonal edges as thin mesh tubes (no square edges)
-const hexagonEdgesGeometry = (() => {
-  const r = 0.32
-  const s = r / Math.sqrt(5)
-  const edgeRadius = 0.008 // Thin edge thickness
+// Halo Sphere Geometry (larger, lower poly for performance)
+const haloSphereGeometry = new THREE.SphereGeometry(0.3, 16, 12)
 
-  // Same 24 vertices as the truncated octahedron
-  const vertices = [
-    [0, 1, 2],
-    [0, 1, -2],
-    [0, -1, 2],
-    [0, -1, -2],
-    [0, 2, 1],
-    [0, 2, -1],
-    [0, -2, 1],
-    [0, -2, -1],
-    [1, 0, 2],
-    [1, 0, -2],
-    [-1, 0, 2],
-    [-1, 0, -2],
-    [2, 0, 1],
-    [2, 0, -1],
-    [-2, 0, 1],
-    [-2, 0, -1],
-    [1, 2, 0],
-    [1, -2, 0],
-    [-1, 2, 0],
-    [-1, -2, 0],
-    [2, 1, 0],
-    [2, -1, 0],
-    [-2, 1, 0],
-    [-2, -1, 0],
-  ]
-
-  const points = vertices.map(v => new THREE.Vector3(v[0]! * s, v[1]! * s, v[2]! * s))
-
-  // 8 Hexagonal faces - only their edges
-  const hexFaces = [
-    [0, 4, 16, 20, 12, 8],
-    [0, 10, 14, 22, 18, 4],
-    [2, 8, 12, 21, 17, 6],
-    [2, 6, 19, 23, 14, 10],
-    [1, 5, 16, 20, 13, 9],
-    [1, 11, 15, 22, 18, 5],
-    [3, 9, 13, 21, 17, 7],
-    [3, 7, 19, 23, 15, 11],
-  ]
-
-  // Collect unique edges (avoid duplicates)
-  const edgeSet = new Set<string>()
-  const edges: [THREE.Vector3, THREE.Vector3][] = []
-
-  for (const face of hexFaces) {
-    for (let i = 0; i < face.length; i++) {
-      const i1 = face[i]!
-      const i2 = face[(i + 1) % face.length]!
-      const key = i1 < i2 ? `${i1}-${i2}` : `${i2}-${i1}`
-      if (!edgeSet.has(key)) {
-        edgeSet.add(key)
-        edges.push([points[i1]!, points[i2]!])
-      }
-    }
-  }
-
-  // Create mesh geometry for all edges (triangular prism for each edge)
-  const positions: number[] = []
-  const normals: number[] = []
-
-  for (const [p1, p2] of edges) {
-    // Direction along the edge
-    const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
-
-    // Find perpendicular vectors
-    const up = Math.abs(dir.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)
-    const perp1 = new THREE.Vector3().crossVectors(dir, up).normalize().multiplyScalar(edgeRadius)
-    const perp2 = new THREE.Vector3().crossVectors(dir, perp1).normalize().multiplyScalar(edgeRadius)
-
-    // Create 3 vertices around each endpoint (triangular cross-section)
-    const angle1 = 0
-    const angle2 = (Math.PI * 2) / 3
-    const angle3 = (Math.PI * 4) / 3
-
-    const getOffset = (angle: number) => {
-      return new THREE.Vector3()
-        .addScaledVector(perp1, Math.cos(angle))
-        .addScaledVector(perp2, Math.sin(angle))
-    }
-
-    const o1 = getOffset(angle1)
-    const o2 = getOffset(angle2)
-    const o3 = getOffset(angle3)
-
-    // 6 vertices: 3 at p1, 3 at p2
-    const v1a = new THREE.Vector3().addVectors(p1, o1)
-    const v1b = new THREE.Vector3().addVectors(p1, o2)
-    const v1c = new THREE.Vector3().addVectors(p1, o3)
-    const v2a = new THREE.Vector3().addVectors(p2, o1)
-    const v2b = new THREE.Vector3().addVectors(p2, o2)
-    const v2c = new THREE.Vector3().addVectors(p2, o3)
-
-    // 3 rectangular faces (each split into 2 triangles)
-    // Face 1: v1a, v2a, v2b, v1b
-    positions.push(v1a.x, v1a.y, v1a.z, v2a.x, v2a.y, v2a.z, v2b.x, v2b.y, v2b.z)
-    positions.push(v1a.x, v1a.y, v1a.z, v2b.x, v2b.y, v2b.z, v1b.x, v1b.y, v1b.z)
-    // Face 2: v1b, v2b, v2c, v1c
-    positions.push(v1b.x, v1b.y, v1b.z, v2b.x, v2b.y, v2b.z, v2c.x, v2c.y, v2c.z)
-    positions.push(v1b.x, v1b.y, v1b.z, v2c.x, v2c.y, v2c.z, v1c.x, v1c.y, v1c.z)
-    // Face 3: v1c, v2c, v2a, v1a
-    positions.push(v1c.x, v1c.y, v1c.z, v2c.x, v2c.y, v2c.z, v2a.x, v2a.y, v2a.z)
-    positions.push(v1c.x, v1c.y, v1c.z, v2a.x, v2a.y, v2a.z, v1a.x, v1a.y, v1a.z)
-
-    // Normals (pointing outward from edge center)
-    const n1 = new THREE.Vector3().addVectors(o1, o2).normalize()
-    const n2 = new THREE.Vector3().addVectors(o2, o3).normalize()
-    const n3 = new THREE.Vector3().addVectors(o3, o1).normalize()
-
-    for (let i = 0; i < 6; i++) normals.push(n1.x, n1.y, n1.z)
-    for (let i = 0; i < 6; i++) normals.push(n2.x, n2.y, n2.z)
-    for (let i = 0; i < 6; i++) normals.push(n3.x, n3.y, n3.z)
-  }
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
-
-  return geometry
-})()
+// Number of segments per curved link (more = smoother curve)
+const CURVE_SEGMENTS = 4
 
 // Pre-allocated objects to avoid garbage collection in render loop
 const tempColor = new THREE.Color()
@@ -277,10 +89,17 @@ const tempVec3 = new THREE.Vector3()
 const tempVec3_2 = new THREE.Vector3()
 const tempScale = new THREE.Vector3()
 const tempRotMatrix = new THREE.Matrix4()
-const wireMatrix = new THREE.Matrix4()
 const glowMatrix = new THREE.Matrix4()
 const midGlowMatrix = new THREE.Matrix4()
 const upVector = new THREE.Vector3(0, 1, 0)
+
+// Pre-allocated vectors for curve calculation
+const curveStart = new THREE.Vector3()
+const curveEnd = new THREE.Vector3()
+const curveControl = new THREE.Vector3()
+const curveMid = new THREE.Vector3()
+const curvePoint = new THREE.Vector3()
+const curvePointPrev = new THREE.Vector3()
 
 // Initialize Line Buffers
 watchEffect(() => {
@@ -292,8 +111,11 @@ watchEffect(() => {
 watch(linesRef, (lines) => {
   if (lines && graphData.value) {
     const { links } = graphData.value
-    const positions = new Float32Array(links.length * 6)
-    const colors = new Float32Array(links.length * 6)
+    // For curved lines: each link has CURVE_SEGMENTS segments, each segment has 2 points (start and end)
+    // Total points per link = CURVE_SEGMENTS * 2
+    const pointsPerLink = CURVE_SEGMENTS * 2
+    const positions = new Float32Array(links.length * pointsPerLink * 3)
+    const colors = new Float32Array(links.length * pointsPerLink * 3)
     lines.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     lines.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   }
@@ -512,6 +334,23 @@ onBeforeRender(({ delta }) => {
 
     nodesMeshRef.value.setMatrixAt(i, tempMatrix)
 
+    // --- Update Halo to match node ---
+    if (nodeHaloMeshRef.value && scale > 0.01) {
+      const haloScale = scale * 2.5 // Larger than node
+      const haloMatrix = new THREE.Matrix4()
+      haloMatrix.makeScale(haloScale, haloScale, haloScale)
+      haloMatrix.setPosition(n.currentPosition)
+      haloMatrix.multiply(tempRotMatrix) // Match rotation
+
+      nodeHaloMeshRef.value.setMatrixAt(i, haloMatrix)
+    }
+    else if (nodeHaloMeshRef.value) {
+      // Hide halo if node is hidden
+      const emptyMatrix = new THREE.Matrix4()
+      emptyMatrix.makeScale(0, 0, 0)
+      nodeHaloMeshRef.value.setMatrixAt(i, emptyMatrix)
+    }
+
     // --- Color Logic ---
     // Check if this node is the origin of an active beam
     let isBeamOrigin = false
@@ -525,57 +364,44 @@ onBeforeRender(({ delta }) => {
     }
 
     if (blockFlash > 0) {
-      // Source of Energy: Intense White
-      tempColor.setHex(0xFFFFFF)
+      // Source of Energy: Intense White with orange tint
+      tempColor.setHex(0xFFCC88)
       // "Easy to spot": significant brightness boost for bloom
-      // Base 1.5 + variable 5.5 = max 7.0 (Very bright, triggers bloom halo)
-      // This creates the "glow" without physically growing the mesh too much.
-      tempColor.multiplyScalar(1.5 + blockFlash * 5.5)
+      tempColor.multiplyScalar(3.0 + blockFlash * 12.0)
     }
     else if (isBeamOrigin) {
-      // Beam origin node - use beam color (orange)
+      // Beam origin node - use beam color (orange) with high intensity
       tempColor.copy(cBeam)
-      tempColor.multiplyScalar(1.5)
+      tempColor.multiplyScalar(4.5)
     }
     else if (beamIntensity > 0) {
-      // Beam hit - White but softer
+      // Beam hit - Orange glow
       tempColor.copy(cBeam)
-      const intensity = 1 + beamIntensity * 8.0
+      const intensity = 2.5 + beamIntensity * 5.0
       tempColor.multiplyScalar(intensity)
     }
     else {
-      // Standard State
+      // Standard State - Different for validators vs peers
       if (n.baseColor)
         tempColor.copy(n.baseColor)
       if (n.type === NodeType.VALIDATOR) {
-        tempColor.multiplyScalar(1.2)
+        // Validators: bright purple glow
+        tempColor.multiplyScalar(3.5)
       }
       else {
-        tempColor.multiplyScalar(0.8)
+        // Peers: gray/white, subtle glow
+        tempColor.multiplyScalar(1.2)
       }
     }
 
     nodesMeshRef.value.setColorAt(i, tempColor)
 
-    // Update wireframe mesh for validators
-    if (nodeWireframeMeshRef.value) {
-      if (n.type === NodeType.VALIDATOR && scale > 0.01) {
-        // Scale wireframe slightly larger to prevent z-fighting
-        const wireScale = scale * 1.01
-        wireMatrix.makeScale(wireScale, wireScale, wireScale)
-        wireMatrix.setPosition(n.currentPosition)
-        // Apply same rotation (reuse tempEuler already set above)
-        wireMatrix.multiply(tempRotMatrix)
-        nodeWireframeMeshRef.value.setMatrixAt(i, wireMatrix)
-        // Use pre-set edge color for hexagon outlines
-        tempColor.setHex(0x00D9FF) // EDGE_COLOR
-        nodeWireframeMeshRef.value.setColorAt(i, tempColor)
-      }
-      else {
-        // Hide wireframe for non-validators
-        wireMatrix.makeScale(0, 0, 0)
-        nodeWireframeMeshRef.value.setMatrixAt(i, wireMatrix)
-      }
+    // --- Update Halo Color ---
+    if (nodeHaloMeshRef.value && scale > 0.01) {
+      // Use similar color but dimmer for subtlety
+      const haloColor = tempColor.clone()
+      haloColor.multiplyScalar(0.6)
+      nodeHaloMeshRef.value.setColorAt(i, haloColor)
     }
   }
 
@@ -583,10 +409,11 @@ onBeforeRender(({ delta }) => {
   if (nodesMeshRef.value.instanceColor)
     nodesMeshRef.value.instanceColor.needsUpdate = true
 
-  if (nodeWireframeMeshRef.value) {
-    nodeWireframeMeshRef.value.instanceMatrix.needsUpdate = true
-    if (nodeWireframeMeshRef.value.instanceColor)
-      nodeWireframeMeshRef.value.instanceColor.needsUpdate = true
+  // Update halo mesh
+  if (nodeHaloMeshRef.value) {
+    nodeHaloMeshRef.value.instanceMatrix.needsUpdate = true
+    if (nodeHaloMeshRef.value.instanceColor)
+      nodeHaloMeshRef.value.instanceColor.needsUpdate = true
   }
 
   // 3. Update Links
@@ -630,8 +457,12 @@ onBeforeRender(({ delta }) => {
 
     // Skip rendering if fully disconnected or nodes invisible
     if (link.reconnectProgress < 0.01 || alpha < 0.01) {
-      linePositions.setXYZ(i * 2, 0, 0, 0)
-      linePositions.setXYZ(i * 2 + 1, 0, 0, 0)
+      // Hide all curve segments
+      const baseIdx = i * CURVE_SEGMENTS * 2
+      for (let seg = 0; seg < CURVE_SEGMENTS; seg++) {
+        linePositions.setXYZ(baseIdx + seg * 2, 0, 0, 0)
+        linePositions.setXYZ(baseIdx + seg * 2 + 1, 0, 0, 0)
+      }
 
       // Hide beam instances if link is hidden
       tempMatrix.makeScale(0, 0, 0)
@@ -674,8 +505,49 @@ onBeforeRender(({ delta }) => {
       endZ = startZ + (endZ - startZ) * link.reconnectProgress
     }
 
-    linePositions.setXYZ(i * 2, startX, startY, startZ)
-    linePositions.setXYZ(i * 2 + 1, endX, endY, endZ)
+    // --- CURVED LINE RENDERING (Quadratic Bezier) ---
+    // Set up curve control points
+    curveStart.set(startX, startY, startZ)
+    curveEnd.set(endX, endY, endZ)
+
+    // Midpoint
+    curveMid.addVectors(curveStart, curveEnd).multiplyScalar(0.5)
+
+    // Control point: push midpoint outward to create arch
+    curveControl.copy(curveMid).normalize()
+    const linkDist = curveStart.distanceTo(curveEnd)
+    const archHeight = linkDist * 0.18 // 18% arch
+    curveControl.multiplyScalar(archHeight).add(curveMid)
+
+    // Generate CURVE_SEGMENTS curved segments using quadratic bezier
+    const baseIdx = i * CURVE_SEGMENTS * 2
+    for (let seg = 0; seg < CURVE_SEGMENTS; seg++) {
+      const t0 = seg / CURVE_SEGMENTS
+      const t1 = (seg + 1) / CURVE_SEGMENTS
+
+      // Quadratic Bezier formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+      // where P0 = start, P1 = control, P2 = end
+
+      // Point at t0
+      const it0 = 1 - t0
+      curvePoint.set(
+        it0 * it0 * curveStart.x + 2 * it0 * t0 * curveControl.x + t0 * t0 * curveEnd.x,
+        it0 * it0 * curveStart.y + 2 * it0 * t0 * curveControl.y + t0 * t0 * curveEnd.y,
+        it0 * it0 * curveStart.z + 2 * it0 * t0 * curveControl.z + t0 * t0 * curveEnd.z,
+      )
+
+      // Point at t1
+      const it1 = 1 - t1
+      curvePointPrev.set(
+        it1 * it1 * curveStart.x + 2 * it1 * t1 * curveControl.x + t1 * t1 * curveEnd.x,
+        it1 * it1 * curveStart.y + 2 * it1 * t1 * curveControl.y + t1 * t1 * curveEnd.y,
+        it1 * it1 * curveStart.z + 2 * it1 * t1 * curveControl.z + t1 * t1 * curveEnd.z,
+      )
+
+      // Store segment
+      linePositions.setXYZ(baseIdx + seg * 2, curvePoint.x, curvePoint.y, curvePoint.z)
+      linePositions.setXYZ(baseIdx + seg * 2 + 1, curvePointPrev.x, curvePointPrev.y, curvePointPrev.z)
+    }
 
     // Beam on link
     let beamHit = 0
@@ -783,7 +655,7 @@ onBeforeRender(({ delta }) => {
 
     if (beamHit > 0) {
       tempColor.copy(cBeam)
-      tempColor.multiplyScalar(0.5 + beamHit * 3.0) // softer beam on links
+      tempColor.multiplyScalar(0.5 + beamHit * 3.0)
     }
     else {
       tempColor.copy(cLink)
@@ -796,16 +668,17 @@ onBeforeRender(({ delta }) => {
     }
     tempColor.multiplyScalar(alpha)
 
-    // Set Colors
-    // Start point is always the standard link color
-    lineColors.setXYZ(i * 2, tempColor.r, tempColor.g, tempColor.b)
+    // Set Colors for all curve segments
+    for (let seg = 0; seg < CURVE_SEGMENTS; seg++) {
+      const segmentColor = tempColor.clone()
 
-    // End point: If Reconnecting, highlight tip (Bright White)
-    if (link.connectionState === 'RECONNECTING') {
-      lineColors.setXYZ(i * 2 + 1, 1.0, 1.0, 1.0)
-    }
-    else {
-      lineColors.setXYZ(i * 2 + 1, tempColor.r, tempColor.g, tempColor.b)
+      // If reconnecting, brighten the growing tip
+      if (link.connectionState === 'RECONNECTING' && seg === CURVE_SEGMENTS - 1) {
+        segmentColor.setRGB(1.0, 1.0, 1.0)
+      }
+
+      lineColors.setXYZ(baseIdx + seg * 2, segmentColor.r, segmentColor.g, segmentColor.b)
+      lineColors.setXYZ(baseIdx + seg * 2 + 1, segmentColor.r, segmentColor.g, segmentColor.b)
     }
   }
 
@@ -834,46 +707,34 @@ onBeforeRender(({ delta }) => {
 
 <template>
   <TresGroup ref="groupRef">
-    <TresInstancedMesh ref="nodesMeshRef" :args="[truncatedOctahedronGeometry, undefined, NODE_COUNT]">
-      <TresMeshStandardMaterial
-        :tone-mapped="false"
-        :roughness="0.2"
-        :metalness="0.0"
-        :flat-shading="true"
-        emissive="#ffffff"
-        :emissive-intensity="0.4"
-        color="#666666"
-        :side="THREE.DoubleSide"
-      />
-    </TresInstancedMesh>
-
-    <!-- Hexagon edges overlay for validator nodes -->
-    <TresInstancedMesh ref="nodeWireframeMeshRef" :args="[hexagonEdgesGeometry, undefined, NODE_COUNT]">
+    <!-- Node Halos (Glow Effect) -->
+    <TresInstancedMesh ref="nodeHaloMeshRef" :args="[haloSphereGeometry, undefined, NODE_COUNT]">
       <TresMeshBasicMaterial
-        :color="EDGE_COLOR"
         :tone-mapped="false"
-        :transparent="true"
-        :opacity="1.0"
-        :side="THREE.DoubleSide"
-      />
-    </TresInstancedMesh>
-
-    <!-- Energy Beams (Thick Links) with blur effect -->
-    <!-- Outer glow layer (blur effect) -->
-    <TresInstancedMesh ref="beamGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.25, 0.25, 1, 4, 1]" />
-      <TresMeshBasicMaterial
-        :color="BEAM_COLOR"
         transparent
-        :opacity="0.15"
+        :opacity="0.25"
         :blending="THREE.AdditiveBlending"
         :depth-write="false"
-        :tone-mapped="false"
+        color="#0095FF"
       />
     </TresInstancedMesh>
+
+    <!-- Existing nodes mesh -->
+    <TresInstancedMesh ref="nodesMeshRef" :args="[bumpySphereGeometry, undefined, NODE_COUNT]">
+      <TresMeshStandardMaterial
+        :tone-mapped="false"
+        :roughness="0.05"
+        :metalness="0.5"
+        emissive="#0095FF"
+        :emissive-intensity="1.2"
+        color="#e0f0ff"
+        :side="THREE.FrontSide"
+      />
+    </TresInstancedMesh>
+
     <!-- Middle glow layer -->
     <TresInstancedMesh ref="beamMidGlowMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.16, 0.16, 1, 4, 1]" />
+      <TresCylinderGeometry :args="[0.32, 0.32, 1, 12, 1]" />
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
@@ -884,25 +745,25 @@ onBeforeRender(({ delta }) => {
       />
     </TresInstancedMesh>
     <!-- Core beam layer -->
-    <TresInstancedMesh ref="beamMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
-      <TresCylinderGeometry :args="[0.08, 0.08, 1, 6, 1]" />
+    <!-- <TresInstancedMesh ref="beamMeshRef" :args="[undefined, undefined, 5000]" :count="graphData?.links.length || 0">
+      <TresCylinderGeometry :args="[0.15, 0.15, 1, 12, 1]" />
       <TresMeshBasicMaterial
         :color="BEAM_COLOR"
         transparent
-        :opacity="0.5"
-        :blending="THREE.NormalBlending"
+        :opacity="0.4"
+        :blending="THREE.AdditiveBlending"
         :depth-write="false"
         :tone-mapped="false"
       />
-    </TresInstancedMesh>
+    </TresInstancedMesh> -->
 
     <TresLineSegments ref="linesRef">
       <TresBufferGeometry />
       <TresLineBasicMaterial
         vertex-colors
         transparent
-        :opacity="1"
-        :blending="THREE.NormalBlending"
+        :opacity="0.8"
+        :blending="THREE.AdditiveBlending"
         :depth-write="false"
         :tone-mapped="false"
       />

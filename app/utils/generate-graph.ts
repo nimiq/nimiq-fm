@@ -6,6 +6,7 @@ import {
   NODE_PALETTE,
   ORB_RADIUS,
   PEER_LIFETIME_MS,
+  VALIDATOR_COLOR,
   VALIDATOR_COUNT,
 } from './orb-constants'
 
@@ -51,8 +52,8 @@ export function generateGraph() {
       theta,
       radius: r,
       lastBlockTime: -999,
-      // Validators: slightly brighter base
-      baseColor: new THREE.Color('#ffffff'),
+      // Validators: bright purple/violet
+      baseColor: new THREE.Color(VALIDATOR_COLOR),
     })
   }
 
@@ -106,32 +107,20 @@ export function generateGraph() {
   }
 
   // --- 3. Generate Links ---
-  // Validators Mesh
+  // Validators Mesh - Full mesh: connect all validators to all other validators
   for (let i = 0; i < VALIDATOR_COUNT; i++) {
-    const distances = []
-    for (let j = 0; j < VALIDATOR_COUNT; j++) {
-      if (i === j)
-        continue
-      distances.push({ id: j, dist: nodes[i]!.targetPosition.distanceTo(nodes[j]!.targetPosition) })
-    }
-    distances.sort((a, b) => a.dist - b.dist)
-
-    const connectionCount = 2
-    for (let k = 0; k < connectionCount; k++) {
-      const targetId = distances[k]!.id
-      if (!nodes[i]!.connections.includes(targetId)) {
-        nodes[i]!.connections.push(targetId)
-        nodes[targetId]!.connections.push(i)
-        links.push({
-          sourceIndex: Math.min(i, targetId),
-          targetIndex: Math.max(i, targetId),
-          isValidatorLink: true,
-          phaseOffset: Math.random() * Math.PI * 2,
-          connectionState: 'CONNECTED',
-          reconnectProgress: 1.0,
-          disconnectTimer: 0,
-        })
-      }
+    for (let j = i + 1; j < VALIDATOR_COUNT; j++) {
+      nodes[i]!.connections.push(j)
+      nodes[j]!.connections.push(i)
+      links.push({
+        sourceIndex: i,
+        targetIndex: j,
+        isValidatorLink: true,
+        phaseOffset: Math.random() * Math.PI * 2,
+        connectionState: 'CONNECTED',
+        reconnectProgress: 1.0,
+        disconnectTimer: 0,
+      })
     }
   }
 

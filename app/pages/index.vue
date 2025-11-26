@@ -75,9 +75,12 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
 
 <template>
   <div class="relative min-h-screen bg-slate-900 overflow-hidden text-white">
+    <!-- Circular Gradient Background for Orb -->
+    <div class="absolute inset-0 z-0 orb-gradient-background" />
+
     <!-- Background Orb Visualization -->
     <ClientOnly>
-      <div class="absolute inset-0 z-0">
+      <div class="absolute inset-0 z-1">
         <OrbScene :audio-data="0" />
       </div>
     </ClientOnly>
@@ -157,3 +160,15 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
     </div>
   </div>
 </template>
+
+<style scoped>
+.orb-gradient-background {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(56, 191, 248, 0.042) 0%,
+    rgba(99, 101, 241, 0.029) 20%,
+    rgba(2, 6, 23, 0.95) 80%,
+    #020617 100%
+  );
+}
+</style>
