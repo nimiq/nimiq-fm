@@ -1,237 +1,164 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+import { AnimatePresence, Motion } from 'motion-v'
 import { useBlockchain } from '~/composables/useBlockchain'
+import { getCurrentSongName, getNextSongName } from '~/utils/song'
 
-interface DisplayBlock {
-  id: string
-  blockNumber: number
-  type: 'micro' | 'macro'
-  validatorAddress?: string
-  epoch: number
-  batch: number
-}
-
-const BLOCK_WIDTH = 112 // 96px + 16px gap
-const TARGET_OFFSET = -BLOCK_WIDTH / 4
-const CHAIN_SPEED_FACTOR = 0.55
-const MAX_BLOCKS = 30 // Enough to fill wide screens
-const FADE_DISTANCE = 50 // Distance from left edge where fade starts
+const BATCHES_PER_SONG = 3
+const VISIBLE_BATCHES = 4
 
 const { latestBlock } = useBlockchain()
-const blocks = ref<DisplayBlock[]>([])
-const firstBlockReceived = ref(false)
-const blockOpacities = ref<number[]>(Array.from({ length: MAX_BLOCKS }, () => 1))
-const blockBlurs = ref<number[]>(Array.from({ length: MAX_BLOCKS }, () => 0))
-const blockElements = ref<HTMLElement[]>([])
 
-function updateBlockOpacities() {
-  if (!blockElements.value.length)
-    return
+// Track if blockchain has loaded (first block received)
+const isLoaded = computed(() => latestBlock.value !== null)
 
-  for (let i = 0; i < blockElements.value.length; i++) {
-    const el = blockElements.value[i]
-    if (!el)
-      continue
+// Current block info
+const currentBlockNumber = computed(() => latestBlock.value?.blockNumber ?? null)
+const currentGlobalBatch = computed(() => currentBlockNumber.value !== null ? batchAt(currentBlockNumber.value) : 0)
 
-    const rect = el.getBoundingClientRect()
-    const leftEdge = rect.left
+// Song cycle index (increments every 3 batches)
+const songCycleIndex = computed(() => Math.floor(currentGlobalBatch.value / BATCHES_PER_SONG))
 
-    if (leftEdge < FADE_DISTANCE) {
-      // Calculate opacity: 0 at left edge (0), 1 at FADE_DISTANCE
-      const ratio = Math.max(0, leftEdge / FADE_DISTANCE)
-      blockOpacities.value[i] = ratio
-      // Blur increases as opacity decreases (max 8px blur at edge)
-      blockBlurs.value[i] = (1 - ratio) * 8
-    }
-    else {
-      blockOpacities.value[i] = 1
-      blockBlurs.value[i] = 0
-    }
-  }
-}
+// Position within the song cycle
+const batchInSong = computed(() => currentGlobalBatch.value % BATCHES_PER_SONG)
+const blockInBatch = computed(() => currentBlockNumber.value !== null ? batchIndexAt(currentBlockNumber.value) : 0)
+const blocksElapsedInSong = computed(() => batchInSong.value * BLOCKS_PER_BATCH + blockInBatch.value)
 
-// Prefill with placeholder blocks
-for (let i = 0; i < MAX_BLOCKS; i++) {
-  blocks.value.push({
-    id: `placeholder-${i}`,
-    blockNumber: 0,
-    type: 'micro',
-    validatorAddress: undefined,
-    epoch: 0,
-    batch: 0,
-  })
-}
-
-let velocity = 0
-let offset = blocks.value.length * BLOCK_WIDTH // Start with blocks filling from left
-let frame: number | null = null
-
-const chainElement = ref<HTMLElement>()
-
-function startAnimation() {
-  if (frame)
-    return
-
-  function loop() {
-    frame = requestAnimationFrame(loop)
-    velocity = -Math.floor((-TARGET_OFFSET + offset) ** CHAIN_SPEED_FACTOR)
-    offset += velocity
-
-    if (chainElement.value) {
-      chainElement.value.style.transform = `translate3d(${offset}px, 0, 0)`
-    }
-
-    updateBlockOpacities()
-  }
-
-  loop()
-}
-
-function stopAnimation() {
-  if (!frame)
-    return
-  cancelAnimationFrame(frame)
-  frame = null
-}
-
-onMounted(() => {
-  startAnimation()
+// Generate the 4 visible batches with unique keys based on song cycle
+const visibleBatches = computed(() => {
+  return Array.from({ length: VISIBLE_BATCHES }, (_, i) => ({
+    relativeIndex: i,
+    isNextSong: i >= BATCHES_PER_SONG,
+    uniqueKey: `${songCycleIndex.value}-${i}`,
+  }))
 })
 
-onBeforeUnmount(() => {
-  stopAnimation()
+const currentSongName = computed(() => latestBlock.value ? getCurrentSongName(latestBlock.value.blockNumber) : 'Loading...')
+const nextSongName = computed(() => latestBlock.value ? getNextSongName(latestBlock.value.blockNumber) : '')
+
+// Format block number as array of characters for slot machine effect
+const formattedBlockDigits = computed(() => {
+  if (currentBlockNumber.value === null) return []
+  return currentBlockNumber.value.toLocaleString('en-US').split('')
 })
 
-watch(latestBlock, (newBlock) => {
-  if (!newBlock)
-    return
-
-  // On first block, replace all placeholders with real blocks counting backwards
-  if (!firstBlockReceived.value) {
-    firstBlockReceived.value = true
-    blocks.value = []
-    for (let i = MAX_BLOCKS - 1; i >= 0; i--) {
-      blocks.value.unshift({
-        id: `block-${newBlock.blockNumber - i}`,
-        blockNumber: newBlock.blockNumber - i,
-        type: 'micro',
-        validatorAddress: undefined,
-        epoch: newBlock.epoch,
-        batch: newBlock.batch,
-      })
-    }
-    return
+// Track if this is the initial load (no animation on first render)
+const hasInitialized = ref(false)
+watch(currentBlockNumber, () => {
+  if (!hasInitialized.value && currentBlockNumber.value !== null) {
+    // Small delay to mark as initialized after first render
+    nextTick(() => { hasInitialized.value = true })
   }
-
-  const displayBlock: DisplayBlock = {
-    id: `block-${newBlock.blockNumber}`,
-    blockNumber: newBlock.blockNumber,
-    type: newBlock.type,
-    validatorAddress: newBlock.validatorAddress,
-    epoch: newBlock.epoch,
-    batch: newBlock.batch,
-  }
-
-  // Remove old block BEFORE adding new one to avoid length changes
-  if (blocks.value.length >= MAX_BLOCKS) {
-    blocks.value.shift()
-  }
-
-  blocks.value.push(displayBlock)
-
-  // Always increase offset when adding a block
-  offset += BLOCK_WIDTH
 })
+
+function getBlockState(batchRelativeIndex: number, blockIndexInBatch: number): 'unplayed' | 'played' | 'current' {
+  if (currentBlockNumber.value === null) return 'unplayed'
+  if (batchRelativeIndex >= BATCHES_PER_SONG) return 'unplayed'
+  
+  const blockPositionInSong = batchRelativeIndex * BLOCKS_PER_BATCH + blockIndexInBatch
+  
+  if (blockPositionInSong === blocksElapsedInSong.value) return 'current'
+  if (blockPositionInSong < blocksElapsedInSong.value) return 'played'
+  return 'unplayed'
+}
+
+function getBatchBlockIndices() {
+  return Array.from({ length: BLOCKS_PER_BATCH }, (_, i) => i)
+}
 </script>
 
 <template>
-  <div class="w-full overflow-hidden py-10">
-    <div class="flex items-center justify-end px-10 min-h-32">
-      <div ref="chainElement" class="flex items-center justify-end" style="will-change: transform">
-        <TransitionGroup
-          tag="div"
-          class="flex items-center justify-end gap-4"
-          enter-from-class="opacity-0"
-          enter-active-class="transition-opacity duration-400 ease-in"
-        >
-          <div
-            v-for="(block, index) in blocks"
-            :key="block.id"
-            :ref="(el) => { if (el) blockElements[index] = el as HTMLElement }"
-            class="relative shrink-0 w-24 h-32 block-enter rounded-xl backdrop-blur-xs"
-            :style="{ opacity: blockOpacities[index], filter: `blur(${blockBlurs[index]}px)` }"
+  <div class="w-full flex flex-col items-center px-4 sm:px-8">
+    <!-- Container fades in when blockchain loads -->
+    <AnimatePresence>
+      <Motion
+        v-if="isLoaded"
+        :initial="{ opacity: 0, y: 20 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.6, ease: 'easeOut' }"
+        class="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_30px_120px_rgba(0,0,0,0.45)] ring-1 ring-white/5 p-4 sm:p-6 overflow-hidden"
+      >
+        <!-- Content slides LEFT on song change -->
+        <AnimatePresence :initial="false" mode="popLayout">
+          <Motion
+            :key="songCycleIndex"
+            :initial="{ x: '100%', opacity: 0 }"
+            :animate="{ x: 0, opacity: 1 }"
+            :exit="{ x: '-100%', opacity: 0 }"
+            :transition="{ duration: 0.5, ease: 'easeInOut' }"
           >
-            <!-- Macro Block -->
-            <div
-              v-if="block.type === 'macro'"
-              class="w-full h-full bg-[#0582CA] rounded-lg p-2 flex flex-col items-center justify-between shadow-[0_0_15px_rgba(5,130,202,0.4)] border border-blue-400/50"
-            >
-              <div class="text-center w-full">
-                <div class="text-[0.5rem] font-bold text-white/90 uppercase tracking-wider mb-0.5">
-                  MACRO
+            <!-- Blockline Row -->
+            <div class="flex justify-center">
+              <template v-for="batch in visibleBatches" :key="batch.uniqueKey">
+                <!-- Macro Block -->
+                <div class="batch-item flex-shrink-0 flex items-center">
+                  <div class="size-6 sm:size-8 rounded bg-[#0582CA] shadow-[0_0_12px_rgba(5,130,202,0.5)] flex items-center justify-center mx-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="sm:w-3.5 sm:h-3.5"><polyline points="20 6 9 17 4 12" /></svg>
+                  </div>
                 </div>
-                <div class="text-[0.55rem] font-bold text-white font-['Orbitron'] leading-none tracking-tighter">
-                  #{{ block.blockNumber }}
-                </div>
-              </div>
 
-              <div class="flex-1 flex items-center justify-center">
-                <div class="w-8 h-8 rounded-full border border-white/80 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                <!-- Batch Grid -->
+                <div class="flex-shrink-0 grid grid-rows-4 gap-0.5 p-2" style="grid-template-columns: repeat(15, minmax(0, 1fr));">
+                  <div
+                    v-for="blockIdx in getBatchBlockIndices()"
+                    :key="blockIdx"
+                    class="size-1.5 sm:size-2 rounded-sm transition-all duration-300"
+                    :class="{
+                      'bg-slate-700/40': getBlockState(batch.relativeIndex, blockIdx) === 'unplayed',
+                      'bg-slate-400': getBlockState(batch.relativeIndex, blockIdx) === 'played',
+                      'bg-orange-500 current-block-glow': getBlockState(batch.relativeIndex, blockIdx) === 'current',
+                    }"
+                  />
                 </div>
-              </div>
-
-              <div class="text-center w-full">
-                <div class="text-[0.55rem] text-white/70">
-                  E{{ block.epoch }}
-                </div>
-              </div>
+              </template>
             </div>
 
-            <!-- Micro Block -->
-            <div
-              v-else
-              class="w-full h-full bg-[#0f172a]/90 backdrop-blur-sm rounded-lg p-2 flex flex-col justify-between border border-slate-700"
-            >
-              <div class="w-full">
-                <div class="text-[0.5rem] font-bold text-white font-['Orbitron'] leading-none tracking-tighter">
-                  #{{ block.blockNumber }}
-                </div>
+            <!-- Labels Row - slides with blocks -->
+            <div class="flex mt-4 text-xs sm:text-sm">
+              <div class="flex-[3] text-white/80">
+                <span class="text-white/50">Playing: </span>{{ currentSongName }}
               </div>
-
-              <div class="flex-1 flex items-center justify-center">
-                <div class="text-slate-500 text-[0.6rem] font-medium text-center">
-                  B{{ block.batch }}
-                </div>
-              </div>
-
-              <div class="w-full">
-                <div class="text-[0.5rem] text-slate-500">
-                  E{{ block.epoch }}
-                </div>
+              <div class="flex-1 text-right text-white/50">
+                <span>Next: </span>{{ nextSongName }}
               </div>
             </div>
+          </Motion>
+        </AnimatePresence>
+        
+        <!-- Block counter - slot machine style -->
+        <div class="mt-3 text-center">
+          <div class="text-lg sm:text-xl font-mono text-white/80 tabular-nums flex justify-center overflow-hidden h-7">
+            <template v-for="(char, idx) in formattedBlockDigits" :key="idx">
+              <span v-if="char === ','" class="text-white/40">,</span>
+              <div v-else class="relative w-[0.6em] h-7 overflow-hidden">
+                <AnimatePresence :initial="false" mode="popLayout">
+                  <Motion
+                    :key="`${idx}-${char}`"
+                    :initial="hasInitialized ? { y: '100%', opacity: 0 } : false"
+                    :animate="{ y: 0, opacity: 1 }"
+                    :exit="{ y: '-100%', opacity: 0 }"
+                    :transition="{ duration: 0.3, ease: 'easeOut' }"
+                    class="absolute inset-0 flex items-center justify-center"
+                  >
+                    {{ char }}
+                  </Motion>
+                </AnimatePresence>
+              </div>
+            </template>
           </div>
-        </TransitionGroup>
-      </div>
-    </div>
+        </div>
+      </Motion>
+    </AnimatePresence>
   </div>
 </template>
 
 <style scoped>
-@keyframes orange-splash {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 96, 0, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(255, 96, 0, 0.4);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 96, 0, 0);
-  }
+@keyframes current-glow {
+  0% { box-shadow: 0 0 8px 4px rgba(255, 96, 0, 0.9); }
+  100% { box-shadow: 0 0 2px 1px rgba(255, 96, 0, 0.3); }
 }
 
-.block-enter {
-  animation: orange-splash 0.6s ease-out;
+.current-block-glow {
+  animation: current-glow 1s ease-out forwards;
 }
 </style>
