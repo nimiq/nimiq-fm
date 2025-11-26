@@ -77,16 +77,16 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-slate-900 overflow-hidden text-white">
-    <!-- Circular Gradient Background for Orb -->
-    <div class="absolute inset-0 z-0 orb-gradient-background" />
-
-    <!-- Background Orb Visualization -->
-    <ClientOnly>
-      <div class="absolute inset-0 z-1">
-        <OrbScene :audio-data="0" />
-      </div>
-    </ClientOnly>
+  <div class="relative min-h-screen bg-slate-900 text-white">
+    <!-- Fixed Orb Background (stays in place when page scrolls) -->
+    <div class="fixed inset-0 z-0">
+      <div class="absolute inset-0 orb-gradient-background" />
+      <ClientOnly>
+        <div class="absolute inset-0">
+          <OrbScene :audio-data="0" />
+        </div>
+      </ClientOnly>
+    </div>
 
     <!-- Main Content -->
     <div class="relative z-10 flex flex-col min-h-screen pointer-events-none">
@@ -154,6 +154,12 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
         <div class="relative z-10">
           <BlockchainViewer />
         </div>
+
+        <!-- Validators Panel -->
+        <div class="relative z-10 mt-4">
+          <ValidatorsPanel />
+        </div>
+
         <UFooter class="relative pointer-events-auto bg-transparent border-t-0">
           <p class="text-white/50 text-xs">
             Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Strudel</a>
