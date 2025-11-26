@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
-const BATCHES_PER_SONG = 3
-const BLOCKS_PER_SONG = BLOCKS_PER_BATCH * BATCHES_PER_SONG // 180 blocks
-
-const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
 
 // Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
 let blockchain: ReturnType<typeof useBlockchain> | null = null
+
+// Use the shared blockchain state
+const { latestBlock } = useBlockchain()
 
 async function togglePlay() {
   if (!strudel.value)
@@ -38,8 +36,6 @@ onMounted(async () => {
   blockchain.startListening()
 
   blockchain.onBlockEvent((blockEvent: BlockEvent) => {
-    currentBlock.value = blockEvent
-
     if (!isPlaying.value || !strudel.value)
       return
 
@@ -51,27 +47,15 @@ onMounted(async () => {
 })
 
 const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')
-const displayNowPlaying = computed(() => nowPlayingTitle.value || 'Tuning in...')
-const nextSongTitle = computed(() => currentBlock.value ? getNextSongName(currentBlock.value.blockNumber) : '')
-
-// Progress within 3-batch song cycle (180 blocks total)
-const blocksElapsedInSong = computed(() => {
-  if (!currentBlock.value)
-    return 0
-  const globalBatch = batchAt(currentBlock.value.blockNumber)
-  const batchInSong = globalBatch % BATCHES_PER_SONG // 0, 1, or 2
-  const blockInBatch = batchIndexAt(currentBlock.value.blockNumber) // 0-59
-  return batchInSong * BLOCKS_PER_BATCH + blockInBatch
+const displayNowPlaying = computed(() => {
+  if (nowPlayingTitle.value)
+    return nowPlayingTitle.value
+  if (latestBlock.value)
+    return getCurrentSongName(latestBlock.value.blockNumber)
+  return 'Tuning in...'
 })
-const blocksLeftInSong = computed(() => BLOCKS_PER_SONG - blocksElapsedInSong.value - 1)
-const progressLabel = computed(() => `${blocksLeftInSong.value} blocks left`)
-const blockMeta = computed(() => {
-  if (!currentBlock.value)
-    return 'Waiting for blocks...'
-
-  return `Block ${currentBlock.value.blockNumber} · Batch ${currentBlock.value.batch} · Epoch ${currentBlock.value.epoch}`
-})
-const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.validatorAddress : '')
+const nextSongTitle = computed(() => latestBlock.value ? getNextSongName(latestBlock.value.blockNumber) : '')
+const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
 </script>
 
 <template>
@@ -91,84 +75,104 @@ const validatorAddress = computed(() => currentBlock.value ? currentBlock.value.
       <OrbDebugPanel class="fixed top-4 right-4 z-50 pointer-events-auto" />
     </DevOnly>
 
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-20 pointer-events-auto">
+      <div class="flex items-center justify-between p-4 sm:p-6">
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+          <div class="size-6 sm:size-8 rounded-full bg-amber-500" />
+          <span class="text-lg sm:text-xl font-bold tracking-wide">NIMIQ <span class="text-xs sm:text-sm font-normal px-1.5 py-0.5 bg-white/10 rounded">FM</span></span>
+        </div>
+
+        <!-- Right side links -->
+        <div class="flex items-center gap-4 sm:gap-6 text-sm text-white/70">
+          <button class="flex items-center gap-1.5 hover:text-white transition-colors" @click="togglePlay">
+            <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-4" />
+            <span class="hidden sm:inline">{{ isPlaying ? 'Audio on' : 'Audio off' }}</span>
+          </button>
+          <a href="#" class="hover:text-white transition-colors">What is this?</a>
+        </div>
+      </div>
+    </header>
+
     <!-- Main Content -->
     <div class="relative z-10 flex flex-col min-h-screen pointer-events-none">
       <div class="flex-1" />
 
-      <div class="pointer-events-auto px-4 sm:px-8 pb-6">
-        <div class="max-w-4xl mx-auto bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_30px_120px_rgba(0,0,0,0.45)] ring-1 ring-white/5">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-5 sm:p-6">
-            <button
-              class="w-12 h-12 rounded-full border border-amber-200/60 bg-black/30 hover:border-white/70 hover:shadow-[0_0_30px_rgba(251,191,36,0.45)] transition-all duration-300 flex items-center justify-center text-amber-200"
-              @click="togglePlay"
-            >
-              <span class="sr-only">Toggle playback</span>
-              <UIcon :name="isPlaying ? 'i-heroicons-pause-20-solid' : 'i-heroicons-play-20-solid'" class="w-6 h-6" />
-            </button>
+      <!-- Bottom Section -->
+      <div class="pointer-events-auto z-20 w-full relative">
+        <!-- Gradient Background -->
+        <div class="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" />
 
-            <div class="flex-1 w-full space-y-3">
-              <div class="flex items-center gap-3 text-[0.75rem] uppercase tracking-[0.12em] text-white/70 font-semibold">
-                <span class="text-white/80">Now Playing</span>
-                <span class="ml-auto text-xs text-white/80">{{ progressLabel }}</span>
+        <!-- Content Container -->
+        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6">
+          <!-- Blockchain Viewer Bar -->
+          <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4">
+            <BlockchainViewer class="rounded-t-lg" />
+
+            <div class="flex border border-t-0 border-white/10 rounded-b-lg">
+              <div class="grid grid-cols-[auto_1fr] gap-x-6 items-center p-6 border-r border-white/10 flex-1">
+                <button class="nimiq-btn">
+                  <UIcon :name="isPlaying ? 'i-heroicons-speaker-x-mark' : 'i-heroicons-speaker-wave'" class="size-5" />
+                  <span>{{ isPlaying ? '' : 'Turn on audio' }}</span>
+                </button>
+                <div>
+                  <p class="font-bold text-xl text-white/50">
+                    Now playing
+                    <span class="text-white ml-1">{{ displayNowPlaying }}</span>
+                  </p>
+                  <p class="text-sm text-white/50 mt-1">
+                    Epoch {{ currentEpoch }} · Up next: {{ nextSongTitle }}
+                  </p>
+                </div>
               </div>
 
-              <UProgress
-                :model-value="blocksElapsedInSong"
-                :max="BLOCKS_PER_SONG - 1"
-                :status="false"
-                color="primary"
-                class="w-full"
-                :ui="{
-                  base: 'h-2 rounded-full bg-white/10 overflow-hidden',
-                  indicator: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-200 shadow-[0_0_25px_rgba(56,189,248,0.35)] rounded-full',
-                }"
-              />
+              <ValidatorsPanel />
+            </div>
+          </div>
 
-              <div class="space-y-1">
-                <div class="text-lg sm:text-xl font-semibold text-white">
-                  Now Playing: {{ displayNowPlaying }}
+          <!-- Bottom Row: Now Playing (left) + Validators (right) -->
+          <!-- <div class="flex items-end justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <button
+                class="shrink-0 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-[#0582CA] hover:bg-[#0582CA]/90 transition-all duration-300 flex items-center gap-2 text-white font-medium shadow-lg shadow-[#0582CA]/30"
+                @click="togglePlay"
+              >
+                <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-5" />
+                <span class="text-sm sm:text-base">{{ isPlaying ? 'Audio on' : 'Turn on audio' }}</span>
+              </button>
+
+              <div class="flex flex-col">
+                <div class="text-base sm:text-lg font-medium text-white">
+                  Now playing <span class="font-bold">{{ displayNowPlaying }}</span>
                 </div>
-                <div class="text-sm text-white/60">
-                  Up Next: {{ nextSongTitle }}
-                </div>
-                <div class="text-xs text-white/50">
-                  {{ blockMeta }}
-                </div>
-                <div class="text-xs text-white/50">
-                  {{ validatorAddress }}
+                <div class="text-xs sm:text-sm text-white/60">
+                  Epoch {{ currentEpoch }} · Up next: {{ nextSongTitle }}
                 </div>
               </div>
             </div>
+
+            <ValidatorsPanel />
           </div>
+        </div> -->
         </div>
-      </div>
-
-      <!-- Blockchain Viewer at Bottom -->
-      <div class="pointer-events-auto z-20 w-full pt-0 pb-4 relative overflow-hidden">
-        <!-- Gradient Background -->
-        <div class="absolute inset-0 bg-linear-to-t from-slate-900 to-transparent pointer-events-none" />
-
-        <!-- Blockchain Content -->
-        <div class="relative z-10">
-          <BlockchainViewer />
-        </div>
-
-        <!-- Validators Panel -->
-        <div class="relative z-10 mt-4">
-          <ValidatorsPanel />
-        </div>
-
-        <UFooter class="relative pointer-events-auto bg-transparent border-t-0">
-          <p class="text-white/50 text-xs">
-            Made with ❤️ by <a href="https://nimiq.com" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Team Nimiq</a> using <a href="https://strudel.cc/" target="_blank" rel="noopener" class="underline hover:text-white transition-colors">Strudel</a>
-          </p>
-        </UFooter>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.nimiq-btn {
+  background: var(--radial-gradient-light-blue);
+  padding: 16px 24px;
+  border-radius: 120px;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .orb-gradient-background {
   background: radial-gradient(
     circle at 50% 45%,
