@@ -41,30 +41,40 @@ function getValidatorState(address: string) {
 // Get validator name by address
 function getValidatorName(address: string): string {
   const validator = sortedBySlots.value.find(v => v.address === address)
-  return validator?.name || ''
+  return validator?.name || address
 }
 
 // Get active validator name for display
-const activeValidatorName = ref('')
+const activeValidatorName = ref('Waiting for blocks...')
 watch(latestBlock, () => {
   if (latestBlock.value?.validatorAddress)
-    activeValidatorName.value = getValidatorName(latestBlock.value.validatorAddress)
+    activeValidatorName.value = getValidatorName(latestBlock.value.validatorAddress) || activeValidatorName.value
 })
 </script>
 
 <template>
-  <div class="w-max m-3 bg-white/5 backdrop-blur-md rounded-md py-5 px-6">
+  <div class="w-max m-3 hover:bg-white/5 transition-colors rounded-md py-5 px-6 cursor-zoom-in">
     <div class="flex items-center justify-between gap-4 mb-2">
-      <div v-for="i in 10" :key="i" class="size-10 rounded-full bg-white/20 mx-1 animate-pulse-delay" :style="{ animationDelay: `${i * 0.1}s` }" />
+      <div v-for="v in topValidators" :key="v.address" class="flex items-center gap-0.5">
+        <div
+          class="validator-hex"
+          :class="{
+            'validator-glow': getValidatorState(v.address) === 'glow',
+            'validator-fading': getValidatorState(v.address) === 'fading',
+          }"
+        >
+          <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
+        </div>
+      </div>
     </div>
     <AnimatePresence mode="wait">
       <Motion
         :key="activeValidatorName"
-        :initial="{ opacity: 0, y: 5 }"
+        :initial="{ opacity: 0, y: 4 }"
         :animate="{ opacity: 1, y: 0 }"
-        :exit="{ opacity: 0, y: -5 }"
+        :exit="{ opacity: 0, y: -4 }"
         :transition="{ duration: 0.2 }"
-        class="text-xs text-white/70"
+        class="text-sm text-white/80 font-medium"
       >
         {{ activeValidatorName }}
       </Motion>
@@ -116,48 +126,32 @@ watch(latestBlock, () => {
 </template>
 
 <style scoped>
-.validator-hex {
-  width: 36px;
-  height: 32px;
-  background: rgba(30, 41, 59, 0.8);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  position: relative;
+.validator-img {
+  filter: grayscale(80%);
+  opacity: 0.6;
 }
 
-@media (min-width: 640px) {
-  .validator-hex {
-    width: 42px;
-    height: 36px;
-  }
-}
-
-.validator-hex img {
-  filter: grayscale(50%) brightness(0.8);
-  opacity: 0.7;
-}
-
-.validator-hex.validator-glow {
-  background: rgba(60, 80, 120, 0.9);
-  box-shadow: 0 0 16px rgba(100, 150, 255, 0.5);
-}
-
-.validator-hex.validator-glow img {
-  filter: grayscale(0%) brightness(1.1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+.validator-img.validator-glow {
+  filter: grayscale(0%) drop-shadow(0 0 10px rgba(255, 96, 0, 0.5)) drop-shadow(0 0 16px rgba(255, 96, 0, 0.2));
   opacity: 1;
 }
 
-.validator-hex.validator-fading {
-  background: rgba(30, 41, 59, 0.8);
-  transition: all 1s ease-out;
+.validator-img.validator-fading {
+  filter: grayscale(80%);
+  opacity: 0.6;
+  transition: filter 1s ease-out, opacity 1s ease-out;
 }
 
-.validator-hex.validator-fading img {
-  filter: grayscale(50%) brightness(0.8);
-  opacity: 0.7;
-  transition: filter 1s ease-out, opacity 1s ease-out;
+.validator-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.validator-text.validator-text-glow {
+  color: rgb(251, 146, 60);
+}
+
+.validator-text.validator-text-fading {
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 1s ease-out;
 }
 </style>
