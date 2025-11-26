@@ -6,9 +6,14 @@ import {
   NODE_PALETTE,
   ORB_RADIUS,
   PEER_LIFETIME_MS,
+  VALIDATOR_ADDRESSES,
   VALIDATOR_COLOR,
   VALIDATOR_COUNT,
 } from './orb-constants'
+
+// Helper to get current validator count value
+const getValidatorCount = () => VALIDATOR_COUNT.value
+const getValidatorAddresses = () => VALIDATOR_ADDRESSES.value
 
 // Extend NodeData to store a specific base color for that node
 interface ExtendedNodeData extends NodeData {
@@ -22,8 +27,11 @@ export function generateGraph() {
   // Helper to get random palette color
   const getRandomColor = () => new THREE.Color(NODE_PALETTE[Math.floor(Math.random() * NODE_PALETTE.length)])
 
+  const validatorCount = getValidatorCount()
+  const validatorAddresses = getValidatorAddresses()
+
   // --- 1. Generate Validators ---
-  for (let i = 0; i < VALIDATOR_COUNT; i++) {
+  for (let i = 0; i < validatorCount; i++) {
     const u = Math.random()
     const v = Math.random()
     const theta = 2 * Math.PI * u
@@ -54,11 +62,13 @@ export function generateGraph() {
       lastBlockTime: -999,
       // Validators: bright purple/violet
       baseColor: new THREE.Color(VALIDATOR_COLOR),
+      // Assign validator address from the list
+      validatorAddress: validatorAddresses[i],
     })
   }
 
   // --- 2. Generate Peers ---
-  for (let i = VALIDATOR_COUNT; i < NODE_COUNT; i++) {
+  for (let i = validatorCount; i < NODE_COUNT; i++) {
     const u = Math.random()
     const v = Math.random()
     const theta = 2 * Math.PI * u
@@ -108,8 +118,8 @@ export function generateGraph() {
 
   // --- 3. Generate Links ---
   // Validators Mesh - Full mesh: connect all validators to all other validators
-  for (let i = 0; i < VALIDATOR_COUNT; i++) {
-    for (let j = i + 1; j < VALIDATOR_COUNT; j++) {
+  for (let i = 0; i < validatorCount; i++) {
+    for (let j = i + 1; j < validatorCount; j++) {
       nodes[i]!.connections.push(j)
       nodes[j]!.connections.push(i)
       links.push({
@@ -125,10 +135,10 @@ export function generateGraph() {
   }
 
   // Peers
-  for (let i = VALIDATOR_COUNT; i < NODE_COUNT; i++) {
+  for (let i = validatorCount; i < NODE_COUNT; i++) {
     // Connect to nearby validators
     const valCandidates = []
-    for (let vIdx = 0; vIdx < VALIDATOR_COUNT; vIdx++) {
+    for (let vIdx = 0; vIdx < validatorCount; vIdx++) {
       const d = nodes[i]!.targetPosition.distanceTo(nodes[vIdx]!.targetPosition)
       valCandidates.push({ id: vIdx, dist: d })
     }
@@ -160,7 +170,7 @@ export function generateGraph() {
     // Connect to nearby peers
     const peerDistances = []
     const scanRange = 60
-    const startScan = Math.max(VALIDATOR_COUNT, i - scanRange)
+    const startScan = Math.max(validatorCount, i - scanRange)
     const endScan = Math.min(NODE_COUNT, i + scanRange)
 
     for (let j = startScan; j < endScan; j++) {

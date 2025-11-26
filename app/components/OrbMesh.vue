@@ -23,6 +23,9 @@ defineProps<{
   audioData: number
 }>()
 
+// Helper to get current validator count
+const getValidatorCount = () => VALIDATOR_COUNT.value
+
 // Generate Graph (only once, not reactively - so lastBlockTime persists)
 const graphData = shallowRef<{ nodes: NodeData[], links: LinkData[] } | null>(null)
 if (import.meta.client) {
@@ -128,15 +131,18 @@ onMounted(() => {
   onBlockEvent((block: BlockEvent) => {
     const now = Date.now() / 1000
 
-    // Select validator based on address hash or random
-    let validatorIdx = Math.floor(Math.random() * VALIDATOR_COUNT)
-    if (block.validatorAddress) {
-      let hash = 0
-      for (let i = 0; i < block.validatorAddress.length; i++) {
-        hash = (hash << 5) - hash + block.validatorAddress.charCodeAt(i)
-        hash |= 0
-      }
-      validatorIdx = Math.abs(hash) % VALIDATOR_COUNT
+    // Find validator node by address
+    let validatorIdx = -1
+    if (block.validatorAddress && graphData.value) {
+      validatorIdx = graphData.value.nodes.findIndex(
+        n => n.type === NodeType.VALIDATOR && n.validatorAddress === block.validatorAddress,
+      )
+    }
+
+    // Fallback to random validator if address not found
+    if (validatorIdx === -1) {
+      const validatorCount = getValidatorCount()
+      validatorIdx = Math.floor(Math.random() * validatorCount)
     }
 
     if (graphData.value) {
@@ -176,9 +182,9 @@ onBeforeRender(({ delta }) => {
     // Infinity (lemniscate) slow rotation pattern
     const t = time * 0.1 // Very slow base speed
     // Parametric infinity curve mapped to rotation
-    groupRef.value.rotation.y += delta * 0.08
-    groupRef.value.rotation.x = Math.sin(t * 2) * 0.15
-    groupRef.value.rotation.z = Math.cos(t) * 0.1
+    groupRef.value.rotation.y += delta * 0.025
+    groupRef.value.rotation.x = Math.sin(t * 2) * 0.05
+    groupRef.value.rotation.z = Math.cos(t) * 0.025
   }
 
   // 1. Dynamic Rewiring - throttled to reduce computation
@@ -186,7 +192,7 @@ onBeforeRender(({ delta }) => {
     const linkIdx = Math.floor(Math.random() * links.length)
     const link = links[linkIdx]
     if (link && !link.isValidatorLink && nodes[link.sourceIndex]!.state === 'ACTIVE' && link.connectionState === 'CONNECTED') {
-      const candidateId = VALIDATOR_COUNT + Math.floor(Math.random() * (NODE_COUNT - VALIDATOR_COUNT))
+      const candidateId = getValidatorCount() + Math.floor(Math.random() * (NODE_COUNT - getValidatorCount()))
       if (candidateId !== link.sourceIndex && candidateId !== link.targetIndex) {
         const dist = nodes[link.sourceIndex]!.currentPosition.distanceTo(nodes[candidateId]!.currentPosition)
         if (dist < 6.0)

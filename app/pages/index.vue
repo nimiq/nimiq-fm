@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+import { setValidatorAddresses } from '~/utils/orb-constants'
 
 const BATCHES_PER_SONG = 3
 const BLOCKS_PER_SONG = BLOCKS_PER_BATCH * BATCHES_PER_SONG // 180 blocks
 
 const currentBlock = ref<BlockEvent | null>(null)
 const isPlaying = ref(false)
-const cycleTitle = 'Macroblock Song Cycle'
 
 // Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
@@ -47,6 +47,9 @@ onMounted(async () => {
 
     strudel.value.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
+
+  const { addresses } = await blockchain.getValidators()
+  setValidatorAddresses(addresses)
 })
 
 const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')

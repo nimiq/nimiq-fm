@@ -56,7 +56,17 @@ function _useBlockchain() {
     }
   })
 
-  return { latestBlock: readonly(latestBlock), startListening, onBlockEvent }
+  async function getValidators() {
+    const { data } = await useFetch<{ count: number, validators: { address: string }[] }>('/api/validator-count')
+    const validators = data.value?.validators ?? []
+    const addresses = validators.map(v => v.address)
+    return {
+      count: data.value?.count ?? 40,
+      addresses,
+    }
+  }
+
+  return { latestBlock: readonly(latestBlock), startListening, onBlockEvent, getValidators }
 }
 
 export const useBlockchain = createSharedComposable(_useBlockchain)

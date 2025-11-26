@@ -18,6 +18,7 @@ export interface NodeData {
   type: NodeType
   connections: number[] // Indices of connected nodes
   stake: number // For validators
+  validatorAddress?: string // Address for validator nodes
 
   // Animation State
   state: LifeCycleState

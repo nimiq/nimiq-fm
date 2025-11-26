@@ -1,7 +1,19 @@
+import { ref } from 'vue'
+
 // Visual Configuration
 export const ORB_RADIUS = 14
 export const NODE_COUNT = 800
-export const VALIDATOR_COUNT = 40
+export const VALIDATOR_COUNT = ref(40)
+export const VALIDATOR_ADDRESSES = ref<string[]>([])
+
+export function setValidatorCount(count: number) {
+  VALIDATOR_COUNT.value = count
+}
+
+export function setValidatorAddresses(addresses: string[]) {
+  VALIDATOR_ADDRESSES.value = addresses
+  VALIDATOR_COUNT.value = addresses.length
+}
 
 // Animation Timings
 export const BLOCK_INTERVAL_MS = 1200
