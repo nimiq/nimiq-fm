@@ -104,7 +104,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
         <div class="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" />
 
         <!-- Content Container -->
-        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 max-w-[1680px] max-h-[calc(100vh-80px)]">
+        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 mx-auto max-w-[1680px] max-h-[calc(100vh-80px)]">
           <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4 border border-white/10">
             <BlockchainViewer class="border-b border-white/10" />
 
