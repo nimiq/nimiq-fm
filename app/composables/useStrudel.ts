@@ -4,6 +4,7 @@ let initPromise: Promise<void> | null = null
 
 export function useStrudel() {
   const nowPlaying = ref('')
+  const selectedValidator = ref<string | null>(null)
 
   async function init() {
     if (!import.meta.client)
@@ -86,8 +87,11 @@ export function useStrudel() {
       return
 
     try {
+      // Use selected validator address if one is manually chosen, otherwise use block producer
+      const addressToPlay = selectedValidator.value || validatorAddress
+
       const { makeHash } = await import('identicons-esm/core')
-      const hashStr = makeHash(validatorAddress || '')
+      const hashStr = makeHash(addressToPlay || '')
       const digits = hashStr.split('').map(Number).map(n => n + 32)
 
       const songInfo = await loadSong(blockNumber)
@@ -113,5 +117,17 @@ export function useStrudel() {
     }
   }
 
-  return { init, start, playBlockSound, stop: () => scheduler?.stop(), nowPlaying }
+  const setSelectedValidator = (address: string | null) => {
+    selectedValidator.value = address
+  }
+
+  return {
+    init,
+    start,
+    playBlockSound,
+    stop: () => scheduler?.stop(),
+    nowPlaying,
+    setSelectedValidator,
+    selectedValidator: readonly(selectedValidator),
+  }
 }

@@ -145,7 +145,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
                 <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :epoch="currentEpoch" />
               </div>
 
-              <SmallValidatorsPanel class="border-t sm:border-t-0 border-white/10 rounded-b-lg sm:rounded-none" @is-expanded="(value) => isValidatorsPanelExpanded = value" />
+              <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />
             </div>
             <ValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
           </div>
