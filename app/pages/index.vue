@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Motion } from 'motion-v'
 import { epochAt } from '@nimiq/utils/albatross-policy'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
@@ -110,8 +111,11 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
         <!-- Right side links -->
         <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">
           <button class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0" @click="togglePlay">
-            <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-5 sm:size-4" />
-            <span class="hidden sm:inline">{{ isPlaying ? 'Audio on' : 'Audio off' }}</span>
+            <AudioBars :is-playing="isPlaying" class="size-5 sm:size-4" />
+            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-4 text-left">
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 1 : 0, filter: isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 0 : 1, filter: isPlaying ? 'blur(4px)' : 'blur(0px)' }" :transition="{ duration: 0.2 }">off</Motion>
+            </span></span>
           </button>
           <button class="hover:text-white transition-colors cursor-pointer text-base sm:text-sm p-2 sm:p-0" @click="showWhatIsThis = true">
             <span class="hidden sm:inline">What is this?</span>

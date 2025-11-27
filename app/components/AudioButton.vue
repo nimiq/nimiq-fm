@@ -12,17 +12,13 @@ const isMobile = breakpoints.smaller('sm')
 const isHovered = ref(false)
 const hasLeftAfterPlay = ref(false)
 
-// Reset hasLeftAfterPlay when stopping
 watch(() => props.isPlaying, (playing) => {
   if (!playing)
     hasLeftAfterPlay.value = false
 })
 
-// Only show orange if user has left and re-entered after clicking play
 const isOrange = computed(() => props.isPlaying && isHovered.value && hasLeftAfterPlay.value)
-const _showRing = computed(() => props.isPlaying && isHovered.value && hasLeftAfterPlay.value)
 
-// Determine background based on state
 const background = computed(() => {
   if (isOrange.value)
     return 'radial-gradient(100% 100% at 100% 100%, #FD6216 0%, #FC8701 100%)'
@@ -39,14 +35,13 @@ const background = computed(() => {
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false; if (isPlaying) hasLeftAfterPlay = true"
   >
-    <!-- Rotating shimmer ring (circle state) - larger with gap -->
+    <!-- Rotating shimmer ring -->
     <Motion
       tag="span"
       class="absolute size-16 -left-2 -top-2 rounded-full pointer-events-none"
       :animate="{ opacity: isPlaying ? 1 : 0, scale: isPlaying ? 1 : 0.8 }"
       :transition="{ opacity: { duration: 0.3, delay: isPlaying ? 0.2 : 0 }, scale: { duration: 0.3 } }"
     >
-      <!-- Rotating gradient ring with stroke effect -->
       <svg class="absolute inset-0 size-full shimmer-ring" viewBox="0 0 64 64">
         <circle cx="32" cy="32" r="30" fill="none" stroke="url(#ring-gradient)" stroke-width="2.5" />
         <defs>
@@ -63,29 +58,15 @@ const background = computed(() => {
     <Motion
       tag="span"
       class="h-10 sm:h-12 flex items-center justify-center rounded-full relative overflow-hidden"
-      :animate="{
-        width: isPlaying ? (isMobile ? '40px' : '48px') : (isMobile ? '110px' : '140px'),
-        background,
-      }"
-      :transition="{
-        width: { type: 'spring', stiffness: 500, damping: 35, delay: isPlaying ? 0.08 : 0.15 },
-        background: { duration: 0.2 },
-      }"
+      :animate="{ width: isPlaying ? (isMobile ? '40px' : '48px') : (isMobile ? '110px' : '140px'), background }"
+      :transition="{ width: { type: 'spring', stiffness: 500, damping: 35, delay: isPlaying ? 0.08 : 0.15 }, background: { duration: 0.2 } }"
     >
       <!-- Pill content: icon + text -->
       <Motion
         tag="span"
         class="flex items-center gap-1.5 sm:gap-2 font-bold text-white text-sm sm:text-base whitespace-nowrap absolute"
-        :animate="{
-          opacity: isPlaying ? 0 : 1,
-          scale: isPlaying ? 0.85 : 1,
-          x: isPlaying ? -20 : 0,
-        }"
-        :transition="{
-          opacity: { duration: 0.1, delay: isPlaying ? 0 : 0.2 },
-          scale: { duration: 0.15 },
-          x: { duration: 0.15 },
-        }"
+        :animate="{ opacity: isPlaying ? 0 : 1, scale: isPlaying ? 0.85 : 1, x: isPlaying ? -20 : 0 }"
+        :transition="{ opacity: { duration: 0.1, delay: isPlaying ? 0 : 0.2 }, scale: { duration: 0.15 }, x: { duration: 0.15 } }"
       >
         <span class="shrink-0" v-html="volumeSvg" />
         <span>Tune in</span>
@@ -96,17 +77,11 @@ const background = computed(() => {
         tag="span"
         class="absolute"
         :style="{ color: isOrange ? '#fff' : '#334155' }"
-        :animate="{
-          opacity: isPlaying ? 1 : 0,
-          scale: isPlaying ? 1 : 0.5,
-        }"
-        :transition="{
-          opacity: { duration: 0.15, delay: isPlaying ? 0.2 : 0 },
-          scale: { type: 'spring', stiffness: 600, damping: 25, delay: isPlaying ? 0.18 : 0 },
-        }"
+        :animate="{ opacity: isPlaying ? 1 : 0, scale: isPlaying ? 1 : 0.5 }"
+        :transition="{ opacity: { duration: 0.15, delay: isPlaying ? 0.2 : 0 }, scale: { type: 'spring', stiffness: 600, damping: 25, delay: isPlaying ? 0.18 : 0 } }"
       >
         <Transition name="icon-swap" mode="out-in">
-          <span v-if="!isOrange" key="vol" v-html="volumeSvg" />
+          <AudioBars v-if="!isOrange" key="bars" :is-playing="isPlaying" class="size-5 sm:size-6" />
           <span v-else key="mute" v-html="muteSvg" />
         </Transition>
       </Motion>
@@ -115,24 +90,8 @@ const background = computed(() => {
 </template>
 
 <style scoped>
-.icon-swap-enter-active,
-.icon-swap-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
-}
-
-.icon-swap-enter-from,
-.icon-swap-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-/* Rotating shimmer ring */
-.shimmer-ring {
-  animation: shimmer-rotate 3s linear infinite;
-}
-
-@keyframes shimmer-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+.icon-swap-enter-active, .icon-swap-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.icon-swap-enter-from, .icon-swap-leave-to { opacity: 0; transform: scale(0.8); }
+.shimmer-ring { animation: shimmer-rotate 3s linear infinite; }
+@keyframes shimmer-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
