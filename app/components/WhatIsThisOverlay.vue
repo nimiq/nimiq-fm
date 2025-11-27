@@ -2,10 +2,9 @@
 import { AnimatePresence, Motion } from 'motion-v'
 import { onKeyStroke } from '@vueuse/core'
 
-defineProps<{ show: boolean }>()
-const emit = defineEmits<{ close: [] }>()
+const show = defineModel<boolean>({ required: true })
 
-onKeyStroke('Escape', () => emit('close'))
+onKeyStroke('Escape', () => show.value = false)
 
 const callouts = [
   {
@@ -51,7 +50,7 @@ const callouts = [
         :transition="{ duration: 0.3 }"
       >
         <!-- Backdrop (clickable to close) -->
-        <div class="absolute inset-0" @click="emit('close')" />
+        <div class="absolute inset-0" @click="show = false" />
 
         <!-- Close hint -->
         <Motion
@@ -59,7 +58,7 @@ const callouts = [
           :initial="{ opacity: 0, y: -10 }"
           :animate="{ opacity: 1, y: 0 }"
           :transition="{ delay: 0.3, duration: 0.4, easing: [0.16, 1, 0.3, 1] }"
-          @click="emit('close')"
+          @click="show = false"
         >
           Click anywhere to close
         </Motion>

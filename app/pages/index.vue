@@ -3,7 +3,7 @@ import { epochAt } from '@nimiq/utils/albatross-policy'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
 const isPlaying = ref(false)
-const isInfoModalOpen = ref(false)
+const showWhatIsThis = ref(false)
 
 // Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
@@ -75,7 +75,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
 
     <!-- Debug Panel (Dev Only) -->
     <DevOnly>
-      <OrbDebugPanel class="fixed top-4 right-4 z-50 pointer-events-auto" />
+      <OrbDebugPanel class="fixed bottom-4 right-4 z-50 pointer-events-auto" />
     </DevOnly>
 
     <!-- Header -->
@@ -90,9 +90,12 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
             <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-4" />
             <span class="hidden sm:inline">{{ isPlaying ? 'Audio on' : 'Audio off' }}</span>
           </button>
-          <button class="hover:text-white transition-colors cursor-pointer" @click="isInfoModalOpen = true">
+          <button class="hover:text-white transition-colors cursor-pointer" @click="showWhatIsThis = true">
             What is this?
           </button>
+          <NuxtLink to="https://nimiq.com/home" target="_blank" external class="nimiq-pill-blue nq-arrow">
+            Visit nimiq.com
+          </NuxtLink>
         </div>
       </div>
     </header>
@@ -125,8 +128,8 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
       </div>
     </div>
 
-    <!-- Info Modal -->
-    <InfoModal v-model="isInfoModalOpen" />
+    <!-- What is this overlay -->
+    <WhatIsThisOverlay v-model="showWhatIsThis" />
   </div>
 </template>
 
@@ -140,6 +143,39 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.nimiq-pill-blue {
+  background: var(--radial-gradient-light-blue);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: white;
+  transition: filter 0.2s ease;
+}
+
+.nimiq-pill-blue:hover {
+  filter: brightness(1.1);
+}
+
+.nq-arrow::after {
+  content: '';
+  display: inline-block;
+  -webkit-mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMTIgMTIiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgZD0iTTQuNjY2IDEwIDEgNmwzLjY2Ny00TTIuNjE5IDZIMTEiLz48L3N2Zz4=') no-repeat;
+  mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMTIgMTIiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgZD0iTTQuNjY2IDEwIDEgNmwzLjY2Ny00TTIuNjE5IDZIMTEiLz48L3N2Zz4=') no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  background-color: currentColor;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.4em;
+  margin-bottom: 1px;
+  transform: rotate(135deg);
+  transition: transform 100ms ease-out;
+}
+
+.nq-arrow:hover::after {
+  transform: rotate(135deg) translate(-0.15em, 0);
 }
 
 .orb-gradient-background {
