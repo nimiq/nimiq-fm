@@ -79,7 +79,8 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-20 pointer-events-auto">
       <div class="flex items-center justify-between p-4 sm:p-6">
-        <NimiqFmLogo class="w-28" />
+        <!-- Logo -->
+        <img src="/logo-dark.svg" alt="Nimiq FM" class="h-4 sm:h-5">
 
         <!-- Right side links -->
         <div class="flex items-center gap-4 sm:gap-6 text-sm text-white/70">
@@ -102,7 +103,7 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
         <div class="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" />
 
         <!-- Content Container -->
-        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 max-h-[calc(100vh-80px)]">
+        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 max-w-[1680px] max-h-[calc(100vh-80px)]">
           <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4 border border-white/10">
             <BlockchainViewer class="border-b border-white/10" />
 

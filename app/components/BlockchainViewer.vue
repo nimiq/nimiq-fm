@@ -1,196 +1,176 @@
 <script setup lang="ts">
-import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
 import { AnimatePresence, Motion } from 'motion-v'
+import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
 import { useBlockchain } from '~/composables/useBlockchain'
 import { getSongNameByIndex } from '~/utils/song'
 
 const BATCHES_PER_SONG = 3
-const VISIBLE_BATCHES = 6
+const BLOCKS_PER_ROW = 30
+const BLOCK_SIZE = 4
+const BLOCK_GAP = 4
+const MACRO_SIZE = 14
+const MACRO_GAP = 6
 
 const { latestBlock } = useBlockchain()
 
-// Track if blockchain has loaded (first block received)
-const isLoaded = computed(() => latestBlock.value !== null)
-
-// Current block info
 const currentBlockNumber = computed(() => latestBlock.value?.blockNumber ?? null)
 const currentGlobalBatch = computed(() => currentBlockNumber.value !== null ? batchAt(currentBlockNumber.value) : 0)
 const currentBatch = computed(() => latestBlock.value?.batch ?? 0)
-
-// Song cycle index (increments every 3 batches)
-const songCycleIndex = computed(() => Math.floor(currentGlobalBatch.value / BATCHES_PER_SONG))
-
-// Position within the song cycle
+const currentSongIndex = computed(() => Math.floor(currentGlobalBatch.value / BATCHES_PER_SONG))
 const batchInSong = computed(() => currentGlobalBatch.value % BATCHES_PER_SONG)
 const blockInBatch = computed(() => currentBlockNumber.value !== null ? batchIndexAt(currentBlockNumber.value) : 0)
-const blocksElapsedInSong = computed(() => batchInSong.value * BLOCKS_PER_BATCH + blockInBatch.value)
+const blocksElapsedInCurrentSong = computed(() => batchInSong.value * BLOCKS_PER_BATCH + blockInBatch.value)
 
-const visibleBatches = computed(() => {
-  return Array.from({ length: VISIBLE_BATCHES }, (_, i) => ({
-    relativeIndex: i,
-    isNextSong: i >= BATCHES_PER_SONG,
-    uniqueKey: `${songCycleIndex.value}-${i}`,
-    songName: getSongNameByIndex(songCycleIndex.value + Math.floor(i / BATCHES_PER_SONG)),
-    isFirstOfSong: i === 0 || i === BATCHES_PER_SONG,
+// Calculate sizes
+const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP // 236px
+const songWidth = MACRO_SIZE + MACRO_GAP + 3 * (batchWidth + BLOCK_GAP) // ~740px
+const prevSongOffset = songWidth - 80 // Show only last ~80px of previous song
+
+// Show prev, current, next, next-next (4 songs for smooth transition)
+const visibleSongs = computed(() => {
+  return [-1, 0, 1, 2].map(offset => ({
+    offset,
+    songIndex: currentSongIndex.value + offset,
+    name: getSongNameByIndex(currentSongIndex.value + offset),
   }))
 })
 
-// Format block number as array of characters for slot machine effect
-const formattedBlockDigits = computed(() => {
-  if (currentBlockNumber.value === null)
-    return []
-  return currentBlockNumber.value.toLocaleString('en-US').replace(/,/g, ' ').split('')
-})
+const glowingBlock = ref<string | null>(null)
 
-// Track if this is the initial load (no animation on first render)
-const hasInitialized = ref(false)
-watch(currentBlockNumber, () => {
-  if (!hasInitialized.value && currentBlockNumber.value !== null) {
-    // Small delay to mark as initialized after first render
-    nextTick(() => {
-      hasInitialized.value = true
-    })
+watch(currentBlockNumber, (newBlock, oldBlock) => {
+  if (oldBlock !== null && newBlock !== null && newBlock !== oldBlock && blocksElapsedInCurrentSong.value > 0) {
+    const prevBlockPos = blocksElapsedInCurrentSong.value - 1
+    const prevBatchInSong = Math.floor(prevBlockPos / BLOCKS_PER_BATCH)
+    const prevBlockInBatch = prevBlockPos % BLOCKS_PER_BATCH
+    glowingBlock.value = `0-${prevBatchInSong}-${prevBlockInBatch}`
+    setTimeout(() => { glowingBlock.value = null }, 500)
   }
 })
 
-function getBlockState(batchRelativeIndex: number, blockIndexInBatch: number): 'unplayed' | 'played' | 'current' {
-  if (currentBlockNumber.value === null)
-    return 'unplayed'
-  if (batchRelativeIndex >= BATCHES_PER_SONG)
-    return 'unplayed'
+function getBlockState(songOffset: number, batchIdx: number, blockIdx: number): 'unplayed' | 'played' | 'current' | 'glowing' {
+  if (songOffset < 0) return 'played' // Previous songs are fully played
+  if (songOffset > 0) return 'unplayed' // Future songs are unplayed
 
-  const blockPositionInSong = batchRelativeIndex * BLOCKS_PER_BATCH + blockIndexInBatch
-
-  if (blockPositionInSong === blocksElapsedInSong.value)
-    return 'current'
-  if (blockPositionInSong < blocksElapsedInSong.value)
-    return 'played'
+  const blockPositionInSong = batchIdx * BLOCKS_PER_BATCH + blockIdx
+  if (glowingBlock.value === `${songOffset}-${batchIdx}-${blockIdx}`) return 'glowing'
+  if (blockPositionInSong === blocksElapsedInCurrentSong.value) return 'current'
+  if (blockPositionInSong < blocksElapsedInCurrentSong.value) return 'played'
   return 'unplayed'
 }
 
-function getBatchBlockIndices() {
-  return Array.from({ length: BLOCKS_PER_BATCH }, (_, i) => i)
+// Generate blocks in column-first order: col 0 (0,1), col 1 (2,3), etc.
+function getBlocksColumnFirst() {
+  const blocks = []
+  for (let col = 0; col < BLOCKS_PER_ROW; col++) {
+    for (let row = 0; row < 2; row++) {
+      blocks.push({ index: col * 2 + row, row, col })
+    }
+  }
+  return blocks
 }
+
+const formattedBatch = computed(() => currentBatch.value.toLocaleString('en-US').replace(/,/g, ' '))
+const formattedBlock = computed(() => currentBlockNumber.value?.toLocaleString('en-US').replace(/,/g, ' ') ?? '')
+const batchDigits = computed(() => formattedBatch.value.split(' '))
+const blockDigits = computed(() => formattedBlock.value.split(' '))
+
+// Animation offset for song transitions
+const transitionOffset = ref(0)
+
+watch(currentSongIndex, (newIdx, oldIdx) => {
+  if (oldIdx !== undefined && newIdx > oldIdx) {
+    // Song advanced: start at old position (negative offset = less scroll = shows right side)
+    // then animate to 0 (normal position)
+    transitionOffset.value = -(songWidth + 16)
+    setTimeout(() => { transitionOffset.value = 0 }, 20)
+  }
+})
+
+// Scroll position: prevSongOffset + transition animation
+const scrollX = computed(() => prevSongOffset + transitionOffset.value)
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto p-6">
-    <div class="flex justify-center items-center flex-nowrap">
-      <template v-for="batch in visibleBatches" :key="batch.uniqueKey">
-        <!-- Show macro block as special only if it's the first of a song -->
-        <template v-if="batch.isFirstOfSong">
-          <div class="size-5 sm:size-6 rounded bg-white flex items-center justify-center shrink-0 ml-4 mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="sm:w-3 sm:h-3"><polyline points="20 6 9 17 4 12" /></svg>
-          </div>
-        </template>
+  <div class="border overflow-hidden">
+    <div class="relative w-full py-4 px-6">
+      <div class="overflow-hidden relative">
+        <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
+        <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
+        <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
+          <template v-for="song in visibleSongs" :key="song.songIndex">
+            <div class="flex items-center shrink-0" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
+              <!-- Macro block -->
+              <div class="size-3.5 rounded bg-white flex items-center justify-center shrink-0 mr-1.5" :class="{ 'opacity-20': song.offset !== 0 }">
+                <div class="size-1 rounded-full bg-[#0f1e3d]" />
+              </div>
 
-        <div class="grid grid-rows-2 gap-x-1 ml-1 gap-y-1" style="grid-template-columns: repeat(30, minmax(0, 1fr)); grid-auto-flow: column;">
-          <div
-            v-for="blockIdx in getBatchBlockIndices()"
-            :key="blockIdx"
-            class="size-1 rounded-[1px] transition-all duration-1000"
-            :class="{
-              'bg-slate-600/50': getBlockState(batch.relativeIndex, blockIdx) === 'unplayed',
-              'bg-white': getBlockState(batch.relativeIndex, blockIdx) === 'played',
-              'bg-orange-500 current-block-glow': getBlockState(batch.relativeIndex, blockIdx) === 'current',
-            }"
-          />
-        </div>
-      </template>
-    </div>
-
-    <!-- <AnimatePresence>
-      <Motion
-        v-if="isLoaded"
-        :initial="{ opacity: 0, y: 20 }"
-        :animate="{ opacity: 1, y: 0 }"
-        :transition="{ duration: 0.6, ease: 'easeOut' }"
-        class="overflow-hidden"
-      >
-
-        <AnimatePresence :initial="false" mode="popLayout">
-          <Motion
-            :key="songCycleIndex"
-            :initial="{ x: '100%', opacity: 0 }"
-            :animate="{ x: 0, opacity: 1 }"
-            :exit="{ x: '-100%', opacity: 0 }"
-            :transition="{ duration: 0.5, ease: 'easeInOut' }"
-          >
-
-            <div class="flex justify-center items-end gap-0.5 sm:gap-1">
-              <template v-for="batch in visibleBatches" :key="batch.uniqueKey">
-
-                <div class="batch-section shrink-0 flex flex-col items-center">
-
-                  <div class="flex items-center">
-
-                    <div class="size-6 sm:size-7 rounded bg-[#0582CA] shadow-[0_0_12px_rgba(5,130,202,0.5)] flex items-center justify-center shrink-0">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="sm:w-3 sm:h-3"><polyline points="20 6 9 17 4 12" /></svg>
-                    </div>
-
-                    <div class="shrink-0 grid grid-rows-2 gap-0.5 ml-1" style="grid-template-columns: repeat(30, minmax(0, 1fr));">
-                      <div
-                        v-for="blockIdx in getBatchBlockIndices()"
-                        :key="blockIdx"
-                        class="size-[3px] sm:size-1 rounded-[1px] transition-all duration-1000"
-                        :class="{
-                          'bg-slate-600/50': getBlockState(batch.relativeIndex, blockIdx) === 'unplayed',
-                          'bg-slate-400/70': getBlockState(batch.relativeIndex, blockIdx) === 'played',
-                          'bg-orange-500 current-block-glow': getBlockState(batch.relativeIndex, blockIdx) === 'current',
-                        }"
-                      />
-                    </div>
+              <!-- 3 Batches -->
+              <div class="flex gap-1">
+                <template v-for="batchIdx in 3" :key="batchIdx">
+                  <div class="grid grid-cols-[repeat(30,4px)] grid-rows-[repeat(2,4px)] gap-1">
+                    <div
+                      v-for="block in getBlocksColumnFirst()"
+                      :key="block.index"
+                      class="size-1 rounded-sm"
+                      :class="{
+                        'bg-white/20': getBlockState(song.offset, batchIdx - 1, block.index) === 'unplayed',
+                        'bg-white': getBlockState(song.offset, batchIdx - 1, block.index) === 'played',
+                        'bg-white shadow-[0_0_8px_4px_rgba(255,149,0,0.9)] animate-pulse': getBlockState(song.offset, batchIdx - 1, block.index) === 'current',
+                        'bg-white animate-glow-fade': getBlockState(song.offset, batchIdx - 1, block.index) === 'glowing',
+                      }"
+                      :style="{ gridRow: block.row + 1, gridColumn: block.col + 1 }"
+                    />
                   </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </Motion>
+      </div>
 
-                  <div class="mt-1.5 text-[9px] sm:text-[10px] text-white/50 whitespace-nowrap font-light">
-                    {{ batch.songName }}
-                  </div>
-                </div>
+      <!-- Labels row -->
+      <div class="mt-2 overflow-hidden relative">
+        <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
+        <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
+        <Motion tag="div" class="flex" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
+          <template v-for="song in visibleSongs" :key="`label-${song.songIndex}`">
+            <div class="shrink-0 flex items-center gap-1" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
+              <AnimatePresence mode="wait">
+                <Motion
+                  :key="song.name"
+                  :initial="{ opacity: 0, y: 4 }"
+                  :animate="{ opacity: 1, y: 0 }"
+                  :exit="{ opacity: 0, y: -4 }"
+                  :transition="{ duration: 0.2 }"
+                  class="text-[10px] text-white/50"
+                >
+                  {{ song.name }}
+                </Motion>
+              </AnimatePresence>
+              <template v-if="song.offset === 0">
+                <span class="text-[10px] text-white/50">· Batch</span>
+                <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
+                  <template v-for="(digit, i) in batchDigits" :key="`batch-${i}`">
+                    <AnimatePresence mode="wait">
+                      <Motion :key="digit" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.15 }">{{ digit }}</Motion>
+                    </AnimatePresence>
+                    <span v-if="i < batchDigits.length - 1">&nbsp;</span>
+                  </template>
+                </span>
+                <span class="text-[10px] text-white/50">· Block</span>
+                <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
+                  <template v-for="(digit, i) in blockDigits" :key="`block-${i}`">
+                    <AnimatePresence mode="wait">
+                      <Motion :key="digit" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.15 }">{{ digit }}</Motion>
+                    </AnimatePresence>
+                    <span v-if="i < blockDigits.length - 1">&nbsp;</span>
+                  </template>
+                </span>
               </template>
             </div>
-
-            <div class="flex justify-center mt-1.5 text-[9px] sm:text-[10px] text-white/50">
-              <span>Batch {{ currentBatch.toLocaleString() }}</span>
-              <span class="mx-2">·</span>
-              <span>Block </span>
-              <span class="font-mono tabular-nums flex overflow-hidden">
-                <template v-for="(char, idx) in formattedBlockDigits" :key="idx">
-                  <span class="relative overflow-hidden">
-                    <AnimatePresence :initial="false" mode="popLayout">
-                      <Motion
-                        :key="`${idx}-${char}`"
-                        :initial="hasInitialized ? { y: '100%', opacity: 0 } : false"
-                        :animate="{ y: 0, opacity: 1 }"
-                        :exit="{ y: '-100%', opacity: 0 }"
-                        :transition="{ duration: 0.3, ease: 'easeOut' }"
-                        class="inline-block"
-                      >
-                        {{ char }}
-                      </Motion>
-                    </AnimatePresence>
-                  </span>
-                </template>
-              </span>
-            </div>
-          </Motion>
-        </AnimatePresence>
-      </Motion>
-    </AnimatePresence> -->
+          </template>
+        </Motion>
+      </div>
+    </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes current-glow {
-  0% { box-shadow: 0 0 8px 4px rgba(255, 96, 0, 0.9); }
-  100% { box-shadow: 0 0 2px 1px rgba(255, 96, 0, 0.3); }
-}
-
-@keyframes fade-to-played {
-  0% { background-color: rgb(249 115 22); } /* orange-500 */
-  100% { background-color: rgba(255, 255, 255); } /* white */
-}
-
-.current-block-glow {
-  animation: current-glow 1s ease-out forwards, fade-to-played 1s ease-out forwards;
-}
-</style>

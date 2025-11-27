@@ -20,7 +20,8 @@ export function getSongCount() {
 }
 
 export function getSongNameByIndex(index: number): string {
-  return SONG_LIST[index % SONG_LIST.length]!.name
+  const len = SONG_LIST.length
+  return SONG_LIST[((index % len) + len) % len]!.name
 }
 
 export function getCurrentSongName(blockNumber: number, batchesPerSong = 3): string {
