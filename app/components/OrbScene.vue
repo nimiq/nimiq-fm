@@ -20,7 +20,7 @@ bgSphereGeometry.scale(-1, 1, 1)
       <template #default>
         <TresGroup>
           <TresPerspectiveCamera :position="[0, 0, config.cameraPositionZ]" :fov="config.cameraFov" make-default />
-          <Environment preset="studio" :blur="0.6" :background="false" />
+          <Environment preset="studio" :background="false" />
 
           <TresAmbientLight :intensity="config.ambientLightIntensity" color="#ffffff" />
           <TresPointLight :position="[20, 10, 20]" :intensity="config.mainLightIntensity" color="#ffffff" :distance="100" />

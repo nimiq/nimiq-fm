@@ -15,7 +15,7 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@vueuse/nuxt',
     '@tresjs/nuxt',
-    '@nuxthub/core',
+    '@nuxthub/core-nightly',
     '@nuxtjs/device',
   ],
   eslint: {
@@ -28,11 +28,14 @@ export default defineNuxtConfig({
       websocket: true,
     },
     rollupConfig: {
-      external: ['utf-8-validate', 'bufferutil'],
+      external: ['utf-8-validate', 'bufferutil', '@libsql/isomorphic-ws'],
     },
   },
   css: ['./app/assets/css/main.css'],
   runtimeConfig: {
     nimiqRpcUrl: process.env.NIMIQ_RPC_URL || 'http://localhost:8648',
+  },
+  hub: {
+    cache: true,
   },
 })

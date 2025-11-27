@@ -12,17 +12,19 @@ const hasRealSong = ref(false)
 
 // Song change
 watch(() => props.currentSong, async (newSong, oldSong) => {
-  if (!newSong || newSong === oldSong) return
-  
+  if (!newSong || newSong === oldSong)
+    return
+
   const isRealSong = newSong !== 'Tuning in...'
-  
+
   // First real song or placeholder - just set without animation
   if (!hasRealSong.value) {
     currentSongDisplay.value = newSong
-    if (isRealSong) hasRealSong.value = true
+    if (isRealSong)
+      hasRealSong.value = true
     return
   }
-  
+
   // Animate transition between real songs
   isTransitioning.value = true
   await sleep(600)
@@ -34,43 +36,46 @@ watch(() => props.currentSong, async (newSong, oldSong) => {
 }, { immediate: true })
 
 watch(() => props.nextSong, (v) => {
-  if (!nextSongDisplay.value || !isTransitioning.value) nextSongDisplay.value = v
+  if (!nextSongDisplay.value || !isTransitioning.value)
+    nextSongDisplay.value = v
 }, { immediate: true })
 
-function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+function sleep(ms: number) {
+  return new Promise(r => setTimeout(r, ms))
+}
 </script>
 
 <template>
   <ClientOnly>
     <div>
-        <!-- Line 1: Now playing [SONG] -->
-        <p class="font-bold text-sm sm:text-xl text-white/50">
-          Now playing
-          <span class="relative inline-block ml-1">
-            <!-- Current song - exits up + fade + blur -->
-            <Motion
-              tag="span"
-              class="text-shimmer"
-              :animate="{
-                opacity: isTransitioning ? 0 : 1,
-                y: isTransitioning ? -8 : 0,
-                filter: isTransitioning ? 'blur(3px)' : 'blur(0px)',
-              }"
-              :transition="{ duration: isTransitioning ? 0.5 : 0, easing: 'ease-out' }"
-            >{{ currentSongDisplay }}</Motion>
+      <!-- Line 1: Now playing [SONG] -->
+      <p class="font-bold text-sm sm:text-xl text-white/50">
+        Now playing
+        <span class="relative inline-block ml-1">
+          <!-- Current song - exits up + fade + blur -->
+          <Motion
+            tag="span"
+            class="text-shimmer"
+            :animate="{
+              opacity: isTransitioning ? 0 : 1,
+              y: isTransitioning ? -8 : 0,
+              filter: isTransitioning ? 'blur(3px)' : 'blur(0px)',
+            }"
+            :transition="{ duration: isTransitioning ? 0.5 : 0, ease: 'easeOut' }"
+          >{{ currentSongDisplay }}</Motion>
 
-            <!-- Next song morphs in from below -->
-            <Motion
-              tag="span"
-              class="absolute left-0 top-0 whitespace-nowrap text-shimmer"
-              :animate="{
-                opacity: isTransitioning ? 1 : 0,
-                y: isTransitioning ? 0 : 24,
-              }"
-              :transition="{ duration: isTransitioning ? 0.5 : 0, easing: [0.4, 0, 0.2, 1], delay: isTransitioning ? 0.1 : 0 }"
-            >{{ nextSongDisplay }}</Motion>
-          </span>
-        </p>
+          <!-- Next song morphs in from below -->
+          <Motion
+            tag="span"
+            class="absolute left-0 top-0 whitespace-nowrap text-shimmer"
+            :animate="{
+              opacity: isTransitioning ? 1 : 0,
+              y: isTransitioning ? 0 : 24,
+            }"
+            :transition="{ duration: isTransitioning ? 0.5 : 0, ease: [0.4, 0, 0.2, 1], delay: isTransitioning ? 0.1 : 0 }"
+          >{{ nextSongDisplay }}</Motion>
+        </span>
+      </p>
 
       <!-- Line 2: Epoch X · Up next: [SONG] -->
       <p class="text-[11px] sm:text-sm text-white/50 mt-0.5 sm:mt-1">
@@ -84,9 +89,9 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
               opacity: isTransitioning ? 0 : 1,
               y: isTransitioning ? -8 : 0,
             }"
-            :transition="{ duration: isTransitioning ? 0.3 : 0, easing: 'ease-out' }"
+            :transition="{ duration: isTransitioning ? 0.3 : 0, ease: 'easeOut' }"
           >{{ nextSongDisplay }}</Motion>
-          
+
           <!-- New next slides in from below -->
           <Motion
             tag="span"
@@ -95,7 +100,7 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
               opacity: isTransitioning ? 1 : 0,
               y: isTransitioning ? 0 : 12,
             }"
-            :transition="{ duration: isTransitioning ? 0.5 : 0, easing: [0.4, 0, 0.2, 1], delay: isTransitioning ? 0.15 : 0 }"
+            :transition="{ duration: isTransitioning ? 0.5 : 0, ease: [0.4, 0, 0.2, 1], delay: isTransitioning ? 0.15 : 0 }"
           >{{ props.nextSong }}</Motion>
         </span>
       </p>

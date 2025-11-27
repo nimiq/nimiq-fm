@@ -4,7 +4,7 @@ import { AnimatePresence, Motion } from 'motion-v'
 const { sortedBySlots } = useValidators()
 const { latestBlock } = useBlockchain()
 
-const currentValidator = ref<{ name: string, logo: string } | null>(null)
+const currentValidator = ref<{ name: string, logo: string | undefined } | null>(null)
 
 // Get validator info by address
 function getValidatorInfo(address: string) {
@@ -14,9 +14,11 @@ function getValidatorInfo(address: string) {
 
 // Watch for new blocks
 watch(latestBlock, (block) => {
-  if (!block?.validatorAddress) return
+  if (!block?.validatorAddress)
+    return
   const newValidator = getValidatorInfo(block.validatorAddress)
-  if (newValidator) currentValidator.value = newValidator
+  if (newValidator)
+    currentValidator.value = newValidator
 }, { immediate: true })
 </script>
 
@@ -32,7 +34,7 @@ watch(latestBlock, (block) => {
           :initial="{ opacity: 0, y: 12, filter: 'blur(2px)' }"
           :animate="{ opacity: 1, y: 0, filter: 'blur(0px)' }"
           :exit="{ opacity: 0, y: -12, filter: 'blur(2px)' }"
-          :transition="{ duration: 0.3, easing: [0.16, 1, 0.3, 1] }"
+          :transition="{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }"
         >
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
           <span class="text-sm text-white/90 font-medium">{{ currentValidator.name }}</span>

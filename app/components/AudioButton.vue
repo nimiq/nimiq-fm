@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Motion } from 'motion-v'
 
-const volumeSvg = `<svg class="size-4 sm:size-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.36 5.64a3.333 3.333 0 0 1 0 4.713m2.353-7.066a6.667 6.667 0 0 1 0 9.426m-5.38-9.38L4 6H1.333v4H4l3.333 2.667z" /></svg>`
-const muteSvg = `<svg class="size-4 sm:size-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.333 3.333L4 6H1.333v4H4l3.333 2.667zM14 6l-4 4m0-4 4 4" /></svg>`
-
 const props = defineProps<{ isPlaying: boolean }>()
 const emit = defineEmits<{ toggle: [] }>()
+const volumeSvg = `<svg class="size-4 sm:size-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.36 5.64a3.333 3.333 0 0 1 0 4.713m2.353-7.066a6.667 6.667 0 0 1 0 9.426m-5.38-9.38L4 6H1.333v4H4l3.333 2.667z" /></svg>`
+const muteSvg = `<svg class="size-4 sm:size-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.333 3.333L4 6H1.333v4H4l3.333 2.667zM14 6l-4 4m0-4 4 4" /></svg>`
 
 const breakpoints = useBreakpoints({ sm: 640 })
 const isMobile = breakpoints.smaller('sm')
@@ -21,7 +20,7 @@ watch(() => props.isPlaying, (playing) => {
 
 // Only show orange if user has left and re-entered after clicking play
 const isOrange = computed(() => props.isPlaying && isHovered.value && hasLeftAfterPlay.value)
-const showRing = computed(() => props.isPlaying && isHovered.value && hasLeftAfterPlay.value)
+const _showRing = computed(() => props.isPlaying && isHovered.value && hasLeftAfterPlay.value)
 
 // Determine background based on state
 const background = computed(() => {

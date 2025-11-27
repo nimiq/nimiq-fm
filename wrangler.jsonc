@@ -1,7 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "song",
-  "compatibility_date": "2025-03-07",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": { "enabled": true, "head_sampling_rate": 1 }
+  "name": "nimiq-fm",
+  "kv_namespaces": [{ "binding": "KV", "id": "61d5a0d846f64102873e40e7398a54e9" }],
+  "observability": { "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true } }
 }

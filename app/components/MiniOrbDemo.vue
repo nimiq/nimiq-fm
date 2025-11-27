@@ -12,11 +12,11 @@ const peerColor = '#CBD5E1' // from nodePalette
       <div class="relative">
         <div class="absolute -inset-2 rounded-full blur-md opacity-60" :style="{ background: validatorColor }" />
         <div class="absolute -inset-1 rounded-full opacity-30" :style="{ background: validatorColor }" />
-        <div 
+        <div
           class="relative size-5 rounded-full"
-          :style="{ 
+          :style="{
             background: `radial-gradient(circle at 30% 30%, #e0f0ff 0%, ${validatorColor} 60%, #0066aa 100%)`,
-            boxShadow: `0 0 20px ${validatorColor}, 0 0 40px ${validatorColor}50`
+            boxShadow: `0 0 20px ${validatorColor}, 0 0 40px ${validatorColor}50`,
           }"
         />
       </div>
@@ -26,11 +26,11 @@ const peerColor = '#CBD5E1' // from nodePalette
     <div class="absolute bottom-0 left-0 floating-fast flex items-center gap-2">
       <div class="relative">
         <div class="absolute -inset-1 rounded-full blur-sm opacity-30" style="background: white" />
-        <div 
+        <div
           class="relative size-3 rounded-full"
-          :style="{ 
+          :style="{
             background: `radial-gradient(circle at 30% 30%, #ffffff 0%, ${peerColor} 70%, #94A3B8 100%)`,
-            boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+            boxShadow: '0 0 8px rgba(255,255,255,0.3)',
           }"
         />
       </div>

@@ -34,11 +34,11 @@ import { note, sound, stack } from '@strudel/web'
 
 export function mySong(digits: number[], batch: number, blockNumber: number) {
   const seedSequence = digits.join(' ')
-  
+
   const melody = note(seedSequence).transpose(20).scale('c:major').seg(8).s('sawtooth')
   const bass = note('<c0 g0>/2').seg(8).s('triangle')
   const drums = sound('bd(3,8)')
-  
+
   return stack(melody, bass, drums)
 }
 ```

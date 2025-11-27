@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { AnimatePresence, Motion } from 'motion-v'
 import { batchAt, batchIndexAt, BLOCKS_PER_BATCH } from '@nimiq/utils/albatross-policy'
+import { AnimatePresence, Motion } from 'motion-v'
 import { useBlockchain } from '~/composables/useBlockchain'
 import { getSongNameByIndex } from '~/utils/song'
 
@@ -47,18 +47,25 @@ watch(currentBlockNumber, (newBlock, oldBlock) => {
     const prevBatchInSong = Math.floor(prevBlockPos / BLOCKS_PER_BATCH)
     const prevBlockInBatch = prevBlockPos % BLOCKS_PER_BATCH
     glowingBlock.value = `0-${prevBatchInSong}-${prevBlockInBatch}`
-    setTimeout(() => { glowingBlock.value = null }, 500)
+    setTimeout(() => {
+      glowingBlock.value = null
+    }, 500)
   }
 })
 
 function getBlockState(songOffset: number, batchIdx: number, blockIdx: number): 'unplayed' | 'played' | 'current' | 'glowing' {
-  if (songOffset < 0) return 'played' // Previous songs are fully played
-  if (songOffset > 0) return 'unplayed' // Future songs are unplayed
+  if (songOffset < 0)
+    return 'played' // Previous songs are fully played
+  if (songOffset > 0)
+    return 'unplayed' // Future songs are unplayed
 
   const blockPositionInSong = batchIdx * BLOCKS_PER_BATCH + blockIdx
-  if (glowingBlock.value === `${songOffset}-${batchIdx}-${blockIdx}`) return 'glowing'
-  if (blockPositionInSong === blocksElapsedInCurrentSong.value) return 'current'
-  if (blockPositionInSong < blocksElapsedInCurrentSong.value) return 'played'
+  if (glowingBlock.value === `${songOffset}-${batchIdx}-${blockIdx}`)
+    return 'glowing'
+  if (blockPositionInSong === blocksElapsedInCurrentSong.value)
+    return 'current'
+  if (blockPositionInSong < blocksElapsedInCurrentSong.value)
+    return 'played'
   return 'unplayed'
 }
 
@@ -87,13 +94,16 @@ watch(currentSongIndex, (newIdx, oldIdx) => {
     // Song advanced: start at old position (negative offset = less scroll = shows right side)
     // then animate to 0 (normal position)
     transitionOffset.value = -(songWidth + 16)
-    setTimeout(() => { transitionOffset.value = 0 }, 20)
+    setTimeout(() => {
+      transitionOffset.value = 0
+    }, 20)
   }
 })
 
 // Mobile auto-scroll: follow current block position within song
 const mobileAutoScroll = computed(() => {
-  if (!isMobile.value) return 0
+  if (!isMobile.value)
+    return 0
   // Calculate how far into the current song we are (in pixels)
   const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP
   const currentBatchInSong = batchInSong.value
@@ -116,7 +126,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
       <div class="overflow-hidden relative">
         <div class="hidden sm:block absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
         <div class="absolute inset-y-0 right-0 w-8 sm:w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
-        <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
+        <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, ease: 'easeOut' }">
           <template v-for="song in visibleSongs" :key="song.songIndex">
             <div class="flex items-center shrink-0" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
               <!-- Macro block -->
@@ -181,7 +191,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
         <template v-else>
           <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
           <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
-          <Motion tag="div" class="flex" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
+          <Motion tag="div" class="flex" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, ease: 'easeOut' }">
             <template v-for="song in visibleSongs" :key="`label-${song.songIndex}`">
               <div class="shrink-0 flex items-center gap-1" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
                 <AnimatePresence mode="wait">

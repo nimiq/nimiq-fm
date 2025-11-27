@@ -1,41 +1,35 @@
-import { BlockType, NimiqRPCClient, RetrieveType } from '@albermonte/nimiq-rpc-client-ts'
+import * as rpc from 'nimiq-rpc-client-ts'
 
 export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event)
 
   const config = useRuntimeConfig()
-  const nodeRpcUrl = config.nimiqRpcUrl
+  rpc.initRpcClient({ url: config.nimiqRpcUrl })
 
   try {
-    const client = new NimiqRPCClient(new URL(nodeRpcUrl))
+    const sub = await rpc.subscribeForHeadBlock(true, { autoReconnect: true })
 
-    const { next } = await client.blockchainStreams.subscribeForBlocks({ retrieve: RetrieveType.Full })
-
-    next(({ error, data }) => {
-      if (error) {
-        eventStream.push(JSON.stringify({ type: 'error', message: error.message }))
-        return
-      }
-
-      const block = data
-      if (!block)
-        return
-
+    sub.addEventListener('data', (e) => {
+      const block = e.detail.data
       const streamedBlock: FmBlock = {
         number: block.number,
         batch: block.batch,
         epoch: block.epoch,
-        validator: block.type === BlockType.Micro ? block.producer.validator : undefined,
+        validator: block.type === 'micro' ? block.producer.validator : undefined,
       }
-
       eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
+    })
+
+    sub.addEventListener('error', (e) => {
+      eventStream.push(JSON.stringify({ type: 'error', message: e.detail }))
+    })
+
+    sub.addEventListener('close', () => {
+      eventStream.close()
     })
   }
   catch (error) {
-    // Log the actual error for server-side debugging
     console.error('[SSE] Failed to subscribe to blockchain:', error)
-
-    // Send descriptive error to client
     const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe'
     eventStream.push(JSON.stringify({ type: 'error', message: `Subscription failed: ${errorMessage}` }))
   }
