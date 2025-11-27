@@ -63,9 +63,9 @@ const callouts = [
           Click anywhere to close
         </Motion>
 
-        <!-- Callout boxes -->
+        <!-- Callout boxes (except orb and music which have custom layouts) -->
         <Motion
-          v-for="(callout, index) in callouts"
+          v-for="(callout, index) in callouts.filter(c => c.id !== 'orb' && c.id !== 'music')"
           :key="callout.id"
           class="absolute max-w-xs p-4 rounded-lg callout-box"
           :class="callout.position"
@@ -78,6 +78,46 @@ const callouts = [
           <p v-for="(line, i) in callout.lines" :key="i" class="text-sm text-white/80 leading-relaxed" :class="{ 'mt-2': i > 0 }">
             {{ line }}
           </p>
+        </Motion>
+
+        <!-- Music Generation callout with live producer demo -->
+        <Motion
+          class="absolute top-[22%] left-[12%] max-w-xs p-4 rounded-lg callout-box"
+          :initial="{ opacity: 0, x: -80, y: -40, scale: 0.85 }"
+          :animate="{ opacity: 1, x: 0, y: 0, scale: 1 }"
+          :exit="{ opacity: 0, x: -40, y: -20, scale: 0.9 }"
+          :transition="{ duration: 0.5, delay: 0.05, easing: [0.16, 1, 0.3, 1] }"
+        >
+          <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">MUSIC GENERATION</h3>
+          <p class="text-sm text-white/80 leading-relaxed">Every new block adds melodies, rhythms, and textures on top of the base track.</p>
+          <p class="text-sm text-white/80 leading-relaxed mt-2">The block producer's signature shapes the sound, so the music shifts live with the chain.</p>
+          <div class="mt-3 pt-3 border-t border-white/10">
+            <ClientOnly>
+              <LatestProducerDemo />
+            </ClientOnly>
+          </div>
+        </Motion>
+
+        <!-- Network Orb callout with visual elements -->
+        <Motion
+          class="absolute top-[50%] left-[12%] max-w-md p-4 rounded-lg callout-box"
+          :initial="{ opacity: 0, x: -80, y: 0, scale: 0.85 }"
+          :animate="{ opacity: 1, x: 0, y: 0, scale: 1 }"
+          :exit="{ opacity: 0, x: -40, y: 0, scale: 0.9 }"
+          :transition="{ duration: 0.5, delay: 0.12, easing: [0.16, 1, 0.3, 1] }"
+        >
+          <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">NETWORK ORB</h3>
+          <div class="text-sm text-white/80 leading-relaxed">
+            <!-- Mini demo floated right with arc shape -->
+            <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
+              <ClientOnly>
+                <MiniOrbDemo class="absolute inset-0" />
+              </ClientOnly>
+            </div>
+            <p>Live map of the Nimiq network.</p>
+            <p class="mt-2">Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.</p>
+            <p class="mt-2">Lines show their connections as the network rewires.</p>
+          </div>
         </Motion>
 
 
@@ -93,5 +133,24 @@ const callouts = [
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.floating-slow {
+  animation: float-slow 3s ease-in-out infinite;
+}
+
+.floating-fast {
+  animation: float-fast 2.5s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-3px, -4px); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(4px, -3px); }
 }
 </style>
