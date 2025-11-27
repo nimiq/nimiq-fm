@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "nimiq-fm",
-  "kv_namespaces": [{ "binding": "KV", "id": "61d5a0d846f64102873e40e7398a54e9" }],
+  "kv_namespaces": [{ "binding": "CACHE", "id": "61d5a0d846f64102873e40e7398a54e9" }],
   "observability": { "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true } }
 }
