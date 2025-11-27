@@ -47,7 +47,7 @@ export function mySong(digits: number[], batch: number, blockNumber: number) {
 Then register it in `app/utils/song.ts`:
 
 1. Add to `SongName` type
-2. Add to `SONG_LIST` array
+2. Add to `SONG_LIST` array with `{ name, key, author }`
 3. Add import case in `loadSong()`
 
 ## Development

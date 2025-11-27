@@ -82,6 +82,8 @@ const displayNowPlaying = computed(() => {
   return 'Tuning in...'
 })
 const nextSongTitle = computed(() => latestBlock.value ? getNextSongName(latestBlock.value.blockNumber) : '')
+const currentAuthor = computed(() => latestBlock.value ? getCurrentSongAuthor(latestBlock.value.blockNumber) : '')
+const nextAuthor = computed(() => latestBlock.value ? getNextSongAuthor(latestBlock.value.blockNumber) : '')
 const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.value.blockNumber) : 0)
 </script>
 
@@ -146,7 +148,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
             <div class="flex flex-col sm:flex-row">
               <div class="flex items-center gap-3 sm:gap-6 p-4 sm:p-6 sm:border-r border-white/10 sm:flex-1">
                 <AudioButton :is-playing="isPlaying" @toggle="togglePlay" />
-                <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :epoch="currentEpoch" />
+                <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :current-author="currentAuthor" :next-author="nextAuthor" :epoch="currentEpoch" />
               </div>
 
               <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />

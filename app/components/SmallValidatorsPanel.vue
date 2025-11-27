@@ -21,8 +21,13 @@ watch(latestBlock, (block) => {
 
     if (isHidden) {
       overflowGlowState.value = 'glow'
-      setTimeout(() => { if (overflowGlowState.value === 'glow') overflowGlowState.value = 'fading' }, 300)
-      setTimeout(() => { overflowGlowState.value = null }, 1300)
+      setTimeout(() => {
+        if (overflowGlowState.value === 'glow')
+          overflowGlowState.value = 'fading'
+      }, 300)
+      setTimeout(() => {
+        overflowGlowState.value = null
+      }, 1300)
     }
     else {
       activeValidators.value.set(address, 'glow')

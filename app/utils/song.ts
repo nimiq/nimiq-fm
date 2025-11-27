@@ -7,12 +7,12 @@ export interface SongInfo {
 
 export type SongName = 'milky-way' | 'acid' | 'desert-dune' | 'running-away' | 'qimin'
 
-const SONG_LIST: Array<{ name: string, key: SongName }> = [
-  { name: 'Milky Way', key: 'milky-way' },
-  { name: 'Acid', key: 'acid' },
-  { name: 'Desert Dune', key: 'desert-dune' },
-  { name: 'Running Away', key: 'running-away' },
-  { name: 'Qimin', key: 'qimin' },
+const SONG_LIST: Array<{ name: string, key: SongName, author: string }> = [
+  { name: 'Milky Way', key: 'milky-way', author: 'albermonte' },
+  { name: 'Acid', key: 'acid', author: 'albermonte' },
+  { name: 'Desert Dune', key: 'desert-dune', author: 'albermonte' },
+  { name: 'Running Away', key: 'running-away', author: 'albermonte' },
+  { name: 'Qimin', key: 'qimin', author: 'albermonte' },
 ]
 
 export function getSongCount() {
@@ -35,6 +35,19 @@ export function getNextSongName(blockNumber: number, batchesPerSong = 3): string
   const songCycleIndex = Math.floor(currentBatch / batchesPerSong)
   const nextIndex = (songCycleIndex + 1) % SONG_LIST.length
   return SONG_LIST[nextIndex]!.name
+}
+
+export function getCurrentSongAuthor(blockNumber: number, batchesPerSong = 3): string {
+  const currentBatch = batchAt(blockNumber)
+  const songCycleIndex = Math.floor(currentBatch / batchesPerSong)
+  return SONG_LIST[songCycleIndex % SONG_LIST.length]!.author
+}
+
+export function getNextSongAuthor(blockNumber: number, batchesPerSong = 3): string {
+  const currentBatch = batchAt(blockNumber)
+  const songCycleIndex = Math.floor(currentBatch / batchesPerSong)
+  const nextIndex = (songCycleIndex + 1) % SONG_LIST.length
+  return SONG_LIST[nextIndex]!.author
 }
 
 export async function loadSong(blockNumber: number, batchesPerSong = 3): Promise<SongInfo> {

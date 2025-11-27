@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Motion } from 'motion-v'
 
-const props = defineProps<{ currentSong: string, nextSong: string, epoch: number }>()
+const props = defineProps<{ currentSong: string, nextSong: string, currentAuthor: string, nextAuthor: string, epoch: number }>()
 
 const isTransitioning = ref(false)
 const currentSongDisplay = ref('')
 const nextSongDisplay = ref('')
+const currentAuthorDisplay = ref('')
+const nextAuthorDisplay = ref('')
 
 // Track if we've had a real song (not "Tuning in...")
 const hasRealSong = ref(false)
@@ -20,6 +22,7 @@ watch(() => props.currentSong, async (newSong, oldSong) => {
   // First real song or placeholder - just set without animation
   if (!hasRealSong.value) {
     currentSongDisplay.value = newSong
+    currentAuthorDisplay.value = props.currentAuthor
     if (isRealSong)
       hasRealSong.value = true
     return
@@ -32,12 +35,16 @@ watch(() => props.currentSong, async (newSong, oldSong) => {
   isTransitioning.value = false
   await nextTick()
   currentSongDisplay.value = newSong
+  currentAuthorDisplay.value = props.currentAuthor
   nextSongDisplay.value = props.nextSong
+  nextAuthorDisplay.value = props.nextAuthor
 }, { immediate: true })
 
 watch(() => props.nextSong, (v) => {
-  if (!nextSongDisplay.value || !isTransitioning.value)
+  if (!nextSongDisplay.value || !isTransitioning.value) {
     nextSongDisplay.value = v
+    nextAuthorDisplay.value = props.nextAuthor
+  }
 }, { immediate: true })
 
 function sleep(ms: number) {
@@ -48,7 +55,7 @@ function sleep(ms: number) {
 <template>
   <ClientOnly>
     <div>
-      <!-- Line 1: Now playing [SONG] -->
+      <!-- Line 1: Now playing [SONG] by [AUTHOR] -->
       <p class="font-bold text-sm sm:text-xl text-white/50">
         Now playing
         <span class="relative inline-block ml-1">
@@ -62,7 +69,7 @@ function sleep(ms: number) {
               filter: isTransitioning ? 'blur(3px)' : 'blur(0px)',
             }"
             :transition="{ duration: isTransitioning ? 0.5 : 0, ease: 'easeOut' }"
-          >{{ currentSongDisplay }}</Motion>
+          >{{ currentSongDisplay }} <span class="text-white/50 font-normal text-xs sm:text-sm">by {{ currentAuthorDisplay }}</span></Motion>
 
           <!-- Next song morphs in from below -->
           <Motion
@@ -73,7 +80,7 @@ function sleep(ms: number) {
               y: isTransitioning ? 0 : 24,
             }"
             :transition="{ duration: isTransitioning ? 0.5 : 0, ease: [0.4, 0, 0.2, 1], delay: isTransitioning ? 0.1 : 0 }"
-          >{{ nextSongDisplay }}</Motion>
+          >{{ nextSongDisplay }} <span class="text-white/50 font-normal text-xs sm:text-sm">by {{ nextAuthorDisplay }}</span></Motion>
         </span>
       </p>
 
@@ -108,7 +115,7 @@ function sleep(ms: number) {
     <template #fallback>
       <div>
         <p class="font-bold text-sm sm:text-xl text-white/50">
-          Now playing <span class="relative inline-block ml-1 text-shimmer">{{ props.currentSong }}</span>
+          Now playing <span class="relative inline-block ml-1 text-shimmer">{{ props.currentSong }} <span class="text-white/50 font-normal text-xs sm:text-sm">by {{ props.currentAuthor }}</span></span>
         </p>
         <p class="text-[11px] sm:text-sm text-white/50 mt-0.5 sm:mt-1">
           Epoch {{ props.epoch }} · Up next: <span class="relative inline-block ml-1">{{ props.nextSong }}</span>
