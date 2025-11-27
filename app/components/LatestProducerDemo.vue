@@ -36,10 +36,10 @@ watch(latestBlock, async (block) => {
 
   await new Promise(r => setTimeout(r, 500))
 
-  // Update current first, wait for DOM, then end transition (prevents old value flashing back)
-  currentValidator.value = newValidator
-  await nextTick()
+  // End transition first (with duration:0, instant snap), then update values
   isTransitioning.value = false
+  await nextTick()
+  currentValidator.value = newValidator
   nextValidator.value = null
 })
 </script>
@@ -56,7 +56,7 @@ watch(latestBlock, async (block) => {
           y: isTransitioning ? -12 : 0,
           filter: isTransitioning ? 'blur(3px)' : 'blur(0px)',
         }"
-        :transition="{ duration: 0.4, easing: 'ease-out' }"
+        :transition="{ duration: isTransitioning ? 0.4 : 0, easing: 'ease-out' }"
       >
         <template v-if="currentValidator">
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
@@ -67,11 +67,13 @@ watch(latestBlock, async (block) => {
 
       <!-- Next validator - absolute overlay, enters from below -->
       <Motion
-        v-if="nextValidator && isTransitioning"
+        v-if="nextValidator"
         class="flex items-center gap-2 absolute left-0 top-0"
-        :animate="{ opacity: 1, y: 0 }"
-        :initial="{ opacity: 0, y: 16 }"
-        :transition="{ duration: 0.4, easing: [0.16, 1, 0.3, 1], delay: 0.1 }"
+        :animate="{
+          opacity: isTransitioning ? 1 : 0,
+          y: isTransitioning ? 0 : 16,
+        }"
+        :transition="{ duration: isTransitioning ? 0.4 : 0, easing: [0.16, 1, 0.3, 1], delay: isTransitioning ? 0.1 : 0 }"
       >
         <img :src="nextValidator.logo" :alt="nextValidator.name" class="size-5 rounded-full">
         <span class="text-sm text-white/90 font-medium">{{ nextValidator.name }}</span>
