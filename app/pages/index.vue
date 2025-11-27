@@ -94,10 +94,10 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
             <span class="hidden sm:inline">What is this?</span>
             <span class="sm:hidden">?</span>
           </button>
-          <NuxtLink to="https://nimiq.com/home" target="_blank" external class="nimiq-pill-blue nq-arrow text-xs sm:text-sm py-1.5 sm:py-2 px-3 sm:px-4">
+          <!-- <NuxtLink to="https://nimiq.com/home" target="_blank" external class="nimiq-pill-blue nq-arrow text-xs sm:text-sm py-1.5 sm:py-2 px-3 sm:px-4">
             <span class="hidden sm:inline">Visit nimiq.com</span>
             <span class="sm:hidden">nimiq.com</span>
-          </NuxtLink>
+          </NuxtLink> -->
         </div>
       </div>
     </header>
@@ -189,6 +189,4 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
     #020617 100%
   );
 }
-
-
 </style>

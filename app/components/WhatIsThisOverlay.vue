@@ -1,229 +1,268 @@
 <script setup lang="ts">
 import { AnimatePresence, Motion } from 'motion-v'
-import { onKeyStroke } from '@vueuse/core'
 
-const show = defineModel<boolean>({ required: true })
+const props = defineProps<{
+  modelValue: boolean
+}>()
 
-onKeyStroke('Escape', () => show.value = false)
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+}>()
 
-const breakpoints = useBreakpoints({ sm: 640 })
-const isMobile = breakpoints.smaller('sm')
+function closeModal() {
+  emit('update:modelValue', false)
+}
 
-const callouts = [
-  {
-    id: 'music',
-    title: 'MUSIC GENERATION',
-    lines: ['Every new block adds melodies, rhythms, and textures on top of the base track.', "The block producer's signature shapes the sound, so the music shifts live with the chain."],
-    position: 'top-[22%] left-[12%]',
-    from: { x: -80, y: -40 },
-  },
-  {
-    id: 'orb',
-    title: 'NETWORK ORB',
-    lines: ['Live map of the Nimiq network.', 'Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.', 'Lines show their connections as the network rewires.'],
-    position: 'top-[42%] left-[12%]',
-    from: { x: -80, y: 0 },
-  },
-  {
-    id: 'propagation',
-    title: 'BLOCK PROPAGATION',
-    lines: ['When a new block is built, its creator flashes and launches an orange wave.', 'The beam travels along connections to show the block spreading through the network in real time.'],
-    position: 'top-[30%] right-[12%]',
-    from: { x: 80, y: -40 },
-  },
-  {
-    id: 'player',
-    title: 'TIMELINE & PLAYER',
-    lines: ['Blocks stream into the grid; three batches make up one song before the next begins.', 'Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.'],
-    position: 'bottom-[22%] left-1/2 -translate-x-1/2',
-    from: { x: 0, y: 80 },
-  },
-]
+// ESC key handler
+onMounted(() => {
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && props.modelValue) {
+      closeModal()
+    }
+  }
+  window.addEventListener('keydown', handleEscape)
+  onUnmounted(() => window.removeEventListener('keydown', handleEscape))
+})
+
+// Body scroll lock
+watch(() => props.modelValue, (isOpen) => {
+  if (process.client) {
+    document.body.style.overflow = isOpen ? 'hidden' : ''
+  }
+})
 </script>
 
 <template>
-  <Teleport to="body">
-    <AnimatePresence>
-      <Motion
-        v-if="show"
-        class="fixed inset-0 z-50"
-        :initial="{ opacity: 0 }"
-        :animate="{ opacity: 1 }"
-        :exit="{ opacity: 0 }"
-        :transition="{ duration: 0.3 }"
-      >
-        <!-- Backdrop (clickable to close) -->
-        <div class="absolute inset-0" @click="show = false" />
+  <AnimatePresence>
+    <!-- Overlay -->
+    <Motion
+      v-if="modelValue"
+      :initial="{ opacity: 0 }"
+      :animate="{ opacity: 1 }"
+      :exit="{ opacity: 0 }"
+      :transition="{ duration: 0.2 }"
+      class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+      @click="closeModal"
+    />
 
-        <!-- Close hint -->
-        <Motion
-          class="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 text-sm cursor-pointer hover:bg-white/15 transition-colors z-10"
-          :initial="{ opacity: 0, y: -10 }"
-          :animate="{ opacity: 1, y: 0 }"
-          :transition="{ delay: 0.3, duration: 0.4, easing: [0.16, 1, 0.3, 1] }"
-          @click="show = false"
-        >
-          <span class="hidden sm:inline">Click anywhere to close</span>
-          <span class="sm:hidden">Tap to close</span>
-        </Motion>
+    <!-- Modal Content -->
+    <Motion
+      v-if="modelValue"
+      :initial="{ opacity: 0, scale: 0.95, y: 20 }"
+      :animate="{ opacity: 1, scale: 1, y: 0 }"
+      :exit="{ opacity: 0, scale: 0.95, y: 20 }"
+      :transition="{ duration: 0.3, ease: 'easeOut' }"
+      class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col"
+      @click.stop
+    >
+      <!-- Header -->
+      <div class="shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-white/10 p-4 sm:p-6 flex items-center justify-between">
+        <h2 class="text-xl sm:text-2xl font-semibold text-white">
+          What is Nimiq Song?
+        </h2>
+        <UButton
+          icon="i-heroicons-x-mark"
+          size="sm"
+          color="neutral"
+          variant="ghost"
+          class="cursor-pointer"
+          @click="closeModal"
+        />
+      </div>
 
-        <!-- MOBILE: Horizontal snap carousel -->
-        <template v-if="isMobile">
-          <Motion
-            class="absolute inset-x-0 bottom-0 top-16"
-            :initial="{ opacity: 0, y: 40 }"
-            :animate="{ opacity: 1, y: 0 }"
-            :transition="{ duration: 0.4, easing: [0.16, 1, 0.3, 1] }"
-          >
-            <div class="h-full flex flex-col">
-              <!-- Swipe hint -->
-              <p class="text-center text-white/50 text-xs mb-3">Swipe to explore</p>
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-sm sm:text-base">
+        <!-- Introduction -->
+        <section>
+          <p class="text-white/70 leading-relaxed">
+            Nimiq Song is an interactive audiovisual experience that transforms the Nimiq blockchain into music and art. Watch validators produce blocks in real-time while unique generative music patterns play based on blockchain data.
+          </p>
+        </section>
 
-              <!-- Carousel container -->
-              <div class="flex-1 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 flex gap-4">
-                <!-- Music Generation card -->
-                <div class="snap-center shrink-0 w-[85vw] max-w-sm p-4 rounded-lg callout-box self-center">
-                  <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">MUSIC GENERATION</h3>
-                  <p class="text-sm text-white/80 leading-relaxed">Every new block adds melodies, rhythms, and textures on top of the base track.</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-2">The block producer's signature shapes the sound, so the music shifts live with the chain.</p>
-                  <div class="mt-3 pt-3 border-t border-white/10">
-                    <ClientOnly>
-                      <LatestProducerDemo />
-                    </ClientOnly>
-                  </div>
-                </div>
-
-                <!-- Network Orb card -->
-                <div class="snap-center shrink-0 w-[85vw] max-w-sm p-4 rounded-lg callout-box self-center">
-                  <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">NETWORK ORB</h3>
-                  <p class="text-sm text-white/80 leading-relaxed">Live map of the Nimiq network.</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-2">Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-2">Lines show their connections as the network rewires.</p>
-                </div>
-
-                <!-- Block Propagation card -->
-                <div class="snap-center shrink-0 w-[85vw] max-w-sm p-4 rounded-lg callout-box self-center">
-                  <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">BLOCK PROPAGATION</h3>
-                  <p class="text-sm text-white/80 leading-relaxed">When a new block is built, its creator flashes and launches an orange wave.</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-2">The beam travels along connections to show the block spreading through the network in real time.</p>
-                </div>
-
-                <!-- Timeline & Player card -->
-                <div class="snap-center shrink-0 w-[85vw] max-w-sm p-4 rounded-lg callout-box self-center">
-                  <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">TIMELINE & PLAYER</h3>
-                  <p class="text-sm text-white/80 leading-relaxed">Blocks stream into the grid; three batches make up one song before the next begins.</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-2">Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.</p>
-                </div>
-
-                <!-- Spacer for last card centering -->
-                <div class="snap-center shrink-0 w-[7.5vw]" />
-              </div>
-
-              <!-- Dot indicators -->
-              <div class="flex justify-center gap-2 py-4">
-                <div v-for="i in 4" :key="i" class="size-2 rounded-full bg-white/30" />
-              </div>
-            </div>
-          </Motion>
-        </template>
-
-        <!-- DESKTOP: Positioned callout boxes -->
-        <template v-else>
-          <!-- Callout boxes (except orb and music which have custom layouts) -->
-          <Motion
-            v-for="(callout, index) in callouts.filter(c => c.id !== 'orb' && c.id !== 'music')"
-            :key="callout.id"
-            class="absolute max-w-xs p-4 rounded-lg callout-box"
-            :class="callout.position"
-            :initial="{ opacity: 0, x: callout.from.x, y: callout.from.y, scale: 0.85 }"
-            :animate="{ opacity: 1, x: 0, y: 0, scale: 1 }"
-            :exit="{ opacity: 0, x: callout.from.x * 0.5, y: callout.from.y * 0.5, scale: 0.9 }"
-            :transition="{ duration: 0.5, delay: 0.05 + index * 0.07, easing: [0.16, 1, 0.3, 1] }"
-          >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">{{ callout.title }}</h3>
-            <p v-for="(line, i) in callout.lines" :key="i" class="text-sm text-white/80 leading-relaxed" :class="{ 'mt-2': i > 0 }">
-              {{ line }}
+        <!-- How It Works -->
+        <section>
+          <h3 class="text-lg font-semibold text-white mb-3">
+            How It Works
+          </h3>
+          <div class="space-y-2 text-white/70 leading-relaxed">
+            <p>
+              Nimiq Song connects to the Nimiq blockchain in real-time and monitors validator activity. Each block produced triggers a unique sound pattern generated using the Strudel live coding library.
             </p>
-          </Motion>
+            <p>
+              The app cycles through 5 different songs—Milky Way, Acid, Desert Dune, Running Away, and Qimin—rotating every 3 batches based on the blockchain's epoch system. <strong class="text-white/90 cursor-default">Turn on audio to hear the blockchain sing!</strong>
+            </p>
+          </div>
+        </section>
 
-          <!-- Music Generation callout with live producer demo -->
-          <Motion
-            class="absolute top-[22%] left-[12%] max-w-xs p-4 rounded-lg callout-box"
-            :initial="{ opacity: 0, x: -80, y: -40, scale: 0.85 }"
-            :animate="{ opacity: 1, x: 0, y: 0, scale: 1 }"
-            :exit="{ opacity: 0, x: -40, y: -20, scale: 0.9 }"
-            :transition="{ duration: 0.5, delay: 0.05, easing: [0.16, 1, 0.3, 1] }"
-          >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">MUSIC GENERATION</h3>
-            <p class="text-sm text-white/80 leading-relaxed">Every new block adds melodies, rhythms, and textures on top of the base track.</p>
-            <p class="text-sm text-white/80 leading-relaxed mt-2">The block producer's signature shapes the sound, so the music shifts live with the chain.</p>
-            <div class="mt-3 pt-3 border-t border-white/10">
-              <ClientOnly>
-                <LatestProducerDemo />
-              </ClientOnly>
+        <!-- Understanding the UI -->
+        <section>
+          <h3 class="text-lg font-semibold text-white mb-3">
+            Understanding the UI
+          </h3>
+          <div class="space-y-4 text-white/70 leading-relaxed">
+            <div>
+              <h4 class="text-white/90 font-medium mb-1">
+                The Orb (3D Visualization)
+              </h4>
+              <ul class="list-disc list-inside space-y-1 ml-2">
+                <li><strong class="text-white/90">Nodes:</strong> Each node represents a real validator from the Nimiq network</li>
+                <li><strong class="text-white/90">Beams:</strong> When you see a beam shoot from a node, that validator just produced a block (this is real data!)</li>
+                <li><strong class="text-white/90">Links between nodes:</strong> These connections represent the network interconnection between validators and web clients (artistic visualization)</li>
+              </ul>
             </div>
-          </Motion>
 
-          <!-- Network Orb callout with visual elements -->
-          <Motion
-            class="absolute top-[50%] left-[12%] max-w-md p-4 rounded-lg callout-box"
-            :initial="{ opacity: 0, x: -80, y: 0, scale: 0.85 }"
-            :animate="{ opacity: 1, x: 0, y: 0, scale: 1 }"
-            :exit="{ opacity: 0, x: -40, y: 0, scale: 0.9 }"
-            :transition="{ duration: 0.5, delay: 0.12, easing: [0.16, 1, 0.3, 1] }"
-          >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">NETWORK ORB</h3>
-            <div class="text-sm text-white/80 leading-relaxed">
-              <!-- Mini demo floated right with arc shape -->
-              <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
-                <ClientOnly>
-                  <MiniOrbDemo class="absolute inset-0" />
-                </ClientOnly>
-              </div>
-              <p>Live map of the Nimiq network.</p>
-              <p class="mt-2">Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.</p>
-              <p class="mt-2">Lines show their connections as the network rewires.</p>
+            <div>
+              <h4 class="text-white/90 font-medium mb-1">
+                Validators Panel
+              </h4>
+              <p>
+                Shows the top validators with their logos. When a validator produces a block, their logo glows orange. Click the panel to expand and see all validators.
+              </p>
             </div>
-          </Motion>
-        </template>
-      </Motion>
-    </AnimatePresence>
-  </Teleport>
+
+            <div>
+              <h4 class="text-white/90 font-medium mb-1">
+                Blockchain Viewer
+              </h4>
+              <p>
+                Displays batches and blocks in a grid. Gray blocks haven't been played yet, white blocks have been played, and orange blocks are currently being processed.
+              </p>
+            </div>
+
+            <div>
+              <h4 class="text-white/90 font-medium mb-1">
+                Now Playing Section
+              </h4>
+              <p>
+                Shows the current song, epoch number, and what's coming up next.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- About Nimiq -->
+        <section>
+          <h3 class="text-lg font-semibold text-white mb-3">
+            About Nimiq
+          </h3>
+          <p class="text-white/70 leading-relaxed">
+            Nimiq is a blockchain designed to be easy to use and accessible to everyone. With its browser-first approach and proof-of-stake consensus, Nimiq makes blockchain technology more approachable.
+            <a href="https://nimiq.com" target="_blank" rel="noopener noreferrer" class="text-[#0582CA] hover:text-[#265DD7] transition-colors cursor-pointer ml-1">
+              Learn more at nimiq.com →
+            </a>
+          </p>
+        </section>
+
+        <!-- Credits -->
+        <section>
+          <h3 class="text-lg font-semibold text-white mb-3">
+            Credits & Acknowledgments
+          </h3>
+          <div class="space-y-2 text-white/70">
+            <p>
+              <strong class="text-white/90">Created by:</strong> Team Nimiq
+            </p>
+            <div>
+              <strong class="text-white/90">Built with:</strong>
+              <ul class="list-disc list-inside ml-2 mt-1 space-y-1">
+                <li>
+                  <a href="https://strudel.cc" target="_blank" rel="noopener noreferrer" class="text-[#0582CA] hover:text-[#265DD7] transition-colors cursor-pointer">
+                    Strudel
+                  </a>
+                  for generative music (special thanks to
+                  <a href="https://www.youtube.com/@Switch-Angel" target="_blank" rel="noopener noreferrer" class="text-[#0582CA] hover:text-[#265DD7] transition-colors cursor-pointer">
+                    Switch Angel tutorials
+                  </a>)
+                </li>
+                <li>
+                  <a href="https://threejs.org" target="_blank" rel="noopener noreferrer" class="text-[#0582CA] hover:text-[#265DD7] transition-colors cursor-pointer">
+                    Three.js
+                  </a>
+                  for 3D visualization
+                </li>
+                <li>Nuxt + Vue + TypeScript</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Links -->
+        <section>
+          <h3 class="text-lg font-semibold text-white mb-3">
+            Links
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            <a
+              href="https://github.com/onmax/nimiq-song"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/90 text-sm transition-colors cursor-pointer"
+            >
+              <UIcon name="i-heroicons-code-bracket" class="size-4" />
+              GitHub
+            </a>
+            <a
+              href="https://x.com/nimiq"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/90 text-sm transition-colors cursor-pointer"
+            >
+              <UIcon name="i-heroicons-at-symbol" class="size-4" />
+              X (Twitter)
+            </a>
+            <a
+              href="https://discord.gg/nimiq"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/90 text-sm transition-colors cursor-pointer"
+            >
+              <UIcon name="i-heroicons-chat-bubble-left-right" class="size-4" />
+              Discord
+            </a>
+            <a
+              href="https://t.me/nimiq"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/90 text-sm transition-colors cursor-pointer"
+            >
+              <UIcon name="i-heroicons-paper-airplane" class="size-4" />
+              Telegram
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <!-- Footer CTAs -->
+      <div class="shrink-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a
+            href="https://nimiq.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white transition-all nimiq-btn-primary cursor-pointer"
+          >
+            Visit Nimiq.com
+            <UIcon name="i-heroicons-arrow-top-right-on-square" class="size-4" />
+          </a>
+          <button
+            class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-semibold text-white transition-colors cursor-pointer"
+            @click="closeModal"
+          >
+            <UIcon name="i-heroicons-speaker-wave" class="size-4" />
+            Let's go to the radio!
+          </button>
+        </div>
+      </div>
+    </Motion>
+  </AnimatePresence>
 </template>
 
 <style scoped>
-.callout-box {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.75) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+.nimiq-btn-primary {
+  background: var(--radial-gradient-light-blue);
 }
 
-.floating-slow {
-  animation: float-slow 3s ease-in-out infinite;
-}
-
-.floating-fast {
-  animation: float-fast 2.5s ease-in-out infinite;
-  animation-delay: -1s;
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(-3px, -4px); }
-}
-
-@keyframes float-fast {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(4px, -3px); }
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+.nimiq-btn-primary:hover {
+  filter: brightness(1.1);
 }
 </style>
