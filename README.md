@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://nimiq.fm" target="_blank">
+  <a href="https://v0.nimiq.fm" target="_blank">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
       <source media="(prefers-color-scheme: light)" srcset=".github/logo-light.svg">
