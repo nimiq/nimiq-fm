@@ -62,7 +62,7 @@ const background = computed(() => {
       tag="span"
       class="h-12 flex items-center justify-center rounded-full relative overflow-hidden"
       :animate="{
-        width: isPlaying ? '48px' : '180px',
+        width: isPlaying ? '48px' : '140px',
         background,
       }"
       :transition="{
@@ -86,7 +86,7 @@ const background = computed(() => {
         }"
       >
         <span class="shrink-0" v-html="volumeSvg" />
-        <span>Turn on audio</span>
+        <span>Tune in</span>
       </Motion>
 
       <!-- Circle icon -->

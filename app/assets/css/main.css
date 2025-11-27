@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+@theme {
+  --font-sans: 'Mulish', system-ui, sans-serif;
+}
 
 :root {
   --radial-gradient-light-blue: radial-gradient(100% 100% at 100% 100%, #265DD7 0%, #0582CA 100%);

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { epochAt } from '@nimiq/utils/albatross-policy'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
 const isPlaying = ref(false)
@@ -56,7 +57,7 @@ const displayNowPlaying = computed(() => {
   return 'Tuning in...'
 })
 const nextSongTitle = computed(() => latestBlock.value ? getNextSongName(latestBlock.value.blockNumber) : '')
-const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
+const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.value.blockNumber) : 0)
 </script>
 
 <template>
@@ -110,15 +111,7 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
             <div class="flex">
               <div class="grid grid-cols-[auto_1fr] gap-x-6 items-center p-6 border-r border-white/10 flex-1">
                 <AudioButton :is-playing="isPlaying" @toggle="togglePlay" />
-                <div>
-                  <p class="font-bold text-xl text-white/50">
-                    Now playing
-                    <span class="text-white ml-1">{{ displayNowPlaying }}</span>
-                  </p>
-                  <p class="text-sm text-white/50 mt-1">
-                    Epoch {{ currentEpoch }} · Up next: {{ nextSongTitle }}
-                  </p>
-                </div>
+                <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :epoch="currentEpoch" />
               </div>
 
               <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />
@@ -152,4 +145,6 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
     #020617 100%
   );
 }
+
+
 </style>
