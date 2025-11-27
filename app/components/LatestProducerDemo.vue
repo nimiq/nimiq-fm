@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { Motion } from 'motion-v'
+import { AnimatePresence, Motion } from 'motion-v'
 
 const { sortedBySlots } = useValidators()
 const { latestBlock } = useBlockchain()
 
-const isTransitioning = ref(false)
 const currentValidator = ref<{ name: string, logo: string } | null>(null)
-const nextValidator = ref<{ name: string, logo: string } | null>(null)
 
 // Get validator info by address
 function getValidatorInfo(address: string) {
@@ -15,69 +13,41 @@ function getValidatorInfo(address: string) {
 }
 
 // Watch for new blocks
-watch(latestBlock, async (block) => {
+watch(latestBlock, (block) => {
   if (!block?.validatorAddress) return
-
   const newValidator = getValidatorInfo(block.validatorAddress)
-  if (!newValidator) return
-
-  // First validator - just set without animation
-  if (!currentValidator.value) {
-    currentValidator.value = newValidator
-    return
-  }
-
-  // Same validator - skip
-  if (currentValidator.value.name === newValidator.name) return
-
-  // Animate transition
-  nextValidator.value = newValidator
-  isTransitioning.value = true
-
-  await new Promise(r => setTimeout(r, 500))
-
-  // End transition first (with duration:0, instant snap), then update values
-  isTransitioning.value = false
-  await nextTick()
-  currentValidator.value = newValidator
-  nextValidator.value = null
-})
+  if (newValidator) currentValidator.value = newValidator
+}, { immediate: true })
 </script>
 
 <template>
   <div class="flex flex-col gap-1">
     <span class="text-xs text-white/50">Latest producer</span>
-    <div class="relative h-7">
-      <!-- Current validator - in normal flow, exits up with blur + fade -->
-      <Motion
-        class="flex items-center gap-2"
-        :animate="{
-          opacity: isTransitioning ? 0 : 1,
-          y: isTransitioning ? -12 : 0,
-          filter: isTransitioning ? 'blur(3px)' : 'blur(0px)',
-        }"
-        :transition="{ duration: isTransitioning ? 0.4 : 0, easing: 'ease-out' }"
-      >
-        <template v-if="currentValidator">
+    <div class="h-6 overflow-hidden">
+      <AnimatePresence mode="wait">
+        <Motion
+          v-if="currentValidator"
+          :key="currentValidator.name"
+          class="flex items-center gap-2"
+          :initial="{ opacity: 0, y: 12, filter: 'blur(2px)' }"
+          :animate="{ opacity: 1, y: 0, filter: 'blur(0px)' }"
+          :exit="{ opacity: 0, y: -12, filter: 'blur(2px)' }"
+          :transition="{ duration: 0.3, easing: [0.16, 1, 0.3, 1] }"
+        >
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
           <span class="text-sm text-white/90 font-medium">{{ currentValidator.name }}</span>
-        </template>
-        <span v-else class="text-sm text-white/50">Waiting...</span>
-      </Motion>
-
-      <!-- Next validator - absolute overlay, enters from below -->
-      <Motion
-        v-if="nextValidator"
-        class="flex items-center gap-2 absolute left-0 top-0"
-        :animate="{
-          opacity: isTransitioning ? 1 : 0,
-          y: isTransitioning ? 0 : 16,
-        }"
-        :transition="{ duration: isTransitioning ? 0.4 : 0, easing: [0.16, 1, 0.3, 1], delay: isTransitioning ? 0.1 : 0 }"
-      >
-        <img :src="nextValidator.logo" :alt="nextValidator.name" class="size-5 rounded-full">
-        <span class="text-sm text-white/90 font-medium">{{ nextValidator.name }}</span>
-      </Motion>
+        </Motion>
+        <Motion
+          v-else
+          key="waiting"
+          class="flex items-center"
+          :initial="{ opacity: 0 }"
+          :animate="{ opacity: 1 }"
+          :exit="{ opacity: 0 }"
+        >
+          <span class="text-sm text-white/50">Waiting...</span>
+        </Motion>
+      </AnimatePresence>
     </div>
   </div>
 </template>
