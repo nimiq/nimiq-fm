@@ -13,6 +13,10 @@ const MACRO_GAP = 6
 
 const { latestBlock } = useBlockchain()
 
+// Mobile detection
+const breakpoints = useBreakpoints({ sm: 640 })
+const isMobile = breakpoints.smaller('sm')
+
 const currentBlockNumber = computed(() => latestBlock.value?.blockNumber ?? null)
 const currentGlobalBatch = computed(() => currentBlockNumber.value !== null ? batchAt(currentBlockNumber.value) : 0)
 const currentBatch = computed(() => latestBlock.value?.batch ?? 0)
@@ -24,7 +28,7 @@ const blocksElapsedInCurrentSong = computed(() => batchInSong.value * BLOCKS_PER
 // Calculate sizes
 const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP // 236px
 const songWidth = MACRO_SIZE + MACRO_GAP + 3 * (batchWidth + BLOCK_GAP) // ~740px
-const prevSongOffset = songWidth - 80 // Show only last ~80px of previous song
+const prevSongOffset = computed(() => isMobile.value ? 0 : songWidth - 80) // No offset on mobile
 
 // Show prev, current, next, next-next (4 songs for smooth transition)
 const visibleSongs = computed(() => {
@@ -87,16 +91,31 @@ watch(currentSongIndex, (newIdx, oldIdx) => {
   }
 })
 
-// Scroll position: prevSongOffset + transition animation
-const scrollX = computed(() => prevSongOffset + transitionOffset.value)
+// Mobile auto-scroll: follow current block position within song
+const mobileAutoScroll = computed(() => {
+  if (!isMobile.value) return 0
+  // Calculate how far into the current song we are (in pixels)
+  const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP
+  const currentBatchInSong = batchInSong.value
+  const blockInCurrentBatch = blockInBatch.value
+  // Position = batches completed + current block position within batch
+  const colInBatch = Math.floor(blockInCurrentBatch / 2) // 2 rows per column
+  const pixelOffset = currentBatchInSong * (batchWidth + BLOCK_GAP) + colInBatch * (BLOCK_SIZE + BLOCK_GAP)
+  // Keep ~80px margin from left edge, scroll when block goes past that
+  return Math.max(0, pixelOffset - 80)
+})
+
+// Scroll position: prevSongOffset + transition animation + mobile auto-scroll
+const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + mobileAutoScroll.value)
 </script>
 
 <template>
   <div class="border overflow-hidden">
-    <div class="relative w-full py-4 px-6">
+    <div class="relative w-full py-3 sm:py-4 px-4 sm:px-6">
+      <!-- Block timeline -->
       <div class="overflow-hidden relative">
-        <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
-        <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
+        <div class="hidden sm:block absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
+        <div class="absolute inset-y-0 right-0 w-8 sm:w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
         <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
           <template v-for="song in visibleSongs" :key="song.songIndex">
             <div class="flex items-center shrink-0" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
@@ -129,48 +148,71 @@ const scrollX = computed(() => prevSongOffset + transitionOffset.value)
         </Motion>
       </div>
 
-      <!-- Labels row -->
+      <!-- Labels row - fixed on mobile, scrolling on desktop -->
       <div class="mt-2 overflow-hidden relative">
-        <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
-        <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
-        <Motion tag="div" class="flex" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
-          <template v-for="song in visibleSongs" :key="`label-${song.songIndex}`">
-            <div class="shrink-0 flex items-center gap-1" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
-              <AnimatePresence mode="wait">
-                <Motion
-                  :key="song.name"
-                  :initial="{ opacity: 0, y: 4 }"
-                  :animate="{ opacity: 1, y: 0 }"
-                  :exit="{ opacity: 0, y: -4 }"
-                  :transition="{ duration: 0.2 }"
-                  class="text-[10px] text-white/50"
-                >
-                  {{ song.name }}
-                </Motion>
+        <!-- Mobile: fixed labels -->
+        <div v-if="isMobile" class="flex items-center gap-1 text-[9px] text-white/50">
+          <AnimatePresence mode="wait">
+            <Motion :key="visibleSongs[1]?.name" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.2 }">
+              {{ visibleSongs[1]?.name }}
+            </Motion>
+          </AnimatePresence>
+          <span>· Batch</span>
+          <span class="font-mono tabular-nums flex">
+            <template v-for="(char, i) in batchChars" :key="`batch-${i}`">
+              <span v-if="char === ' '" class="w-1" />
+              <AnimatePresence v-else mode="wait">
+                <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
               </AnimatePresence>
-              <template v-if="song.offset === 0">
-                <span class="text-[10px] text-white/50">· Batch</span>
-                <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
-                  <template v-for="(char, i) in batchChars" :key="`batch-${i}`">
-                    <span v-if="char === ' '" class="w-1" />
-                    <AnimatePresence v-else mode="wait">
-                      <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
-                    </AnimatePresence>
-                  </template>
-                </span>
-                <span class="text-[10px] text-white/50">· Block</span>
-                <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
-                  <template v-for="(char, i) in blockChars" :key="`block-${i}`">
-                    <span v-if="char === ' '" class="w-1" />
-                    <AnimatePresence v-else mode="wait">
-                      <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
-                    </AnimatePresence>
-                  </template>
-                </span>
-              </template>
-            </div>
-          </template>
-        </Motion>
+            </template>
+          </span>
+          <span>· Block</span>
+          <span class="font-mono tabular-nums flex">
+            <template v-for="(char, i) in blockChars" :key="`block-${i}`">
+              <span v-if="char === ' '" class="w-1" />
+              <AnimatePresence v-else mode="wait">
+                <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
+              </AnimatePresence>
+            </template>
+          </span>
+        </div>
+
+        <!-- Desktop: scrolling labels -->
+        <template v-else>
+          <div class="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
+          <div class="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
+          <Motion tag="div" class="flex" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, easing: 'ease-out' }">
+            <template v-for="song in visibleSongs" :key="`label-${song.songIndex}`">
+              <div class="shrink-0 flex items-center gap-1" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
+                <AnimatePresence mode="wait">
+                  <Motion :key="song.name" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.2 }" class="text-[10px] text-white/50">
+                    {{ song.name }}
+                  </Motion>
+                </AnimatePresence>
+                <template v-if="song.offset === 0">
+                  <span class="text-[10px] text-white/50">· Batch</span>
+                  <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
+                    <template v-for="(char, i) in batchChars" :key="`batch-${i}`">
+                      <span v-if="char === ' '" class="w-1" />
+                      <AnimatePresence v-else mode="wait">
+                        <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
+                      </AnimatePresence>
+                    </template>
+                  </span>
+                  <span class="text-[10px] text-white/50">· Block</span>
+                  <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
+                    <template v-for="(char, i) in blockChars" :key="`block-${i}`">
+                      <span v-if="char === ' '" class="w-1" />
+                      <AnimatePresence v-else mode="wait">
+                        <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
+                      </AnimatePresence>
+                    </template>
+                  </span>
+                </template>
+              </div>
+            </template>
+          </Motion>
+        </template>
       </div>
     </div>
   </div>

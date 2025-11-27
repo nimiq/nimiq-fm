@@ -85,16 +85,18 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
         <img src="/logo-dark.svg" alt="Nimiq FM" class="h-4 sm:h-5">
 
         <!-- Right side links -->
-        <div class="flex items-center gap-4 sm:gap-6 text-sm text-white/70">
-          <button class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer" @click="togglePlay">
-            <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-4" />
+        <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">
+          <button class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0" @click="togglePlay">
+            <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-5 sm:size-4" />
             <span class="hidden sm:inline">{{ isPlaying ? 'Audio on' : 'Audio off' }}</span>
           </button>
-          <button class="hover:text-white transition-colors cursor-pointer" @click="showWhatIsThis = true">
-            What is this?
+          <button class="hover:text-white transition-colors cursor-pointer text-base sm:text-sm p-2 sm:p-0" @click="showWhatIsThis = true">
+            <span class="hidden sm:inline">What is this?</span>
+            <span class="sm:hidden">?</span>
           </button>
-          <NuxtLink to="https://nimiq.com/home" target="_blank" external class="nimiq-pill-blue nq-arrow">
-            Visit nimiq.com
+          <NuxtLink to="https://nimiq.com/home" target="_blank" external class="nimiq-pill-blue nq-arrow text-xs sm:text-sm py-1.5 sm:py-2 px-3 sm:px-4">
+            <span class="hidden sm:inline">Visit nimiq.com</span>
+            <span class="sm:hidden">nimiq.com</span>
           </NuxtLink>
         </div>
       </div>
@@ -114,13 +116,13 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
           <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4 border border-white/10">
             <BlockchainViewer class="border-b border-white/10" />
 
-            <div class="flex">
-              <div class="grid grid-cols-[auto_1fr] gap-x-6 items-center p-6 border-r border-white/10 flex-1">
+            <div class="flex flex-col sm:flex-row">
+              <div class="flex items-center gap-3 sm:gap-6 p-4 sm:p-6 sm:border-r border-white/10 sm:flex-1">
                 <AudioButton :is-playing="isPlaying" @toggle="togglePlay" />
                 <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :epoch="currentEpoch" />
               </div>
 
-              <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />
+              <SmallValidatorsPanel class="border-t sm:border-t-0 border-white/10 rounded-b-lg sm:rounded-none" @is-expanded="(value) => isValidatorsPanelExpanded = value" />
             </div>
             <ValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
           </div>

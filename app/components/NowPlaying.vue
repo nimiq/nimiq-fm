@@ -43,7 +43,7 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
 <template>
   <div>
       <!-- Line 1: Now playing [SONG] -->
-      <p class="font-bold text-xl text-white/50">
+      <p class="font-bold text-sm sm:text-xl text-white/50">
         Now playing
         <span class="relative inline-block ml-1">
           <!-- Current song - exits up + fade + blur -->
@@ -72,7 +72,7 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
       </p>
 
       <!-- Line 2: Epoch X · Up next: [SONG] -->
-      <p class="text-sm text-white/50 mt-1">
+      <p class="text-[11px] sm:text-sm text-white/50 mt-0.5 sm:mt-1">
         Epoch {{ props.epoch }} · Up next:
         <span class="relative inline-block ml-1">
           <!-- Current next - exits up + fade -->

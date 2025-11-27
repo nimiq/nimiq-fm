@@ -62,12 +62,12 @@ function toggleExpand() {
 
 <template>
   <div
-    class="w-max m-3 hover:bg-white/5 transition-colors rounded-md py-5 px-6 cursor-zoom-in select-none"
+    class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none"
     :class="{ 'cursor-zoom-out': isExpanded }"
     @click="toggleExpand"
   >
-    <div class="flex items-center justify-between gap-4 mb-2">
-      <div v-for="v in topValidators" :key="v.address" class="flex items-center gap-0.5">
+    <div class="grid grid-cols-4 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
+      <div v-for="v in topValidators" :key="v.address" class="flex items-center justify-center gap-0.5">
         <div
           class="validator-hex"
           :class="{
