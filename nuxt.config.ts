@@ -27,6 +27,9 @@ export default defineNuxtConfig({
     experimental: {
       websocket: true,
     },
+    rollupConfig: {
+      external: ['utf-8-validate', 'bufferutil'],
+    },
   },
   css: ['./app/assets/css/main.css'],
   runtimeConfig: {
