@@ -3,6 +3,7 @@ import { epochAt } from '@nimiq/utils/albatross-policy'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
 const isPlaying = ref(false)
+const isInfoModalOpen = ref(false)
 
 // Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
@@ -85,11 +86,13 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
 
         <!-- Right side links -->
         <div class="flex items-center gap-4 sm:gap-6 text-sm text-white/70">
-          <button class="flex items-center gap-1.5 hover:text-white transition-colors" @click="togglePlay">
+          <button class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer" @click="togglePlay">
             <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-4" />
             <span class="hidden sm:inline">{{ isPlaying ? 'Audio on' : 'Audio off' }}</span>
           </button>
-          <a href="#" class="hover:text-white transition-colors">What is this?</a>
+          <button class="hover:text-white transition-colors cursor-pointer" @click="isInfoModalOpen = true">
+            What is this?
+          </button>
         </div>
       </div>
     </header>
@@ -121,6 +124,9 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
         </div>
       </div>
     </div>
+
+    <!-- Info Modal -->
+    <InfoModal v-model="isInfoModalOpen" />
   </div>
 </template>
 
