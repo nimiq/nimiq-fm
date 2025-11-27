@@ -9,6 +9,7 @@ let blockchain: ReturnType<typeof useBlockchain> | null = null
 
 // Use the shared blockchain state
 const { latestBlock } = useBlockchain()
+const isValidatorsPanelExpanded = ref(false)
 
 async function togglePlay() {
   if (!strudel.value)
@@ -105,8 +106,7 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
         <div class="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" />
 
         <!-- Content Container -->
-        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6">
-          <!-- Blockchain Viewer Bar -->
+        <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 max-h-[calc(100vh-80px)]">
           <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4">
             <BlockchainViewer class="rounded-t-lg" />
 
@@ -127,8 +127,9 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
                 </div>
               </div>
 
-              <ValidatorsPanel />
+              <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />
             </div>
+            <ValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
           </div>
 
           <!-- Bottom Row: Now Playing (left) + Validators (right) -->

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { AnimatePresence, Motion } from 'motion-v'
 
-defineProps<{
-  isExpanded: boolean
+const emit = defineEmits<{
+  (e: 'isExpanded', value: boolean): void
 }>()
 
-const { sortedBySlots } = useValidators()
+const isExpanded = ref(false)
+const { sortedBySlots, topValidators } = useValidators()
 const { latestBlock } = useBlockchain()
 
 // Track active validators - use Map for proper reactivity
@@ -26,13 +27,13 @@ watch(latestBlock, (block) => {
         activeValidators.value.set(address, 'fading')
         activeValidators.value = new Map(activeValidators.value)
       }
-    }, 800)
+    }, 300)
 
     // After fade completes, remove
     setTimeout(() => {
       activeValidators.value.delete(address)
       activeValidators.value = new Map(activeValidators.value)
-    }, 1800)
+    }, 1300)
   }
 })
 
@@ -41,51 +42,61 @@ function getValidatorState(address: string) {
 }
 
 // Get validator name by address
-function getValidatorName(address: string): string {
+function getValidatorName(address: string): string | undefined {
   const validator = sortedBySlots.value.find(v => v.address === address)
-  return validator?.name || address
+  return validator?.name || undefined
 }
 
 // Get active validator name for display
-const activeValidatorName = ref('Waiting for blocks...')
+const activeValidatorName = ref<string | undefined>('Waiting for blocks...')
 watch(latestBlock, () => {
   if (latestBlock.value?.validatorAddress)
-    activeValidatorName.value = getValidatorName(latestBlock.value.validatorAddress) || activeValidatorName.value
+    activeValidatorName.value = getValidatorName(latestBlock.value.validatorAddress)
 })
+
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value
+  emit('isExpanded', isExpanded.value)
+}
 </script>
 
 <template>
-  <AnimatePresence>
-    <Motion
-      v-if="isExpanded"
-      :initial="{ height: 0, opacity: 0 }"
-      :animate="{ height: 'auto', opacity: 1 }"
-      :exit="{ height: 0, opacity: 0 }"
-      :transition="{ duration: 0.4, ease: 'easeInOut' }"
-      class="overflow-y-auto overflow-x-hidden max-h-[calc(100vh-300px)]"
-    >
-      <div class="border-t border-white/10 p-4 sm:p-6 xl:p-8">
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6 xl:gap-8 justify-items-center">
-          <Motion
-            v-for="(v, index) in sortedBySlots"
-            :key="v.address"
-            :initial="{ opacity: 0, y: 20, scale: 0.9 }"
-            :animate="{ opacity: 1, y: 0, scale: 1 }"
-            :transition="{ duration: 0.3, delay: index * 0.02, ease: 'easeOut' }"
-            class="flex items-center gap-4 w-full"
-          >
-            <img :src="v.logo" :alt="v.name" class="size-10 sm:size-12 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
-            <div class="text-sm text-white/80 font-medium truncate validator-text" :class="{ 'validator-text-glow': getValidatorState(v.address) === 'glow', 'validator-text-fading': getValidatorState(v.address) === 'fading' }">
-              <div v-if="v.name" class="truncate">
-                {{ v.name }}
-              </div>
-              <ShortAddress v-else :address="v.address" />
-            </div>
-          </Motion>
+  <div
+    class="w-max m-3 hover:bg-white/5 transition-colors rounded-md py-5 px-6 cursor-zoom-in select-none"
+    :class="{ 'cursor-zoom-out': isExpanded }"
+    @click="toggleExpand"
+  >
+    <div class="flex items-center justify-between gap-4 mb-2">
+      <div v-for="v in topValidators" :key="v.address" class="flex items-center gap-0.5">
+        <div
+          class="validator-hex"
+          :class="{
+            'validator-glow': getValidatorState(v.address) === 'glow',
+            'validator-fading': getValidatorState(v.address) === 'fading',
+          }"
+        >
+          <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
         </div>
       </div>
-    </Motion>
-  </AnimatePresence>
+    </div>
+    <AnimatePresence mode="wait">
+      <Motion
+        :key="activeValidatorName"
+        :initial="{ opacity: 0, y: 4 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :exit="{ opacity: 0, y: -4 }"
+        :transition="{ duration: 0.2 }"
+        class="text-sm text-white/80 font-medium"
+      >
+        <span v-if="activeValidatorName">
+          {{ activeValidatorName }}
+        </span>
+        <span v-else>
+          <ShortAddress :address="latestBlock?.validatorAddress || ''" />
+        </span>
+      </Motion>
+    </AnimatePresence>
+  </div>
 </template>
 
 <style scoped>
