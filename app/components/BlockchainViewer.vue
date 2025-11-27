@@ -71,8 +71,9 @@ function getBlocksColumnFirst() {
 
 const formattedBatch = computed(() => currentBatch.value.toLocaleString('en-US').replace(/,/g, ' '))
 const formattedBlock = computed(() => currentBlockNumber.value?.toLocaleString('en-US').replace(/,/g, ' ') ?? '')
-const batchDigits = computed(() => formattedBatch.value.split(' '))
-const blockDigits = computed(() => formattedBlock.value.split(' '))
+// Split into individual chars for odometer effect (spaces become non-animated separators)
+const batchChars = computed(() => formattedBatch.value.split(''))
+const blockChars = computed(() => formattedBlock.value.split(''))
 
 // Animation offset for song transitions
 const transitionOffset = ref(0)
@@ -150,20 +151,20 @@ const scrollX = computed(() => prevSongOffset + transitionOffset.value)
               <template v-if="song.offset === 0">
                 <span class="text-[10px] text-white/50">· Batch</span>
                 <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
-                  <template v-for="(digit, i) in batchDigits" :key="`batch-${i}`">
-                    <AnimatePresence mode="wait">
-                      <Motion :key="digit" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.15 }">{{ digit }}</Motion>
+                  <template v-for="(char, i) in batchChars" :key="`batch-${i}`">
+                    <span v-if="char === ' '" class="w-1" />
+                    <AnimatePresence v-else mode="wait">
+                      <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
                     </AnimatePresence>
-                    <span v-if="i < batchDigits.length - 1">&nbsp;</span>
                   </template>
                 </span>
                 <span class="text-[10px] text-white/50">· Block</span>
                 <span class="text-[10px] text-white/50 font-mono tabular-nums flex">
-                  <template v-for="(digit, i) in blockDigits" :key="`block-${i}`">
-                    <AnimatePresence mode="wait">
-                      <Motion :key="digit" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.15 }">{{ digit }}</Motion>
+                  <template v-for="(char, i) in blockChars" :key="`block-${i}`">
+                    <span v-if="char === ' '" class="w-1" />
+                    <AnimatePresence v-else mode="wait">
+                      <Motion :key="char" :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }" :transition="{ duration: 0.2 }">{{ char }}</Motion>
                     </AnimatePresence>
-                    <span v-if="i < blockDigits.length - 1">&nbsp;</span>
                   </template>
                 </span>
               </template>
