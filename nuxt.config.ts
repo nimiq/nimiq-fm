@@ -16,14 +16,14 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
-    '@nuxthub/core',
+    '@nuxthub/core-nightly',
     '@nuxt/eslint',
     '@nuxt/image',
     '@nuxtjs/seo',
   ],
 
   hub: {
-    // NuxtHub options. See https://hub.nuxt.com/docs/getting-started/installation
+    cache: true,
   },
 
   site: {
@@ -56,7 +56,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    nodeRpcUrl: process.env.NIMIQ_RPC_URL || '',
+    nimiqRpcUrl: process.env.NIMIQ_RPC_URL || '',
   },
 
   vite: {
@@ -78,6 +78,9 @@ export default defineNuxtConfig({
     },
     experimental: {
       websocket: true,
+    },
+    rollupConfig: {
+      external: ['utf-8-validate', 'bufferutil', '@libsql/isomorphic-ws'],
     },
   },
 

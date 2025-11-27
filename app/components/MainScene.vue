@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Material, Mesh, Texture } from 'three'
 import { gsap } from 'gsap'
 import { createIdenticon } from 'identicons-esm'
 import * as THREE from 'three'
@@ -6,14 +7,14 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useBlocks } from '~/stores/blocks'
 
 const { block, micro } = storeToRefs(useBlocks())
-const container = ref(null)
-let scene
-let camera
-let renderer
-const notes = []
-let gridHelper
+const container = ref<HTMLDivElement | null>(null)
+let scene: THREE.Scene
+let camera: THREE.PerspectiveCamera
+let renderer: THREE.WebGLRenderer
+const notes: Mesh[] = []
+let gridHelper: THREE.GridHelper
 const NOTE_SPEED = 2
-let animationId
+let animationId: number
 
 function createHexagonShape() {
   const shape = new THREE.Shape()
@@ -69,14 +70,14 @@ function shakeGrid() {
       gridHelper.position.z = 0
     },
   })
-};
+}
 
 function setupScene() {
   scene = new THREE.Scene()
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setSize(window.innerWidth, window.innerHeight)
-  container.value.appendChild(renderer.domElement)
+  container.value!.appendChild(renderer.domElement)
 
   camera.position.z = 5
   camera.position.y = -2
@@ -98,37 +99,27 @@ function createBackground() {
   scene.add(gridHelper)
 }
 
-function createTextureFromSVG(svgString) {
+function createTextureFromSVG(svgString: string) {
   const img = new Image()
   img.src = svgString
   const texture = new THREE.Texture(img)
-  img.onload = () => { texture.needsUpdate = true }
+  img.onload = () => {
+    texture.needsUpdate = true
+  }
   return texture
 }
 
 function createNote(svgString: string | null = null) {
   const geometry = createHexagonShape()
-  let material
+  let material: Material | Material[]
 
   if (svgString) {
     const texture = createTextureFromSVG(svgString)
-    // Map the texture to the hexagon size (radius 0.3 -> width/height ~0.6)
-    // UVs are based on world units. Range is approx -0.3 to 0.3.
-    // We want to map this range to 0..1
-    // 0 -> 0.5
-    // 0.3 -> 1.0 => 0.3 * repeat + 0.5 = 1.0 => repeat = 0.5 / 0.3 = 1.666
     texture.repeat.set(1.666, 1.666)
     texture.offset.set(0.5, 0.5)
 
-    // Use array of materials: [face, side]
-    // ExtrudeGeometry uses index 0 for faces (top/bottom) and 1 for sides
-    const faceMaterial = new THREE.MeshBasicMaterial({
-      map: texture,
-      color: 0xFFFFFF,
-    })
-    const sideMaterial = new THREE.MeshBasicMaterial({
-      color: 0x222222,
-    })
+    const faceMaterial = new THREE.MeshBasicMaterial({ map: texture, color: 0xFFFFFF })
+    const sideMaterial = new THREE.MeshBasicMaterial({ color: 0x222222 })
     material = [faceMaterial, sideMaterial]
   }
   else {
@@ -143,22 +134,11 @@ function createNote(svgString: string | null = null) {
   }
 
   const note = new THREE.Mesh(geometry, material)
-  note.position.set(
-    (Math.random() - 0.5) * 4,
-    -3,
-    0,
-  )
-
+  note.position.set((Math.random() - 0.5) * 4, -3, 0)
   note.rotation.z = 0
   note.rotation.y = Math.PI
 
-  gsap.from(note.scale, {
-    x: 0,
-    y: 0,
-    z: 0,
-    duration: 0.2,
-    ease: 'back.out',
-  })
+  gsap.from(note.scale, { x: 0, y: 0, z: 0, duration: 0.2, ease: 'back.out' })
 
   scene.add(note)
   notes.push(note)
@@ -175,16 +155,17 @@ function animate() {
       scene.remove(note)
 
       if (Array.isArray(note.material)) {
-        note.material.forEach((m) => {
+        note.material.forEach((m: Material & { map?: Texture }) => {
           if (m.map)
             m.map.dispose()
           m.dispose()
         })
       }
       else {
-        if (note.material.map)
-          note.material.map.dispose()
-        note.material.dispose()
+        const mat = note.material as Material & { map?: Texture }
+        if (mat.map)
+          mat.map.dispose()
+        mat.dispose()
       }
 
       note.geometry.dispose()

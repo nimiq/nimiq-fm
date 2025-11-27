@@ -1,0 +1,13 @@
+diff --git a/dist/ws.mjs b/dist/ws.mjs
+index 0000000..1111111 100644
+--- a/dist/ws.mjs
++++ b/dist/ws.mjs
+@@ -3,7 +3,7 @@ import { __getBaseUrl } from './client.mjs';
+ function getWebSocket() {
+   if (globalThis.WebSocket)
+     return globalThis.WebSocket;
+-  return require("@libsql/isomorphic-ws").WebSocket;
++  throw new Error("WebSocket is not available in this environment");
+ }
+ const DEFAULT_TIMEOUT = 3e4;
+ const DEFAULT_RECONNECT = { retries: 3, delay: 1e3, onFailed: () => {

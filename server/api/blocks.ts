@@ -1,6 +1,4 @@
-import type { Block } from 'nimiq-rpc-client-ts/types'
-import { initRpcClient } from 'nimiq-rpc-client-ts/client'
-import { subscribeForHeadBlock } from 'nimiq-rpc-client-ts/ws'
+import * as rpc from 'nimiq-rpc-client-ts'
 
 export interface StreamedBlock {
   number: number
@@ -13,15 +11,14 @@ export interface StreamedBlock {
 export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event)
 
-  const { nodeRpcUrl } = useRuntimeConfig()
+  const config = useRuntimeConfig()
+  rpc.initRpcClient({ url: config.nimiqRpcUrl })
 
   try {
-    initRpcClient({ url: nodeRpcUrl })
+    const sub = await rpc.subscribeForHeadBlock(true, { autoReconnect: true })
 
-    const eventEmitter = await subscribeForHeadBlock(true)
-
-    eventEmitter.addEventListener('data', async (event: CustomEvent) => {
-      const { data: block } = event.detail as { data: Block | null }
+    sub.addEventListener('data', (e) => {
+      const block = e.detail.data
       if (!block)
         return
 
@@ -36,17 +33,19 @@ export default defineEventHandler(async (event) => {
       eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
     })
 
-    eventEmitter.addEventListener('error', () => {
-      eventStream.push(JSON.stringify({ type: 'error', message: 'Subscription error' }))
+    sub.addEventListener('error', (e) => {
+      eventStream.push(JSON.stringify({ type: 'error', message: e.detail }))
+    })
+
+    sub.addEventListener('close', () => {
+      eventStream.close()
     })
   }
-  catch {
-    eventStream.push(JSON.stringify({ type: 'error', message: 'Failed to subscribe' }))
+  catch (error) {
+    console.error('[SSE] Failed to subscribe to blockchain:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe'
+    eventStream.push(JSON.stringify({ type: 'error', message: `Subscription failed: ${errorMessage}` }))
   }
-
-  eventStream.onClosed(async () => {
-    await eventStream.close()
-  })
 
   return eventStream.send()
 })
