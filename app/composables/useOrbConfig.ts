@@ -53,7 +53,7 @@ const defaultConfig = {
   topLightIntensity: 4,
 
   // === CAMERA ===
-  cameraPositionZ: 40,
+  cameraPositionZ: 33,
   cameraFov: 60,
   orbitMinDistance: 15,
   orbitMaxDistance: 100,
