@@ -103,10 +103,10 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
 
         <!-- Content Container -->
         <div class="relative z-10 px-4 sm:px-6 pb-4 sm:pb-6 max-h-[calc(100vh-80px)]">
-          <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4">
-            <BlockchainViewer class="rounded-t-lg" />
+          <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4 border border-white/10">
+            <BlockchainViewer class="border-b border-white/10" />
 
-            <div class="flex border border-t-0 border-white/10 rounded-b-lg">
+            <div class="flex">
               <div class="grid grid-cols-[auto_1fr] gap-x-6 items-center p-6 border-r border-white/10 flex-1">
                 <button class="nimiq-btn">
                   <UIcon :name="isPlaying ? 'i-heroicons-speaker-x-mark' : 'i-heroicons-speaker-wave'" class="size-5" />
@@ -127,31 +127,6 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
             </div>
             <ValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
           </div>
-
-          <!-- Bottom Row: Now Playing (left) + Validators (right) -->
-          <!-- <div class="flex items-end justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <button
-                class="shrink-0 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-[#0582CA] hover:bg-[#0582CA]/90 transition-all duration-300 flex items-center gap-2 text-white font-medium shadow-lg shadow-[#0582CA]/30"
-                @click="togglePlay"
-              >
-                <UIcon :name="isPlaying ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'" class="size-5" />
-                <span class="text-sm sm:text-base">{{ isPlaying ? 'Audio on' : 'Turn on audio' }}</span>
-              </button>
-
-              <div class="flex flex-col">
-                <div class="text-base sm:text-lg font-medium text-white">
-                  Now playing <span class="font-bold">{{ displayNowPlaying }}</span>
-                </div>
-                <div class="text-xs sm:text-sm text-white/60">
-                  Epoch {{ currentEpoch }} · Up next: {{ nextSongTitle }}
-                </div>
-              </div>
-            </div>
-
-            <ValidatorsPanel />
-          </div>
-        </div> -->
         </div>
       </div>
     </div>

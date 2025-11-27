@@ -74,7 +74,7 @@ function getBatchBlockIndices() {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto p-6 border border-white/10">
+  <div class="w-full overflow-x-auto p-6">
     <div class="flex justify-center items-center flex-nowrap">
       <template v-for="batch in visibleBatches" :key="batch.uniqueKey">
         <!-- Show macro block as special only if it's the first of a song -->
