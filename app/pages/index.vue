@@ -105,7 +105,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
     <header class="fixed top-0 left-0 right-0 z-20 pointer-events-auto">
       <div class="flex items-center justify-between p-4 sm:p-6">
         <!-- Logo -->
-        <img src="/logo-dark.svg" alt="Nimiq FM" class="h-4 sm:h-5">
+        <img src="/logo-dark.svg" alt="Nimiq FM" class="h-4 sm:h-5" fetchpriority="high">
 
         <!-- Right side links -->
         <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">

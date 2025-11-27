@@ -12,6 +12,15 @@ const { config } = useOrbConfig()
 // Background sphere geometry (inverted for inside view)
 const bgSphereGeometry = new THREE.SphereGeometry(200, 32, 32)
 bgSphereGeometry.scale(-1, 1, 1)
+
+// Lazy load environment for better initial performance
+const showEnvironment = ref(false)
+onMounted(() => {
+  // Delay environment loading to prioritize initial render
+  setTimeout(() => {
+    showEnvironment.value = true
+  }, 150)
+})
 </script>
 
 <template>
@@ -20,7 +29,7 @@ bgSphereGeometry.scale(-1, 1, 1)
       <template #default>
         <TresGroup>
           <TresPerspectiveCamera :position="[0, 0, config.cameraPositionZ]" :fov="config.cameraFov" make-default />
-          <Environment preset="studio" :background="false" />
+          <Environment v-if="showEnvironment" preset="studio" :background="false" />
 
           <TresAmbientLight :intensity="config.ambientLightIntensity" color="#ffffff" />
           <TresPointLight :position="[20, 10, 20]" :intensity="config.mainLightIntensity" color="#ffffff" :distance="100" />
