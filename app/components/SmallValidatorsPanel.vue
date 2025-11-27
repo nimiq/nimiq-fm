@@ -61,42 +61,51 @@ function toggleExpand() {
 </script>
 
 <template>
-  <div
-    class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none"
-    :class="{ 'cursor-zoom-out': isExpanded }"
-    @click="toggleExpand"
-  >
-    <div class="grid grid-cols-4 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
-      <div v-for="v in topValidators" :key="v.address" class="flex items-center justify-center gap-0.5">
-        <div
-          class="validator-hex"
-          :class="{
-            'validator-glow': getValidatorState(v.address) === 'glow',
-            'validator-fading': getValidatorState(v.address) === 'fading',
-          }"
-        >
-          <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
+  <ClientOnly>
+    <div
+      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none"
+      :class="{ 'cursor-zoom-out': isExpanded }"
+      @click="toggleExpand"
+    >
+      <div class="grid grid-cols-4 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
+        <div v-for="v in topValidators" :key="v.address" class="flex items-center justify-center gap-0.5">
+          <div
+            class="validator-hex"
+            :class="{
+              'validator-glow': getValidatorState(v.address) === 'glow',
+              'validator-fading': getValidatorState(v.address) === 'fading',
+            }"
+          >
+            <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
+          </div>
         </div>
       </div>
+      <AnimatePresence mode="wait">
+        <Motion
+          :key="activeValidatorName"
+          :initial="{ opacity: 0, y: 4 }"
+          :animate="{ opacity: 1, y: 0 }"
+          :exit="{ opacity: 0, y: -4 }"
+          :transition="{ duration: 0.2 }"
+          class="text-sm text-white/80 font-medium"
+        >
+          <span v-if="activeValidatorName">
+            {{ activeValidatorName }}
+          </span>
+          <span v-else>
+            <ShortAddress :address="latestBlock?.validatorAddress || ''" />
+          </span>
+        </Motion>
+      </AnimatePresence>
     </div>
-    <AnimatePresence mode="wait">
-      <Motion
-        :key="activeValidatorName"
-        :initial="{ opacity: 0, y: 4 }"
-        :animate="{ opacity: 1, y: 0 }"
-        :exit="{ opacity: 0, y: -4 }"
-        :transition="{ duration: 0.2 }"
-        class="text-sm text-white/80 font-medium"
-      >
-        <span v-if="activeValidatorName">
-          {{ activeValidatorName }}
-        </span>
-        <span v-else>
-          <ShortAddress :address="latestBlock?.validatorAddress || ''" />
-        </span>
-      </Motion>
-    </AnimatePresence>
-  </div>
+    <template #fallback>
+      <div class="w-full sm:w-max m-0 sm:m-3 rounded-md py-3 sm:py-5 px-4 sm:px-6">
+        <div class="text-sm text-white/80 font-medium">
+          Loading validators...
+        </div>
+      </div>
+    </template>
+  </ClientOnly>
 </template>
 
 <style scoped>

@@ -27,7 +27,12 @@ export default defineCachedEventHandler(async () => {
 
   const [{ data: electionBlock, error: blockError }, validatorsFromApi] = await Promise.all([
     client.blockchain.getBlockByNumber(electionBlockNumber, { includeBody: true }),
-    $fetch<ValidatorFromApi[]>('https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false'),
+    $fetch<ValidatorFromApi[]>('https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false')
+      .catch((error) => {
+        console.error('Failed to fetch validator metadata from external API:', error)
+        // Return empty array so app still works, just without names/logos
+        return []
+      }),
   ])
 
   if (!electionBlock || !electionBlock.isElectionBlock) {

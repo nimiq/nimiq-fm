@@ -33,28 +33,29 @@ watch(() => props.modelValue, (isOpen) => {
 </script>
 
 <template>
-  <AnimatePresence>
-    <!-- Overlay -->
-    <Motion
-      v-if="modelValue"
-      :initial="{ opacity: 0 }"
-      :animate="{ opacity: 1 }"
-      :exit="{ opacity: 0 }"
-      :transition="{ duration: 0.2 }"
-      class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-      @click="closeModal"
-    />
+  <div>
+    <AnimatePresence>
+      <!-- Overlay -->
+      <Motion
+        v-if="modelValue"
+        :initial="{ opacity: 0 }"
+        :animate="{ opacity: 1 }"
+        :exit="{ opacity: 0 }"
+        :transition="{ duration: 0.2 }"
+        class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+        @click="closeModal"
+      />
 
-    <!-- Modal Content -->
-    <Motion
-      v-if="modelValue"
-      :initial="{ opacity: 0, scale: 0.95, y: 20 }"
-      :animate="{ opacity: 1, scale: 1, y: 0 }"
-      :exit="{ opacity: 0, scale: 0.95, y: 20 }"
-      :transition="{ duration: 0.3, ease: 'easeOut' }"
-      class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col"
-      @click.stop
-    >
+      <!-- Modal Content -->
+      <Motion
+        v-if="modelValue"
+        :initial="{ opacity: 0, scale: 0.95, y: 20 }"
+        :animate="{ opacity: 1, scale: 1, y: 0 }"
+        :exit="{ opacity: 0, scale: 0.95, y: 20 }"
+        :transition="{ duration: 0.3, ease: 'easeOut' }"
+        class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col"
+        @click.stop
+      >
       <!-- Header -->
       <div class="shrink-0 bg-slate-900/95 backdrop-blur-xl border-b border-white/10 p-4 sm:p-6 flex items-center justify-between">
         <h2 class="text-xl sm:text-2xl font-semibold text-white">
@@ -253,8 +254,9 @@ watch(() => props.modelValue, (isOpen) => {
           </button>
         </div>
       </div>
-    </Motion>
-  </AnimatePresence>
+      </Motion>
+    </AnimatePresence>
+  </div>
 </template>
 
 <style scoped>

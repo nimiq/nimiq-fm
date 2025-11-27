@@ -55,15 +55,16 @@ watch(latestBlock, () => {
 </script>
 
 <template>
-  <AnimatePresence>
-    <Motion
-      v-if="isExpanded"
-      :initial="{ height: 0, opacity: 0 }"
-      :animate="{ height: 'auto', opacity: 1 }"
-      :exit="{ height: 0, opacity: 0 }"
-      :transition="{ duration: 0.4, ease: 'easeInOut' }"
-      class="overflow-y-auto overflow-x-hidden max-h-[calc(100vh-300px)]"
-    >
+  <div>
+    <AnimatePresence>
+      <Motion
+        v-if="isExpanded"
+        :initial="{ height: 0, opacity: 0 }"
+        :animate="{ height: 'auto', opacity: 1 }"
+        :exit="{ height: 0, opacity: 0 }"
+        :transition="{ duration: 0.4, ease: 'easeInOut' }"
+        class="overflow-y-auto overflow-x-hidden max-h-[calc(100vh-300px)]"
+      >
       <div class="border-t border-white/10 p-4 sm:p-6 xl:p-8">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6 xl:gap-8 justify-items-center">
           <Motion
@@ -84,8 +85,9 @@ watch(latestBlock, () => {
           </Motion>
         </div>
       </div>
-    </Motion>
-  </AnimatePresence>
+      </Motion>
+    </AnimatePresence>
+  </div>
 </template>
 
 <style scoped>

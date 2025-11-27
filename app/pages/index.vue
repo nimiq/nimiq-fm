@@ -8,6 +8,7 @@ const showWhatIsThis = ref(false)
 // Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
 let blockchain: ReturnType<typeof useBlockchain> | null = null
+let _cleanupBlockListener: (() => void) | null = null
 
 // Use the shared blockchain state
 const { latestBlock } = useBlockchain()
@@ -32,21 +33,43 @@ onMounted(async () => {
   strudel.value = useStrudel()
   blockchain = useBlockchain()
 
-  // Initialize but don't auto-start
-  await strudel.value.init()
+  // Initialize Strudel with error handling
+  try {
+    await strudel.value.init()
+  }
+  catch (error) {
+    console.error('Failed to initialize audio system:', error)
+    // User can still see visuals, audio just won't work
+  }
 
   // Start listening to blockchain events
   blockchain.startListening()
 
-  blockchain.onBlockEvent((blockEvent: BlockEvent) => {
+  // Store cleanup function for event listener
+  _cleanupBlockListener = blockchain.onBlockEvent((blockEvent: BlockEvent) => {
     if (!isPlaying.value || !strudel.value)
       return
 
     strudel.value.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
 
-  const { addresses } = await blockchain.getValidators()
-  setValidatorAddresses(addresses)
+  // Load validators with error handling
+  try {
+    const { addresses } = await blockchain.getValidators()
+    setValidatorAddresses(addresses)
+  }
+  catch (error) {
+    console.error('Failed to load validators:', error)
+    // Application still works, just won't have validator visuals on the orbs
+  }
+})
+
+onUnmounted(() => {
+  // Clean up the block event listener
+  if (_cleanupBlockListener) {
+    _cleanupBlockListener()
+    _cleanupBlockListener = null
+  }
 })
 
 const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')

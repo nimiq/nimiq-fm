@@ -49,7 +49,7 @@ export function useStrudel() {
         isInitialized = true
       }
       catch (error) {
-        console.error('Strudel init failed:', error)
+        console.error('[Strudel] Initialization failed. This may be due to audio context restrictions or failed sample loading:', error)
         throw error
       }
     })()
@@ -77,7 +77,7 @@ export function useStrudel() {
       scheduler.start()
     }
     catch (error) {
-      console.error('Failed to start playback:', error)
+      console.error('[Strudel] Failed to start audio playback. Check that audio context is not suspended:', error)
     }
   }
 
@@ -109,7 +109,7 @@ export function useStrudel() {
       scheduler.setPattern(pattern, true)
     }
     catch (error) {
-      console.error('Failed to play sound:', error)
+      console.error('[Strudel] Failed to play block sound for block', blockNumber, ':', error)
     }
   }
 

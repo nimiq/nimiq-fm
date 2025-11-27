@@ -31,8 +31,13 @@ export default defineEventHandler(async (event) => {
       eventStream.push(JSON.stringify({ type: 'block', data: streamedBlock }))
     })
   }
-  catch {
-    eventStream.push(JSON.stringify({ type: 'error', message: 'Failed to subscribe' }))
+  catch (error) {
+    // Log the actual error for server-side debugging
+    console.error('[SSE] Failed to subscribe to blockchain:', error)
+
+    // Send descriptive error to client
+    const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe'
+    eventStream.push(JSON.stringify({ type: 'error', message: `Subscription failed: ${errorMessage}` }))
   }
 
   return eventStream.send()
