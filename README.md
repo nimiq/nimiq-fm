@@ -9,7 +9,8 @@
 </p>
 
 <p align="center">
-  Generative music driven by the Nimiq blockchain
+  Generative music driven by the Nimiq blockchain<br>
+  <a href="https://nimiq.fm">nimiq.fm</a>
 </p>
 
 ---
