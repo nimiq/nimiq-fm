@@ -79,11 +79,7 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-20 pointer-events-auto">
       <div class="flex items-center justify-between p-4 sm:p-6">
-        <!-- Logo -->
-        <div class="flex items-center gap-2">
-          <div class="size-6 sm:size-8 rounded-full bg-amber-500" />
-          <span class="text-lg sm:text-xl font-bold tracking-wide">NIMIQ <span class="text-xs sm:text-sm font-normal px-1.5 py-0.5 bg-white/10 rounded">FM</span></span>
-        </div>
+        <NimiqFmLogo class="w-28" />
 
         <!-- Right side links -->
         <div class="flex items-center gap-4 sm:gap-6 text-sm text-white/70">
