@@ -30,6 +30,76 @@ function confirmReset() {
     </div>
 
     <div class="p-2 space-y-2">
+      <!-- Performance -->
+      <UCollapsible default-open>
+        <UButton block color="neutral" variant="ghost" class="justify-between">
+          <span class="flex items-center gap-2"><UIcon name="i-heroicons-cpu-chip" class="size-4" /> Performance</span>
+          <template #trailing>
+            <UIcon name="i-heroicons-chevron-down" class="size-4 transition-transform group-data-[state=open]:rotate-180" />
+          </template>
+        </UButton>
+        <template #content>
+          <div class="space-y-2 pt-2 pb-2 text-xs font-mono text-white/80">
+            <div class="flex justify-between">
+              <span>FPS</span><span>{{ metrics.fps.toFixed(1) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Frame Time</span><span>{{ metrics.totalFrameTime.toFixed(2) }} ms</span>
+            </div>
+            <div class="flex justify-between pl-2 border-l border-white/10">
+              <span>Nodes Update</span><span>{{ metrics.nodeUpdateTime.toFixed(2) }} ms</span>
+            </div>
+            <div class="flex justify-between pl-2 border-l border-white/10">
+              <span>Links Update</span><span>{{ metrics.linkUpdateTime.toFixed(2) }} ms</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Heap Used</span><span>{{ metrics.heapUsed.toFixed(1) }} MB</span>
+            </div>
+            <div class="flex justify-between pl-2 border-l border-white/10">
+              <span>Mobile</span><span :class="metrics.isMobile ? 'text-green-400' : 'text-white/50'">{{ metrics.isMobile ? 'Yes' : 'No' }}</span>
+            </div>
+            <div class="flex justify-between pl-2 border-l border-white/10">
+              <span>RAM</span><span>{{ metrics.deviceMemory }} GB</span>
+            </div>
+          </div>
+        </template>
+      </UCollapsible>
+
+      <!-- Mobile Optimization -->
+      <UCollapsible>
+        <UButton block color="neutral" variant="ghost" class="justify-between">
+          <span class="flex items-center gap-2"><UIcon name="i-heroicons-device-phone-mobile" class="size-4" /> Mobile Optimization</span>
+          <template #trailing>
+            <UIcon name="i-heroicons-chevron-down" class="size-4 transition-transform group-data-[state=open]:rotate-180" />
+          </template>
+        </UButton>
+        <template #content>
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-white/60">Enabled</label>
+              <USwitch v-model="config.mobile.enabled" size="sm" />
+            </div>
+            <div><label class="text-xs text-white/60 flex justify-between"><span>Max Nodes</span><span class="font-mono">{{ config.mobile.maxNodes }}</span></label><USlider v-model="config.mobile.maxNodes" :min="50" :max="500" :step="10" class="mt-1" /></div>
+            <div><label class="text-xs text-white/60 flex justify-between"><span>Curve Segments</span><span class="font-mono">{{ config.mobile.curveSegments }}</span></label><USlider v-model="config.mobile.curveSegments" :min="1" :max="4" :step="1" class="mt-1" /></div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-white/60">Disable Bloom</label>
+              <USwitch v-model="config.mobile.disableBloom" size="sm" />
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-white/60">Disable Sparkles</label>
+              <USwitch v-model="config.mobile.disableSparkles" size="sm" />
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-white/60">Simp. Lighting</label>
+              <USwitch v-model="config.mobile.simplifiedLighting" size="sm" />
+            </div>
+            <UButton size="xs" color="neutral" variant="ghost" @click="resetGroup('mobile')">
+              Reset
+            </UButton>
+          </div>
+        </template>
+      </UCollapsible>
+
       <!-- Geometry -->
       <UCollapsible>
         <UButton block color="neutral" variant="ghost" class="justify-between">

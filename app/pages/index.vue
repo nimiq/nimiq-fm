@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Motion } from 'motion-v'
 import { epochAt } from '@nimiq/utils/albatross-policy'
+import { Motion } from 'motion-v'
 import { setValidatorAddresses } from '~/utils/orb-constants'
 
 const isPlaying = ref(false)
@@ -92,14 +92,14 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
       <div class="absolute inset-0 orb-gradient-background" />
       <ClientOnly>
         <div class="absolute inset-0">
-          <OrbScene :audio-data="0" />
+          <LazyOrbScene :audio-data="0" />
         </div>
       </ClientOnly>
     </div>
 
     <!-- Debug Panel (Dev Only) -->
     <DevOnly>
-      <OrbDebugPanel class="fixed bottom-4 right-4 z-50 pointer-events-auto" />
+      <LazyOrbDebugPanel class="fixed bottom-4 right-4 z-50 pointer-events-auto" />
     </DevOnly>
 
     <!-- Header -->
@@ -151,7 +151,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
 
               <SmallValidatorsPanel @is-expanded="(value) => isValidatorsPanelExpanded = value" />
             </div>
-            <ValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
+            <LazyValidatorsPanel :is-expanded="isValidatorsPanelExpanded" />
           </div>
         </div>
 
@@ -164,7 +164,7 @@ const currentEpoch = computed(() => latestBlock.value ? epochAt(latestBlock.valu
     </div>
 
     <!-- What is this overlay -->
-    <WhatIsThisOverlay v-model="showWhatIsThis" />
+    <LazyWhatIsThisOverlay v-model="showWhatIsThis" />
   </div>
 </template>
 

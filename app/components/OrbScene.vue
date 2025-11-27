@@ -40,13 +40,13 @@ onMounted(() => {
             <TresMeshBasicMaterial :color="config.colorBg" :side="THREE.BackSide" />
           </TresMesh>
 
-          <Sparkles :count="config.sparklesCount" :scale="config.sparklesScale" :size="config.sparklesSize" :speed="config.sparklesSpeed" :opacity="config.sparklesOpacity" color="#ffffff" />
+          <Sparkles :count="(config.mobile?.enabled && config.mobile?.disableSparkles) ? 0 : config.sparklesCount" :scale="config.sparklesScale" :size="config.sparklesSize" :speed="config.sparklesSpeed" :opacity="config.sparklesOpacity" color="#ffffff" />
           <Stars :radius="config.starsRadius" :depth="config.starsDepth" :count="config.starsCount" :factor="4" :saturation="0" fade :speed="config.starsSpeed" />
 
           <OrbMesh :audio-data="audioData" />
 
           <EffectComposer :enable-normal-pass="false">
-            <BloomPmndrs :luminance-threshold="config.bloom.threshold" mipmap-blur :intensity="config.bloom.intensity" :radius="config.bloom.radius" :levels="6" />
+            <BloomPmndrs :luminance-threshold="config.bloom.threshold" mipmap-blur :intensity="(config.mobile?.enabled && config.mobile?.disableBloom) ? 0 : config.bloom.intensity" :radius="config.bloom.radius" :levels="6" />
             <VignettePmndrs :eskil="false" :offset="config.vignette.offset" :darkness="config.vignette.darkness" />
           </EffectComposer>
 

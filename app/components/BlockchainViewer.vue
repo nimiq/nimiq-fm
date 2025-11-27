@@ -70,7 +70,7 @@ function getBlockState(songOffset: number, batchIdx: number, blockIdx: number): 
 }
 
 // Generate blocks in column-first order: col 0 (0,1), col 1 (2,3), etc.
-function getBlocksColumnFirst() {
+const BLOCKS_COLUMN_FIRST = (() => {
   const blocks = []
   for (let col = 0; col < BLOCKS_PER_ROW; col++) {
     for (let row = 0; row < 2; row++) {
@@ -78,7 +78,7 @@ function getBlocksColumnFirst() {
     }
   }
   return blocks
-}
+})()
 
 const formattedBatch = computed(() => currentBatch.value.toLocaleString('en-US').replace(/,/g, ' '))
 const formattedBlock = computed(() => currentBlockNumber.value?.toLocaleString('en-US').replace(/,/g, ' ') ?? '')
@@ -139,7 +139,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
                 <template v-for="batchIdx in 3" :key="batchIdx">
                   <div class="grid grid-cols-[repeat(30,4px)] grid-rows-[repeat(2,4px)] gap-1">
                     <div
-                      v-for="block in getBlocksColumnFirst()"
+                      v-for="block in BLOCKS_COLUMN_FIRST"
                       :key="block.index"
                       class="size-1 rounded-sm"
                       :class="{

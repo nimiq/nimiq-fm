@@ -1,6 +1,7 @@
 let scheduler: any = null
 let isInitialized = false
 let initPromise: Promise<void> | null = null
+const digitCache = new Map<string, number[]>()
 
 export function useStrudel() {
   const nowPlaying = ref('')
@@ -88,11 +89,15 @@ export function useStrudel() {
 
     try {
       // Use selected validator address if one is manually chosen, otherwise use block producer
-      const addressToPlay = selectedValidator.value || validatorAddress
+      const addressToPlay = selectedValidator.value || validatorAddress || ''
 
-      const { makeHash } = await import('identicons-esm/core')
-      const hashStr = makeHash(addressToPlay || '')
-      const digits = hashStr.split('').map(Number).map(n => n + 32)
+      let digits = digitCache.get(addressToPlay)
+      if (!digits) {
+        const { makeHash } = await import('identicons-esm/core')
+        const hashStr = makeHash(addressToPlay)
+        digits = hashStr.split('').map(Number).map(n => n + 32)
+        digitCache.set(addressToPlay, digits)
+      }
 
       const songInfo = await loadSong(blockNumber)
       nowPlaying.value = songInfo.name

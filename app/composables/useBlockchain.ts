@@ -19,7 +19,7 @@ export interface BlockEvent {
 }
 
 function _useBlockchain() {
-  const latestBlock = ref<BlockEvent | null>(null)
+  const latestBlock = shallowRef<BlockEvent | null>(null)
   const listeners = new Set<(event: BlockEvent) => void>()
 
   const url = `${useRequestURL().origin}/blocks`

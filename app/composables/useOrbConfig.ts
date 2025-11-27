@@ -72,11 +72,37 @@ const defaultConfig = {
   starsRadius: 100,
   starsDepth: 50,
   starsSpeed: 0.05,
+
+  // === MOBILE OPTIMIZATION ===
+  mobile: {
+    enabled: false,
+    maxNodes: 500,
+    maxLinks: 500, // Not directly used but good for reference
+    curveSegments: 1, // Reduced from 4
+    disableBloom: true,
+    disableSparkles: true,
+    geometryUpdateInterval: 2, // Update every N frames
+    simplifiedLighting: true,
+  },
 }
 
 export type OrbConfig = typeof defaultConfig
 
-const defaultMetrics = { fps: 0, activeBeams: 0, activeNodes: 0, connectedLinks: 0 }
+const defaultMetrics = {
+  fps: 0,
+  activeBeams: 0,
+  activeNodes: 0,
+  connectedLinks: 0,
+  nodeUpdateTime: 0,
+  linkUpdateTime: 0,
+  beamUpdateTime: 0,
+  totalFrameTime: 0,
+  heapUsed: 0,
+  // Mobile specific
+  isMobile: false,
+  deviceMemory: 0,
+  concurrency: 0,
+}
 
 export function useOrbConfig() {
   const config = useState<OrbConfig>('orb-debug-config', () => structuredClone(defaultConfig))
@@ -102,7 +128,7 @@ export function useOrbConfig() {
     config.value = structuredClone(defaultConfig)
   }
 
-  function resetGroup(group: 'geometry' | 'nodeAppearance' | 'timing' | 'animation' | 'beamEffects' | 'validatorFlash' | 'links' | 'colors' | 'lighting' | 'camera' | 'postProcessing' | 'background') {
+  function resetGroup(group: 'geometry' | 'nodeAppearance' | 'timing' | 'animation' | 'beamEffects' | 'validatorFlash' | 'links' | 'colors' | 'lighting' | 'camera' | 'postProcessing' | 'background' | 'mobile') {
     const d = defaultConfig
     if (group === 'geometry') {
       config.value.orbRadius = d.orbRadius
@@ -177,6 +203,36 @@ export function useOrbConfig() {
       config.value.starsRadius = d.starsRadius
       config.value.starsDepth = d.starsDepth
       config.value.starsSpeed = d.starsSpeed
+    }
+    else if (group === 'mobile') {
+      config.value.mobile = { ...d.mobile }
+    }
+  }
+
+  // Mobile Detection
+  if (import.meta.client && !metrics.value.isMobile) {
+    const { isMobile } = useDevice()
+    const deviceMemory = (navigator as any).deviceMemory || 4
+    const concurrency = navigator.hardwareConcurrency || 4
+
+    // Auto-enable mobile mode if low specs or mobile UA
+    const isLowEnd = deviceMemory <= 4 || concurrency <= 4
+
+    updateMetrics({
+      isMobile,
+      deviceMemory,
+      concurrency,
+    })
+
+    if (isMobile || isLowEnd) {
+      // Only auto-apply if not already customized (checking simple flag)
+      // For now, we just set the suggestion, we can force it if needed
+      if (!localStorage.getItem('orb-debug-config')) {
+        config.value.mobile.enabled = true
+        config.value.nodeCount = config.value.mobile.maxNodes
+        config.value.sparklesCount = 0 // Disable sparkles
+        config.value.starsCount = 200 // Reduce stars
+      }
     }
   }
 
