@@ -36,9 +36,11 @@ watch(latestBlock, async (block) => {
 
   await new Promise(r => setTimeout(r, 500))
 
+  // Update current first, wait for DOM, then end transition (prevents old value flashing back)
   currentValidator.value = newValidator
-  nextValidator.value = null
+  await nextTick()
   isTransitioning.value = false
+  nextValidator.value = null
 })
 </script>
 
