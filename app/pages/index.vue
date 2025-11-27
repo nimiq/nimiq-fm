@@ -109,10 +109,7 @@ const currentEpoch = computed(() => latestBlock.value?.epoch ?? 0)
 
             <div class="flex">
               <div class="grid grid-cols-[auto_1fr] gap-x-6 items-center p-6 border-r border-white/10 flex-1">
-                <button class="nimiq-btn">
-                  <UIcon :name="isPlaying ? 'i-heroicons-speaker-x-mark' : 'i-heroicons-speaker-wave'" class="size-5" />
-                  <span>{{ isPlaying ? '' : 'Turn on audio' }}</span>
-                </button>
+                <AudioButton :is-playing="isPlaying" @toggle="togglePlay" />
                 <div>
                   <p class="font-bold text-xl text-white/50">
                     Now playing
