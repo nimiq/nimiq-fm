@@ -112,7 +112,7 @@ watch(hasBlockchainData, (ready) => {
         <Motion
           class="absolute inset-0"
           :initial="{ opacity: 0 }"
-          :animate="animationStage >= 1 ? { opacity: 1 } : { opacity: 0 }"
+          :animate="{ opacity: animationStage >= 1 ? (showWhatIsThis ? 0.3 : 1) : 0 }"
           :transition="{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }"
         >
           <LazyOrbScene :audio-data="0" />
@@ -139,12 +139,11 @@ watch(hasBlockchainData, (ready) => {
 
         <!-- Right side links -->
         <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">
-          <button class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0 disabled:opacity-50 disabled:cursor-wait" :disabled="!isAudioReady" @click="togglePlay">
+          <button v-if="isAudioReady" class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0" @click="togglePlay">
             <AudioBars :is-playing="isPlaying" class="size-5 sm:size-4" />
-            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-8 text-left">
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: !isAudioReady ? 1 : 0, filter: !isAudioReady ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">loading</Motion>
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isAudioReady && isPlaying ? 1 : 0, filter: isAudioReady && isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isAudioReady && !isPlaying ? 1 : 0, filter: isAudioReady && !isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">off</Motion>
+            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-6 text-left">
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 1 : 0, filter: isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: !isPlaying ? 1 : 0, filter: !isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">off</Motion>
             </span></span>
           </button>
           <button class="hover:text-white transition-colors cursor-pointer text-base sm:text-sm p-2 sm:p-0" @click="showWhatIsThis = true">
@@ -209,9 +208,9 @@ watch(hasBlockchainData, (ready) => {
               :initial="{ opacity: 0, y: 20, filter: 'blur(8px)' }"
               :animate="animationStage >= 2 ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 20, filter: 'blur(8px)' }"
               :transition="{ type: 'spring', stiffness: 400, damping: 30, delay: 0.2 }"
-              class="flex flex-col sm:flex-row"
+              class="flex flex-col lg:flex-row"
             >
-              <div class="flex items-center gap-3 sm:gap-6 p-4 sm:p-6 sm:border-r border-white/10 sm:flex-1">
+              <div class="flex items-center gap-3 lg:gap-6 p-4 lg:p-6 lg:border-r border-white/10 lg:flex-1">
                 <AudioButton :is-playing="isPlaying" @toggle="togglePlay" />
                 <NowPlaying :current-song="displayNowPlaying" :next-song="nextSongTitle" :current-author="currentAuthor" :next-author="nextAuthor" :epoch="currentEpoch" />
               </div>
