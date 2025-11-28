@@ -38,12 +38,13 @@ const background = computed(() => {
     <!-- Rotating shimmer ring -->
     <Motion
       tag="span"
-      class="absolute size-14 sm:size-16 -left-2 -top-1 sm:-top-2 rounded-full pointer-events-none"
+      class="absolute size-12 sm:size-14 rounded-full pointer-events-none"
+      :style="{ left: isMobile ? '-4px' : '-3px', top: isMobile ? '-4px' : '-4px' }"
       :animate="{ opacity: isPlaying ? 1 : 0, scale: isPlaying ? 1 : 0.8 }"
       :transition="{ opacity: { duration: 0.3, delay: isPlaying ? 0.2 : 0 }, scale: { duration: 0.3 } }"
     >
       <svg class="absolute inset-0 size-full shimmer-ring" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r="30" fill="none" stroke="url(#ring-gradient)" stroke-width="2.5" />
+        <circle cx="32" cy="32" r="30" fill="none" stroke="url(#ring-gradient)" stroke-width="3" />
         <defs>
           <linearGradient id="ring-gradient">
             <stop offset="0%" :stop-color="isOrange ? 'rgba(253, 98, 22, 0.7)' : 'rgba(255, 255, 255, 0.5)'" />
