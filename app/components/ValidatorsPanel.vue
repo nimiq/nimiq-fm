@@ -88,20 +88,20 @@ watch(latestBlock, () => {
         :transition="{ duration: 0.4, ease: 'easeInOut' }"
         class="overflow-hidden"
       >
-        <div class="border-t border-white/10 p-4 sm:p-6 xl:p-8 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-300px)]">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6 xl:gap-8 justify-items-start">
+        <div class="border-t border-white/10 p-2 sm:p-6 xl:p-8 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-300px)] scrollbar-hide">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1 sm:gap-4 md:gap-6 xl:gap-8 justify-items-start">
             <Motion
               v-for="(v, index) in sortedBySlots"
               :key="v.address"
               :initial="{ opacity: 0, y: 20, scale: 0.9 }"
               :animate="{ opacity: 1, y: 0, scale: 1 }"
               :transition="{ duration: 0.3, delay: index * 0.02, ease: 'easeOut' }"
-              class="flex items-center w-full gap-4 cursor-pointer hover:bg-white/10 transition-colors rounded-md py-3 px-4 select-none"
+              class="flex items-center w-full gap-2 sm:gap-4 cursor-pointer hover:bg-white/10 transition-colors rounded-md py-2 px-2 sm:py-3 sm:px-4 select-none"
               :class="{ 'bg-white/20 ring-2 ring-orange-400': isValidatorSelected(v.address) }"
               @click="playSingleValidator(v.address)"
             >
-              <img :src="v.logo" :alt="v.name" class="size-10 sm:size-12 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading', 'validator-selected': isValidatorSelected(v.address) }">
-              <div class="text-sm text-white/80 font-medium truncate validator-text" :class="{ 'validator-text-glow': getValidatorState(v.address) === 'glow', 'validator-text-fading': getValidatorState(v.address) === 'fading', 'validator-text-selected': isValidatorSelected(v.address) }">
+              <img :src="v.logo" :alt="v.name" class="size-7 sm:size-10 md:size-12 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading', 'validator-selected': isValidatorSelected(v.address) }">
+              <div class="text-xs sm:text-sm text-white/80 font-medium truncate validator-text" :class="{ 'validator-text-glow': getValidatorState(v.address) === 'glow', 'validator-text-fading': getValidatorState(v.address) === 'fading', 'validator-text-selected': isValidatorSelected(v.address) }">
                 <div v-if="v.name" class="truncate">
                   {{ v.name }}
                 </div>
@@ -153,5 +153,14 @@ watch(latestBlock, () => {
 .validator-text.validator-text-fading {
   color: rgba(255, 255, 255, 0.7);
   transition: color 1s ease-out;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 </style>

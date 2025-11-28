@@ -8,9 +8,13 @@ const { sortedBySlots } = useValidators()
 const { latestBlock } = useBlockchain()
 
 // Sliding validators queue
-interface SlidingValidator { address: string, name?: string, logo?: string, id: string }
-const slidingValidatorQueue = ref<SlidingValidator[]>([])
+interface SlidingValidator { address: string, name?: string, logo?: string, id: string, isPlaceholder?: boolean }
+const VISIBLE_COUNT = 12
 const MAX_QUEUE_SIZE = 30
+// Initialize with placeholders
+const slidingValidatorQueue = ref<SlidingValidator[]>(
+  Array.from({ length: VISIBLE_COUNT }, (_, i) => ({ address: '', name: '', logo: '', id: `placeholder-${i}`, isPlaceholder: true }))
+)
 
 // Watch for new blocks - defer to onMounted so placeholders show on initial render
 onMounted(() => {
@@ -44,7 +48,7 @@ function toggleExpand() {
 <template>
   <ClientOnly>
     <div
-      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-b-xl py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
+      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-b-xl lg:rounded-t-xl py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
       :class="{ 'cursor-zoom-out': isExpanded }"
       @click="toggleExpand"
     >
@@ -52,26 +56,22 @@ function toggleExpand() {
       <div class="relative">
         <!-- Sliding container with mask -->
         <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-[512px]">
-          <!-- Empty state placeholders -->
-          <template v-if="!slidingValidatorQueue.length">
-            <svg v-for="i in 8" :key="`placeholder-${i}`" class="shrink-0 size-8 text-white/15" viewBox="0 0 20 18" fill="none" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2">
-              <path d="M19.734 8.156 15.576.844A1.66 1.66 0 0014.135 0H5.819C5.226 0 4.677.32 4.38.844L.222 8.156a1.71 1.71 0 000 1.688l4.158 7.312c.297.523.846.844 1.439.844h8.316c.593 0 1.142-.32 1.438-.844l4.158-7.312c.3-.523.3-1.165.003-1.688" />
+          <Motion
+            v-for="v in slidingValidatorQueue"
+            :key="v.id"
+            layout
+            :initial="{ opacity: 0, scale: 0.6 }"
+            :animate="{ opacity: 1, scale: 1 }"
+            :transition="{ type: 'spring', stiffness: 260, damping: 26 }"
+            class="shrink-0"
+          >
+            <!-- Placeholder -->
+            <svg v-if="v.isPlaceholder" class="size-8" viewBox="0 0 20 18">
+              <path fill="white" fill-opacity="0.1" d="M19.734 8.156 15.576.844A1.66 1.66 0 0014.135 0H5.819C5.226 0 4.677.32 4.38.844L.222 8.156a1.71 1.71 0 000 1.688l4.158 7.312c.297.523.846.844 1.439.844h8.316c.593 0 1.142-.32 1.438-.844l4.158-7.312c.3-.523.3-1.165.003-1.688" />
             </svg>
-          </template>
-          <!-- Validators -->
-          <template v-else>
-            <Motion
-              v-for="v in slidingValidatorQueue"
-              :key="v.id"
-              layout
-              :initial="{ opacity: 0, scale: 0.6 }"
-              :animate="{ opacity: 1, scale: 1 }"
-              :transition="{ type: 'spring', stiffness: 260, damping: 26 }"
-              class="shrink-0"
-            >
-              <img :src="v.logo" :alt="v.name" class="size-8 object-contain">
-            </Motion>
-          </template>
+            <!-- Validator logo -->
+            <img v-else :src="v.logo" :alt="v.name" class="size-8 object-contain">
+          </Motion>
         </div>
 
         <!-- Validator name + CTA row -->
