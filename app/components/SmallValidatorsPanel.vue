@@ -13,7 +13,7 @@ const VISIBLE_COUNT = 12
 const MAX_QUEUE_SIZE = 30
 // Initialize with placeholders
 const slidingValidatorQueue = ref<SlidingValidator[]>(
-  Array.from({ length: VISIBLE_COUNT }, (_, i) => ({ address: '', name: '', logo: '', id: `placeholder-${i}`, isPlaceholder: true }))
+  Array.from({ length: VISIBLE_COUNT }, (_, i) => ({ address: '', name: '', logo: '', id: `placeholder-${i}`, isPlaceholder: true })),
 )
 
 // Watch for new blocks - defer to onMounted so placeholders show on initial render
@@ -39,23 +39,27 @@ watch(latestBlock, () => {
     activeValidatorName.value = getValidatorName(latestBlock.value.validatorAddress)
 })
 
+const hoverEnabled = ref(true)
+
 function toggleExpand() {
+  hoverEnabled.value = false
   isExpanded.value = !isExpanded.value
   emit('isExpanded', isExpanded.value)
+  setTimeout(() => hoverEnabled.value = true, 300)
 }
 </script>
 
 <template>
   <ClientOnly>
     <div
-      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-b-xl lg:rounded-t-xl py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
+      class="group w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-b-xl lg:rounded-t-xl py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
       :class="{ 'cursor-zoom-out': isExpanded }"
       @click="toggleExpand"
     >
       <!-- Sliding animation (always shown) -->
       <div class="relative">
         <!-- Sliding container with mask -->
-        <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-[512px]">
+        <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-[512px] -mr-4 sm:-mr-6 pr-4 sm:pr-6">
           <Motion
             v-for="v in slidingValidatorQueue"
             :key="v.id"
@@ -103,7 +107,10 @@ function toggleExpand() {
           </div>
 
           <!-- CTA -->
-          <span class="text-[10px] text-white/40 flex items-center gap-1 hover:text-white/60 transition-colors">
+          <span
+            class="text-[10px] flex items-center gap-1 transition-colors text-white/40"
+            :class="{ 'group-hover:text-white': hoverEnabled }"
+          >
             {{ isExpanded ? 'Close' : 'See all' }}
             <svg class="size-2.5 transition-transform" :class="{ 'rotate-90': isExpanded }" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 2l4 4-4 4" />
@@ -124,7 +131,7 @@ function toggleExpand() {
 
 <style scoped>
 .sliding-mask {
-  mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
 }
 </style>

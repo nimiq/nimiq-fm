@@ -195,7 +195,7 @@ watch(hasBlockchainData, (ready) => {
 
         <!-- Content Container -->
         <div class="relative z-10 px-4 sm:px-6 mx-auto max-w-[1680px] max-h-[calc(100vh-80px)]">
-          <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg mb-4 border border-white/10">
+          <div class="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg border border-white/10">
             <Motion
               :initial="{ opacity: 0, y: 20, filter: 'blur(8px)' }"
               :animate="animationStage >= 2 ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 20, filter: 'blur(8px)' }"

@@ -28,7 +28,7 @@ const blocksElapsedInCurrentSong = computed(() => batchInSong.value * BLOCKS_PER
 // Calculate sizes
 const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP // 236px
 const songWidth = MACRO_SIZE + MACRO_GAP + 3 * (batchWidth + BLOCK_GAP) // ~740px
-const prevSongOffset = computed(() => isMobile.value ? 0 : songWidth - 80) // No offset on mobile
+const prevSongOffset = computed(() => isMobile.value ? songWidth + 16 : songWidth - 80) // Skip past previous song on mobile
 
 // Show prev, current, next, next-next (4 songs for smooth transition)
 const visibleSongs = computed(() => {
@@ -156,19 +156,26 @@ watch(currentSongIndex, (newIdx, oldIdx) => {
   }
 })
 
-// Mobile auto-scroll: follow current block position within song
+// Mobile container ref for measuring width
+const timelineContainer = ref<HTMLElement | null>(null)
+const { width: containerWidth } = useElementSize(timelineContainer)
+
+// Mobile auto-scroll: center current block position
 const mobileAutoScroll = computed(() => {
   if (!isMobile.value)
     return 0
   // Calculate how far into the current song we are (in pixels)
-  const batchWidth = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP
+  const batchWidthPx = BLOCKS_PER_ROW * (BLOCK_SIZE + BLOCK_GAP) - BLOCK_GAP
   const currentBatchInSong = batchInSong.value
   const blockInCurrentBatch = blockInBatch.value
   // Position = batches completed + current block position within batch
   const colInBatch = Math.floor(blockInCurrentBatch / 2) // 2 rows per column
-  const pixelOffset = currentBatchInSong * (batchWidth + BLOCK_GAP) + colInBatch * (BLOCK_SIZE + BLOCK_GAP)
-  // Keep ~80px margin from left edge, scroll when block goes past that
-  return Math.max(0, pixelOffset - 80)
+  // Account for macro blocks between batches
+  const macroOffset = currentBatchInSong * (BLOCK_GAP)
+  const pixelOffset = MACRO_SIZE + MACRO_GAP + currentBatchInSong * (batchWidthPx + BLOCK_GAP) + colInBatch * (BLOCK_SIZE + BLOCK_GAP) + macroOffset
+  // Center current block in viewport
+  const viewportHalf = (containerWidth.value || 320) / 2
+  return Math.max(0, pixelOffset - viewportHalf)
 })
 
 // Scroll position: prevSongOffset + transition animation + mobile auto-scroll
@@ -177,11 +184,11 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
 
 <template>
   <div class="border overflow-hidden">
-    <div class="relative w-full py-3 sm:py-4 px-4 sm:px-6">
+    <div class="relative w-full py-3 sm:py-4 sm:px-6">
       <!-- Block timeline -->
-      <div class="overflow-x-hidden overflow-y-visible relative py-2 -my-2">
+      <div ref="timelineContainer" class="overflow-x-hidden overflow-y-visible relative py-2 -my-2">
         <div class="hidden sm:block absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
-        <div class="absolute inset-y-0 right-0 w-8 sm:w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
+        <div class="hidden sm:block absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
         <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, ease: 'easeOut' }">
           <template v-for="song in visibleSongs" :key="song.songIndex">
             <div class="flex items-center shrink-0" :style="{ width: `${songWidth}px`, marginRight: '16px' }">
@@ -230,7 +237,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
       <!-- Labels row - fixed on mobile, scrolling on desktop -->
       <div class="mt-2 overflow-hidden relative">
         <!-- Mobile: fixed labels -->
-        <div v-if="isMobile" class="flex items-center gap-1 text-[9px] text-white/50">
+        <div v-if="isMobile" class="flex items-center gap-1 text-[9px] text-white/50 px-4">
           <AnimatePresence mode="wait">
             <Motion :key="visibleSongs[1]?.name" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.2 }">
               {{ visibleSongs[1]?.name }}
