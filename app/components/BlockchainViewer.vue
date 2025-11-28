@@ -41,6 +41,11 @@ const visibleSongs = computed(() => {
 
 const glowingBlock = ref<string | null>(null)
 
+// Wave animation state
+const waveBatchIdx = ref<number | null>(null)
+const waveActiveColumns = ref<Set<number>>(new Set())
+let waveInterval: ReturnType<typeof setInterval> | null = null
+
 watch(currentBlockNumber, (newBlock, oldBlock) => {
   if (oldBlock !== null && newBlock !== null && newBlock !== oldBlock && blocksElapsedInCurrentSong.value > 0) {
     const prevBlockPos = blocksElapsedInCurrentSong.value - 1
@@ -53,17 +58,76 @@ watch(currentBlockNumber, (newBlock, oldBlock) => {
   }
 })
 
-function getBlockState(songOffset: number, batchIdx: number, blockIdx: number): 'unplayed' | 'played' | 'current' | 'glowing' {
+// Trigger wave animation when global batch changes
+const WAVE_WIDTH = 4
+const WAVE_SPEED = 30 // ms per column
+const LAST_MICRO_DELAY = 800 // delay for fake last micro block
+watch(currentGlobalBatch, (newGlobalBatch, oldGlobalBatch) => {
+  if (oldGlobalBatch !== undefined && newGlobalBatch > oldGlobalBatch) {
+    const oldBatchInSong = oldGlobalBatch % BATCHES_PER_SONG
+    // Only animate if not the last batch of a song
+    if (oldBatchInSong < BATCHES_PER_SONG - 1) {
+      // Clear any existing wave
+      if (waveInterval)
+        clearInterval(waveInterval)
+
+      // Start wave
+      waveBatchIdx.value = oldBatchInSong
+      waveActiveColumns.value = new Set([0])
+      let currentCol = 0
+
+      // Wave sweeps through columns 0-28 (stops before last micro)
+      waveInterval = setInterval(() => {
+        currentCol++
+        if (currentCol < BLOCKS_PER_ROW - 1) {
+          waveActiveColumns.value = new Set([...waveActiveColumns.value, currentCol])
+        }
+        // Remove column outside wave width
+        const colToRemove = currentCol - WAVE_WIDTH
+        if (colToRemove >= 0) {
+          const newSet = new Set(waveActiveColumns.value)
+          newSet.delete(colToRemove)
+          waveActiveColumns.value = newSet
+        }
+        // Wave reached col 28 - schedule last micro + macro
+        if (currentCol === BLOCKS_PER_ROW - 1) {
+          if (waveInterval)
+            clearInterval(waveInterval)
+          waveInterval = null
+
+          // After delay, animate last micro (col 29) + macro (col 30) together
+          setTimeout(() => {
+            waveActiveColumns.value = new Set([BLOCKS_PER_ROW - 1, BLOCKS_PER_ROW])
+            // Fade out after wave width duration
+            setTimeout(() => {
+              waveBatchIdx.value = null
+              waveActiveColumns.value = new Set()
+            }, WAVE_WIDTH * WAVE_SPEED)
+          }, LAST_MICRO_DELAY)
+        }
+      }, WAVE_SPEED)
+    }
+  }
+})
+
+function getBlockState(songOffset: number, batchIdx: number, blockIdx: number, blockCol: number, _blockRow: number): 'unplayed' | 'played' | 'current' | 'glowing' | 'wave-active' {
   if (songOffset < 0)
-    return 'played' // Previous songs are fully played
+    return 'played'
   if (songOffset > 0)
-    return 'unplayed' // Future songs are unplayed
+    return 'unplayed'
 
   const blockPositionInSong = batchIdx * BLOCKS_PER_BATCH + blockIdx
   if (glowingBlock.value === `${songOffset}-${batchIdx}-${blockIdx}`)
     return 'glowing'
   if (blockPositionInSong === blocksElapsedInCurrentSong.value)
     return 'current'
+
+  // Wave animation
+  if (waveBatchIdx.value === batchIdx && songOffset === 0) {
+    if (waveActiveColumns.value.has(blockCol))
+      return 'wave-active'
+  }
+
   if (blockPositionInSong < blocksElapsedInCurrentSong.value)
     return 'played'
   return 'unplayed'
@@ -123,7 +187,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
   <div class="border overflow-hidden">
     <div class="relative w-full py-3 sm:py-4 px-4 sm:px-6">
       <!-- Block timeline -->
-      <div class="overflow-hidden relative">
+      <div class="overflow-x-hidden overflow-y-visible relative py-2 -my-2">
         <div class="hidden sm:block absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#151e33] to-transparent" />
         <div class="absolute inset-y-0 right-0 w-8 sm:w-16 z-10 pointer-events-none bg-gradient-to-l from-[#151e33] to-transparent" />
         <Motion tag="div" class="flex items-center" :animate="{ x: -scrollX }" :transition="{ duration: 0.5, ease: 'easeOut' }">
@@ -134,21 +198,34 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
                 <div class="size-1 rounded-full bg-[#0f1e3d]" />
               </div>
 
-              <!-- 3 Batches -->
-              <div class="flex gap-1">
+              <!-- 3 Batches with macro blocks between them -->
+              <div class="flex gap-1 items-center">
                 <template v-for="batchIdx in 3" :key="batchIdx">
                   <div class="grid grid-cols-[repeat(30,4px)] grid-rows-[repeat(2,4px)] gap-1">
                     <div
                       v-for="block in BLOCKS_COLUMN_FIRST"
-                      :key="block.index"
+                      :key="`${block.index}-${getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row)}`"
                       class="size-1 rounded-sm"
                       :class="{
-                        'bg-white/20': getBlockState(song.offset, batchIdx - 1, block.index) === 'unplayed',
-                        'bg-white': getBlockState(song.offset, batchIdx - 1, block.index) === 'played',
-                        'bg-white shadow-[0_0_8px_4px_rgba(255,149,0,0.9)] animate-pulse': getBlockState(song.offset, batchIdx - 1, block.index) === 'current',
-                        'bg-white animate-glow-fade': getBlockState(song.offset, batchIdx - 1, block.index) === 'glowing',
+                        'bg-white/20': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'unplayed',
+                        'bg-white': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'played',
+                        'bg-white shadow-[0_0_8px_4px_rgba(255,149,0,0.9)] animate-pulse': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'current',
+                        'bg-white animate-glow-fade': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'glowing',
+                        'animate-wave-active': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'wave-active',
                       }"
                       :style="{ gridRow: block.row + 1, gridColumn: block.col + 1 }"
+                    />
+                  </div>
+                  <!-- Macro block between batches (after batch 1 and 2, not after batch 3) -->
+                  <div v-if="batchIdx < 3" class="relative shrink-0">
+                    <div
+                      :key="`macro-${song.songIndex}-${batchIdx}-${waveBatchIdx === batchIdx - 1 && waveActiveColumns.has(BLOCKS_PER_ROW)}`"
+                      class="w-1 h-3 rounded-sm"
+                      :class="{
+                        'bg-white/20': song.offset > 0 || (song.offset === 0 && batchIdx > batchInSong),
+                        'bg-white': (song.offset < 0 || (song.offset === 0 && batchIdx <= batchInSong)) && !(song.offset === 0 && waveBatchIdx === batchIdx - 1 && waveActiveColumns.has(BLOCKS_PER_ROW)),
+                        'animate-wave-active': song.offset === 0 && waveBatchIdx === batchIdx - 1 && waveActiveColumns.has(BLOCKS_PER_ROW),
+                      }"
                     />
                   </div>
                 </template>
