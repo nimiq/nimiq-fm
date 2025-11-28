@@ -59,7 +59,7 @@ function toggleExpand() {
       <!-- Sliding animation (always shown) -->
       <div class="relative">
         <!-- Sliding container with mask -->
-        <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-[512px] -mr-4 sm:-mr-6 pr-4 sm:pr-6">
+        <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-lg -mr-4 sm:-mr-6 pr-4 sm:pr-6">
           <Motion
             v-for="v in slidingValidatorQueue"
             :key="v.id"
@@ -96,7 +96,7 @@ function toggleExpand() {
                 :animate="{ opacity: 1 }"
                 :exit="{ opacity: 0 }"
                 :transition="{ duration: 0.15 }"
-                class="text-xs text-white/80 font-medium font-mono whitespace-nowrap ml-1"
+                class="text-xs text-white/80 font-medium font-mono whitespace-nowrap ml-1.5"
               >
                 <template v-if="activeValidatorName">
                   {{ activeValidatorName }}

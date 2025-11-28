@@ -8,11 +8,11 @@ export interface SongInfo {
 export type SongName = 'milky-way' | 'acid' | 'desert-dune' | 'running-away' | 'qimin'
 
 const SONG_LIST: Array<{ name: string, key: SongName, author: string }> = [
-  { name: 'Milky Way', key: 'milky-way', author: 'albermonte' },
-  { name: 'Acid', key: 'acid', author: 'albermonte' },
-  { name: 'Desert Dune', key: 'desert-dune', author: 'albermonte' },
-  { name: 'Running Away', key: 'running-away', author: 'albermonte' },
-  { name: 'Qimin', key: 'qimin', author: 'albermonte' },
+  { name: 'Milky Way', key: 'milky-way', author: 'Albermonte' },
+  { name: 'Acid', key: 'acid', author: 'Albermonte' },
+  { name: 'Desert Dune', key: 'desert-dune', author: 'Albermonte' },
+  { name: 'Running Away', key: 'running-away', author: 'Albermonte' },
+  { name: 'Qimin', key: 'qimin', author: 'Albermonte' },
 ]
 
 export function getSongCount() {
