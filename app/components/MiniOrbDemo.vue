@@ -7,7 +7,7 @@ const peerColor = '#CBD5E1' // from nodePalette
 <template>
   <div class="w-full h-full">
     <!-- Validator node (larger, bright blue with glow) -->
-    <div class="absolute top-0 right-0 floating-slow flex items-center gap-2">
+    <div class="absolute top-1 right-2 floating-slow flex items-center gap-2">
       <span class="text-xs text-white/70">Validator</span>
       <div class="relative">
         <div class="absolute -inset-2 rounded-full blur-md opacity-60" :style="{ background: validatorColor }" />
@@ -23,7 +23,7 @@ const peerColor = '#CBD5E1' // from nodePalette
     </div>
 
     <!-- Peer node (smaller, dimmer white) -->
-    <div class="absolute bottom-0 left-0 floating-fast flex items-center gap-2">
+    <div class="absolute bottom-1 right-8 floating-fast flex items-center gap-2">
       <div class="relative">
         <div class="absolute -inset-1 rounded-full blur-sm opacity-30" style="background: white" />
         <div
