@@ -11,7 +11,7 @@ const isStoriesWidth = breakpoints.smaller('stories')
 
 // Also use stories mode for wide but short screens (like Nest Hub 1024x600)
 const windowSize = useWindowSize()
-const isShortScreen = computed(() => windowSize.height.value < 700 || windowSize.width.value / windowSize.height.value > 1.5)
+const isShortScreen = computed(() => windowSize.height.value < 700 && windowSize.width.value / windowSize.height.value > 1.5)
 const isStories = computed(() => isStoriesWidth.value || isShortScreen.value)
 
 // Shared content for both stories and callouts
