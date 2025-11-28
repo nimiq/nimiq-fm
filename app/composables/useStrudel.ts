@@ -2,6 +2,7 @@ let scheduler: any = null
 let isInitialized = false
 let initPromise: Promise<void> | null = null
 const digitCache = new Map<string, number[]>()
+const isReady = ref(false)
 
 export function useStrudel() {
   const nowPlaying = ref('')
@@ -49,6 +50,7 @@ export function useStrudel() {
         scheduler = replScheduler
         scheduler.setCps(140 / 60 / 4) // 140 BPM, 4 beats per measure
         isInitialized = true
+        isReady.value = true
       }
       catch (error) {
         console.error('[Strudel] Initialization failed. This may be due to audio context restrictions or failed sample loading:', error)
@@ -134,5 +136,6 @@ export function useStrudel() {
     nowPlaying,
     setSelectedValidator,
     selectedValidator: readonly(selectedValidator),
+    isReady: readonly(isReady),
   }
 }

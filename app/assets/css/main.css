@@ -30,6 +30,12 @@
 
 /* Wave animation */
 .animate-wave-active {
-  background: #FF9500;
+  background: #FF9500 !important;
   box-shadow: 0 0 6px 2px rgba(255, 149, 0, 0.8);
+  transition: background 0.05s ease-out, box-shadow 0.05s ease-out;
+}
+
+/* Smooth transition back to white */
+.wave-transition {
+  transition: background 0.15s ease-out, box-shadow 0.15s ease-out;
 }

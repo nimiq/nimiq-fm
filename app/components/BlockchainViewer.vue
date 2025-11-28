@@ -59,9 +59,8 @@ watch(currentBlockNumber, (newBlock, oldBlock) => {
 })
 
 // Trigger wave animation when global batch changes
-const WAVE_WIDTH = 4
-const WAVE_SPEED = 30 // ms per column
-const LAST_MICRO_DELAY = 800 // delay for fake last micro block
+const WAVE_WIDTH = 8
+const WAVE_SPEED = 25 // ms per column
 watch(currentGlobalBatch, (newGlobalBatch, oldGlobalBatch) => {
   if (oldGlobalBatch !== undefined && newGlobalBatch > oldGlobalBatch) {
     const oldBatchInSong = oldGlobalBatch % BATCHES_PER_SONG
@@ -76,10 +75,11 @@ watch(currentGlobalBatch, (newGlobalBatch, oldGlobalBatch) => {
       waveActiveColumns.value = new Set([0])
       let currentCol = 0
 
-      // Wave sweeps through columns 0-28 (stops before last micro)
+      // Wave sweeps through all columns including macro (col 30)
       waveInterval = setInterval(() => {
         currentCol++
-        if (currentCol < BLOCKS_PER_ROW - 1) {
+        // Add new column (0-29 are micro blocks, 30 is macro)
+        if (currentCol <= BLOCKS_PER_ROW) {
           waveActiveColumns.value = new Set([...waveActiveColumns.value, currentCol])
         }
         // Remove column outside wave width
@@ -89,21 +89,13 @@ watch(currentGlobalBatch, (newGlobalBatch, oldGlobalBatch) => {
           newSet.delete(colToRemove)
           waveActiveColumns.value = newSet
         }
-        // Wave reached col 28 - schedule last micro + macro
-        if (currentCol === BLOCKS_PER_ROW - 1) {
+        // Wave complete when all faded
+        if (currentCol >= BLOCKS_PER_ROW + WAVE_WIDTH) {
           if (waveInterval)
             clearInterval(waveInterval)
           waveInterval = null
-
-          // After delay, animate last micro (col 29) + macro (col 30) together
-          setTimeout(() => {
-            waveActiveColumns.value = new Set([BLOCKS_PER_ROW - 1, BLOCKS_PER_ROW])
-            // Fade out after wave width duration
-            setTimeout(() => {
-              waveBatchIdx.value = null
-              waveActiveColumns.value = new Set()
-            }, WAVE_WIDTH * WAVE_SPEED)
-          }, LAST_MICRO_DELAY)
+          waveBatchIdx.value = null
+          waveActiveColumns.value = new Set()
         }
       }, WAVE_SPEED)
     }
@@ -205,7 +197,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
                     <div
                       v-for="block in BLOCKS_COLUMN_FIRST"
                       :key="`${block.index}-${getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row)}`"
-                      class="size-1 rounded-sm"
+                      class="size-1 rounded-sm wave-transition"
                       :class="{
                         'bg-white/20': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'unplayed',
                         'bg-white': getBlockState(song.offset, batchIdx - 1, block.index, block.col, block.row) === 'played',
@@ -220,7 +212,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
                   <div v-if="batchIdx < 3" class="relative shrink-0">
                     <div
                       :key="`macro-${song.songIndex}-${batchIdx}-${waveBatchIdx === batchIdx - 1 && waveActiveColumns.has(BLOCKS_PER_ROW)}`"
-                      class="w-1 h-3 rounded-sm"
+                      class="w-1 h-3 rounded-sm wave-transition"
                       :class="{
                         'bg-white/20': song.offset > 0 || (song.offset === 0 && batchIdx > batchInSong),
                         'bg-white': (song.offset < 0 || (song.offset === 0 && batchIdx <= batchInSong)) && !(song.offset === 0 && waveBatchIdx === batchIdx - 1 && waveActiveColumns.has(BLOCKS_PER_ROW)),
