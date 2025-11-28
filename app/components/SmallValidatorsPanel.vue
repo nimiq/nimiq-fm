@@ -72,11 +72,11 @@ function toggleExpand() {
 <template>
   <ClientOnly>
     <div
-      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none"
+      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
       :class="{ 'cursor-zoom-out': isExpanded }"
       @click="toggleExpand"
     >
-      <div class="grid grid-cols-4 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
+      <div class="grid grid-cols-4 min-[370px]:grid-cols-5 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
         <div v-for="v in displayValidators" :key="v.address" class="flex items-center justify-center gap-0.5">
           <div
             class="validator-hex"
@@ -98,23 +98,30 @@ function toggleExpand() {
           </div>
         </div>
       </div>
-      <AnimatePresence mode="wait">
+      <div class="flex justify-center sm:justify-start mt-1">
         <Motion
-          :key="activeValidatorName"
-          :initial="{ opacity: 0, y: 4 }"
-          :animate="{ opacity: 1, y: 0 }"
-          :exit="{ opacity: 0, y: -4 }"
-          :transition="{ duration: 0.2 }"
-          class="text-sm text-white/80 font-medium"
+          tag="span"
+          layout
+          :layout-dependency="activeValidatorName"
+          :transition="{ layout: { duration: 0.3, ease: 'easeOut' } }"
+          class="text-xs text-white/80 font-medium font-mono bg-white/5 rounded px-3 py-1 inline-block outline outline-1.5 -outline-offset-1.5 outline-white/10"
         >
-          <span v-if="activeValidatorName">
-            {{ activeValidatorName }}
-          </span>
-          <span v-else>
-            <ShortAddress :address="latestBlock?.validatorAddress || ''" />
-          </span>
+          <AnimatePresence mode="wait">
+            <Motion
+              tag="span"
+              :key="activeValidatorName"
+              :initial="{ opacity: 0, y: 4 }"
+              :animate="{ opacity: 1, y: 0 }"
+              :exit="{ opacity: 0, y: -4 }"
+              :transition="{ duration: 0.15 }"
+              class="inline-block whitespace-nowrap"
+            >
+              <template v-if="activeValidatorName">{{ activeValidatorName }}</template>
+              <ShortAddress v-else :address="latestBlock?.validatorAddress || ''" />
+            </Motion>
+          </AnimatePresence>
         </Motion>
-      </AnimatePresence>
+      </div>
     </div>
     <template #fallback>
       <div class="w-full sm:w-max m-0 sm:m-3 rounded-md py-3 sm:py-5 px-4 sm:px-6">

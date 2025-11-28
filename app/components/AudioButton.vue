@@ -38,7 +38,7 @@ const background = computed(() => {
     <!-- Rotating shimmer ring -->
     <Motion
       tag="span"
-      class="absolute size-16 -left-2 -top-2 rounded-full pointer-events-none"
+      class="absolute size-14 sm:size-16 -left-2 -top-1 sm:-top-2 rounded-full pointer-events-none"
       :animate="{ opacity: isPlaying ? 1 : 0, scale: isPlaying ? 1 : 0.8 }"
       :transition="{ opacity: { duration: 0.3, delay: isPlaying ? 0.2 : 0 }, scale: { duration: 0.3 } }"
     >

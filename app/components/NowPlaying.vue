@@ -58,7 +58,7 @@ function sleep(ms: number) {
       <!-- Line 1: Now playing [SONG] by [AUTHOR] -->
       <p class="font-bold text-sm sm:text-xl text-white/50">
         Now playing
-        <span class="relative inline-block ml-1">
+        <span class="relative inline-block sm:ml-1">
           <!-- Current song - exits up + fade + blur -->
           <Motion
             tag="span"
@@ -87,7 +87,7 @@ function sleep(ms: number) {
       <!-- Line 2: Epoch X · Up next: [SONG] -->
       <p class="text-[11px] sm:text-sm text-white/50 mt-0.5 sm:mt-1">
         Epoch {{ props.epoch }} · Up next:
-        <span class="relative inline-block ml-1">
+        <span class="relative inline-block sm:ml-1">
           <!-- Current next - exits up + fade -->
           <Motion
             tag="span"
@@ -118,7 +118,7 @@ function sleep(ms: number) {
           Now playing <span class="relative inline-block ml-1 text-shimmer">{{ props.currentSong }} <span class="text-white/50 font-normal text-xs sm:text-sm">by {{ props.currentAuthor }}</span></span>
         </p>
         <p class="text-[11px] sm:text-sm text-white/50 mt-0.5 sm:mt-1">
-          Epoch {{ props.epoch }} · Up next: <span class="relative inline-block ml-1">{{ props.nextSong }}</span>
+          Epoch {{ props.epoch }} · Up next: <span class="relative inline-block sm:ml-1">{{ props.nextSong }}</span>
         </p>
       </div>
     </template>
