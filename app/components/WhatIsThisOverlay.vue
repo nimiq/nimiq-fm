@@ -194,7 +194,7 @@ watch(() => props.modelValue, (isOpen) => {
             </h3>
             <div class="flex flex-wrap gap-2">
               <a
-                href="https://github.com/onmax/nimiq-song"
+                href="https://github.com/nimiq/nimiq-fm"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/90 text-sm transition-colors cursor-pointer"
