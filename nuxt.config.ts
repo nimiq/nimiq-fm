@@ -6,17 +6,17 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   app: {
     head: {
-      title: 'Nimiq Song of the Validators',
+      title: 'Nimiq FM',
       meta: [
-        { name: 'description', content: 'Experience the Nimiq blockchain as a living, breathing orb. Watch validators produce blocks in real-time, visualized as waves of energy.' },
-        { property: 'og:title', content: 'Nimiq Song of the Validators' },
-        { property: 'og:description', content: 'Experience the Nimiq blockchain as a living, breathing orb. Watch validators produce blocks in real-time.' },
+        { name: 'description', content: 'Tune into the Nimiq blockchain. A living audiovisual experience where validators create music in real-time.' },
+        { property: 'og:title', content: 'Nimiq FM' },
+        { property: 'og:description', content: 'Tune into the Nimiq blockchain. A living audiovisual experience where validators create music in real-time.' },
         { property: 'og:image', content: 'https://song.nimiq.com/og-image.png' },
         { property: 'og:url', content: 'https://song.nimiq.com' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: 'Nimiq Song of the Validators' },
-        { name: 'twitter:description', content: 'Experience the Nimiq blockchain as a living, breathing orb.' },
+        { name: 'twitter:title', content: 'Nimiq FM' },
+        { name: 'twitter:description', content: 'Tune into the Nimiq blockchain. A living audiovisual experience where validators create music in real-time.' },
         { name: 'twitter:image', content: 'https://song.nimiq.com/og-image.png' },
       ],
       link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],

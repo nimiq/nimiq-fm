@@ -683,10 +683,10 @@ onBeforeRender(({ delta, camera }) => {
     else {
       tempColor.copy(cLink)
       if (link.isValidatorLink) {
-        tempColor.multiplyScalar(1.5)
+        tempColor.multiplyScalar(0.8)
       }
       else {
-        tempColor.multiplyScalar(0.5)
+        tempColor.multiplyScalar(0.2)
       }
     }
     tempColor.multiplyScalar(alpha)

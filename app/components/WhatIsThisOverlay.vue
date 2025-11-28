@@ -16,12 +16,12 @@ const isStories = computed(() => isStoriesWidth.value || isShortScreen.value)
 
 // Shared content for both stories and callouts
 const stories = [
-  { id: 'music', title: 'Hear the Blockchain', lines: ['Every new block adds melodies, rhythms, and textures on top of the base track.', 'The block producer\'s signature shapes the sound, so the music shifts live with the chain.'], hasDemo: 'producer' },
-  { id: 'orb', title: 'The Network Breathes', lines: ['Live map of the Nimiq network.', 'Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.', 'Lines show their connections as the network rewires.'], hasDemo: 'orb' },
-  { id: 'propagation', title: 'The Orange Wave', lines: ['When a new block is built, its creator flashes and launches an orange wave.', 'The beam travels along connections to show the block spreading through the network in real time.'], hasOrangeHighlight: true },
-  { id: 'player', title: 'The Rhythm of Blocks', lines: ['Blocks stream into the grid; three batches = one song. Five tracks rotate: Milky Way, Acid, Desert Dune, Running Away, and Qimin.', 'Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.'] },
-  { id: 'tech', title: 'Powered by Open Source', lines: ['We use Strudel for live coding music, with special thanks to Switch Angel for the inspiration.', 'The 3D experience is built with TresJS (Three.js for Vue) and Nuxt.'], hasTech: true },
-  { id: 'community', title: 'About Nimiq', lines: ['Nimiq is the first blockchain that runs natively in your browser.', 'No installation needed—just secure, simple, and accessible crypto.'], hasSocials: true },
+  { id: 'music', title: 'The blockchain conducts the music', lines: ['Melodies and rhythms are generated live by block data.', 'When a validator mines a block, their unique signature shapes the sound, creating an endless, evolving soundtrack.'], hasDemo: 'producer' },
+  { id: 'player', title: 'You control the stream', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to change the vibe, or sit back and let the blockchain DJ the playlist for you.']},
+  { id: 'propagation', title: 'Lightning-fast consensus', lines: ['See that orange flash? That\'s a new block born.', 'It ripples across the globe instantly, turning the whole network into a synchronized wave of consensus.'], hasDemo: 'propagation' },
+  { id: 'orb', title: 'A living map of the network', lines: ['Soft lights represent real people connected to Nimiq. Brighter cores are validators securing the chain.', 'Watch as the mesh rewires itself in real time.'], hasDemo: 'orb' },
+  { id: 'tech', title: 'Built with open source magic', lines: ['Powered by Strudel for generative audio and TresJS for 3D visuals.', 'A tribute to the creative coding community and the browser-first spirit.'], hasTech: true },
+  { id: 'community', title: 'Crypto that just works', lines: ['Nimiq is the only blockchain that runs entirely in your browser.', 'No downloads, no sync times—just instant, secure, and censorship-resistant money.'], hasSocials: true },
 ]
 
 // Stories state
@@ -224,29 +224,17 @@ onUnmounted(() => stopTimer())
                   :transition="{ duration: 0.25 }"
                   class="space-y-4 relative"
                 >
-                  <!-- Tree branch decoration for Orange Wave story -->
-                  <svg v-if="activeStory.hasOrangeHighlight" class="orange-tree absolute -top-8 -right-4 w-28 h-32 overflow-visible" viewBox="0 0 100 120">
-                    <g fill="none" stroke="#FF9500" stroke-linecap="round" stroke-linejoin="round">
-                      <!-- Main trunk -->
-                      <path class="tree-branch branch-1" d="M85,115 Q80,90 75,70 Q70,50 68,30" stroke-width="2.5" />
-                      <!-- Branch 1 - left -->
-                      <path class="tree-branch branch-2" d="M72,55 Q60,45 45,40 Q35,38 25,42" stroke-width="2" />
-                      <!-- Branch 2 - right upper -->
-                      <path class="tree-branch branch-3" d="M68,35 Q75,25 80,15 Q82,10 78,5" stroke-width="1.8" />
-                      <!-- Branch 3 - left upper -->
-                      <path class="tree-branch branch-4" d="M70,42 Q55,30 40,22 Q30,18 22,20" stroke-width="1.5" />
-                      <!-- Small twig 1 -->
-                      <path class="tree-branch branch-5" d="M50,42 Q42,50 35,55" stroke-width="1.2" />
-                      <!-- Small twig 2 -->
-                      <path class="tree-branch branch-6" d="M75,60 Q85,55 92,48" stroke-width="1.2" />
-                      <!-- Small twig 3 -->
-                      <path class="tree-branch branch-7" d="M30,40 Q22,35 15,38" stroke-width="1" />
-                    </g>
-                  </svg>
                   <!-- Orb demo on top -->
                   <div v-if="activeStory.hasDemo === 'orb'" class="flex justify-center">
                     <ClientOnly>
                       <MiniOrbDemo class="w-40 h-32" />
+                    </ClientOnly>
+                  </div>
+
+                  <!-- Propagation demo on top -->
+                  <div v-if="activeStory.hasDemo === 'propagation'" class="flex justify-center h-40 -my-4">
+                    <ClientOnly>
+                      <PropagationDemo />
                     </ClientOnly>
                   </div>
 
@@ -342,13 +330,13 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                Hear the Blockchain
+                {{ stories[0].title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                Every new block adds melodies, rhythms, and textures on top of the base track.
+                {{ stories[0].lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                The block producer's signature shapes the sound, so the music shifts live with the chain.
+                {{ stories[0].lines[1] }}
               </p>
               <div class="mt-3 pt-3 border-t border-white/10">
                 <ClientOnly>
@@ -366,26 +354,19 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                The Orange Wave
+                {{ stories[2].title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                When a new block is built, its creator flashes and launches an orange wave.
+                {{ stories[2].lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                The beam travels along connections to show the block spreading through the network in real time.
+                {{ stories[2].lines[1] }}
               </p>
-              <!-- Tree branch decoration -->
-              <svg class="orange-tree absolute -top-4 -right-3 w-20 h-24 overflow-visible" viewBox="0 0 100 120">
-                <g fill="none" stroke="#FF9500" stroke-linecap="round" stroke-linejoin="round">
-                  <path class="tree-branch branch-1" d="M85,115 Q80,90 75,70 Q70,50 68,30" stroke-width="2.5" />
-                  <path class="tree-branch branch-2" d="M72,55 Q60,45 45,40 Q35,38 25,42" stroke-width="2" />
-                  <path class="tree-branch branch-3" d="M68,35 Q75,25 80,15 Q82,10 78,5" stroke-width="1.8" />
-                  <path class="tree-branch branch-4" d="M70,42 Q55,30 40,22 Q30,18 22,20" stroke-width="1.5" />
-                  <path class="tree-branch branch-5" d="M50,42 Q42,50 35,55" stroke-width="1.2" />
-                  <path class="tree-branch branch-6" d="M75,60 Q85,55 92,48" stroke-width="1.2" />
-                  <path class="tree-branch branch-7" d="M30,40 Q22,35 15,38" stroke-width="1" />
-                </g>
-              </svg>
+              <div class="mt-3 pt-3 border-t border-white/10 h-24">
+                <ClientOnly>
+                  <PropagationDemo />
+                </ClientOnly>
+              </div>
             </Motion>
 
             <!-- The Network Breathes - left side -->
@@ -397,7 +378,7 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                The Network Breathes
+                {{ stories[1].title }}
               </h3>
               <div class="text-sm text-white/80 leading-relaxed">
                 <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
@@ -405,12 +386,11 @@ onUnmounted(() => stopTimer())
                     <MiniOrbDemo class="absolute inset-0" />
                   </ClientOnly>
                 </div>
-                <p>Live map of the Nimiq network.</p>
-                <p class="mt-2">
-                  Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.
+                <p>
+                  {{ stories[1].lines[0] }}
                 </p>
                 <p class="mt-2">
-                  Lines show their connections as the network rewires.
+                  {{ stories[1].lines[1] }}
                 </p>
               </div>
             </Motion>
@@ -424,13 +404,13 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                The Rhythm of Blocks
+                {{ stories[3].title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                Blocks stream into the grid; three batches = one song. Five tracks rotate: Milky Way, Acid, Desert Dune, Running Away, and Qimin.
+                {{ stories[3].lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.
+                {{ stories[3].lines[1] }}
               </p>
             </Motion>
 
@@ -446,7 +426,7 @@ onUnmounted(() => stopTimer())
                 Credits & Links
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                Built by Team Nimiq with Strudel, TresJS & Nuxt. Nimiq is a browser-first blockchain designed for simplicity.
+                Built with open source tech like Strudel, TresJS & Nuxt. Nimiq is the browser-first blockchain designed for everyone.
               </p>
               <div class="mt-3 pt-3 border-t border-white/10">
                 <div class="flex flex-wrap gap-2">
@@ -536,38 +516,4 @@ onUnmounted(() => stopTimer())
 
 /* Credits - bottom right, wider */
 .callout-credits { grid-area: 16 / 25 / 38 / 40; align-self: end; justify-self: end; max-width: 320px; margin-right: 0.5rem; margin-bottom: 0.5rem; }
-
-/* Orange tree branch animation */
-.orange-tree {
-  pointer-events: none;
-  filter: drop-shadow(0 0 3px rgba(255, 149, 0, 0.4));
-}
-
-.tree-branch {
-  stroke-dasharray: 200;
-  stroke-dashoffset: 200;
-  animation: draw-branch 0.8s ease-out forwards;
-}
-
-.branch-1 { animation-delay: 0s; }
-.branch-2 { animation-delay: 0.15s; }
-.branch-3 { animation-delay: 0.25s; }
-.branch-4 { animation-delay: 0.35s; }
-.branch-5 { animation-delay: 0.45s; }
-.branch-6 { animation-delay: 0.5s; }
-.branch-7 { animation-delay: 0.55s; }
-
-@keyframes draw-branch {
-  0% {
-    stroke-dashoffset: 200;
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.8;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-}
 </style>

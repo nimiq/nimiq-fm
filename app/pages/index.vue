@@ -179,9 +179,9 @@ watch(hasBlockchainData, (ready) => {
         :transition="{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }"
       >
         <div class="absolute inset-0 backdrop-blur-md bg-slate-900/30" />
-        <div class="relative flex flex-col items-center gap-2">
-          <span class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white/80">Welcome to</span>
-          <img src="/logo-dark.svg" alt="Nimiq FM" class="h-12 sm:h-16 lg:h-20">
+        <div class="relative flex flex-col items-center gap-3">
+          <img src="/logo-dark.svg" alt="Nimiq FM" class="h-6 sm:h-8">
+          <span class="text-sm sm:text-base text-white/60">The Soundtrack of the Nimiq Blockchain</span>
         </div>
       </Motion>
     </AnimatePresence>
