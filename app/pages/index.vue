@@ -104,7 +104,7 @@ watch(hasBlockchainData, (ready) => {
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-slate-900 text-white" :class="{ 'loading-stage': animationStage <= 3 }">
+  <div class="relative h-dvh bg-slate-900 text-white overflow-hidden">
     <!-- Fixed Orb Background (stays in place when page scrolls) -->
     <div class="fixed inset-0 z-0">
       <div class="absolute inset-0 orb-gradient-background" />
@@ -177,7 +177,7 @@ watch(hasBlockchainData, (ready) => {
     </AnimatePresence>
 
     <!-- Main Content -->
-    <div class="relative z-10 flex flex-col min-h-screen pointer-events-none">
+    <div class="relative z-10 flex flex-col h-dvh pointer-events-none">
       <div class="flex-1" />
 
       <!-- Bottom Section -->
