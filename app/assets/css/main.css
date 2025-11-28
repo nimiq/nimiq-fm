@@ -28,11 +28,51 @@
   background: linear-gradient(180deg, #FF9500 0%, #E88A00 100%);
 }
 
-/* Wave animation */
-.animate-wave-active {
-  background: #FF9500 !important;
-  box-shadow: 0 0 6px 2px rgba(255, 149, 0, 0.8);
-  transition: background 0.05s ease-out, box-shadow 0.05s ease-out;
+/* Fill animation keyframes */
+@keyframes fill-glow {
+  0%, 100% {
+    background: #FF9500;
+    box-shadow: 0 0 6px 2px rgba(255, 149, 0, 0.8);
+  }
+}
+
+@keyframes brightness-pulse {
+  0% {
+    background: #FF9500;
+    box-shadow: 0 0 6px 1px rgba(255, 149, 0, 0.6);
+  }
+  50% {
+    background: #FFB84D;
+    box-shadow: 0 0 12px 2px rgba(255, 184, 77, 0.8);
+  }
+  100% {
+    background: #FF9500;
+    box-shadow: 0 0 6px 1px rgba(255, 149, 0, 0.6);
+  }
+}
+
+@keyframes fade-to-white {
+  0% {
+    background: #FF9500;
+    box-shadow: 0 0 6px 2px rgba(255, 149, 0, 0.8);
+  }
+  100% {
+    background: white;
+    box-shadow: none;
+  }
+}
+
+/* Fill animation classes */
+.animate-fill-active {
+  animation: fill-glow 0.1s ease-out forwards;
+}
+
+.animate-flash-active {
+  animation: brightness-pulse 0.3s ease-in-out forwards;
+}
+
+.animate-fade-active {
+  animation: fade-to-white 0.4s ease-out forwards;
 }
 
 /* Smooth transition back to white */
