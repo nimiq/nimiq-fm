@@ -207,7 +207,7 @@ const scrollX = computed(() => prevSongOffset.value + transitionOffset.value + m
 </script>
 
 <template>
-  <div class="border overflow-hidden">
+  <div class="border-b sm:border-0 sm:border-b overflow-hidden">
     <div class="relative w-full py-3 sm:py-4 sm:px-6">
       <!-- Block timeline -->
       <div ref="timelineContainer" class="overflow-x-hidden overflow-y-visible relative py-2 -my-2">

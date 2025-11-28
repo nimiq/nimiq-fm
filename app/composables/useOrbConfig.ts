@@ -16,7 +16,7 @@ const defaultConfig = {
 
   // === ANIMATION ===
   validatorRotationSpeed: 0.1,
-  groupRotationSpeed: 0.025,
+  groupRotationSpeed: 0.08,
   groupRotationXAmplitude: 0.05,
   groupRotationZAmplitude: 0.025,
   autoRotateSpeed: 0.1,

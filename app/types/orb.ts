@@ -36,6 +36,9 @@ export interface NodeData {
 
   // From ExtendedNodeData in Orb.tsx
   baseColor?: THREE.Color
+
+  // Runtime calculated
+  depthFade?: number // Depth fade factor for back-of-sphere dimming
 }
 
 export interface LinkData {

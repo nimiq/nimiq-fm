@@ -105,6 +105,10 @@ const curveMid = new THREE.Vector3()
 const curvePoint = new THREE.Vector3()
 const curvePointPrev = new THREE.Vector3()
 
+// Pre-allocated vectors for depth fade calculation
+const cameraDirection = new THREE.Vector3()
+const nodeNormal = new THREE.Vector3()
+
 // Initialize Line Buffers
 watchEffect(() => {
   if (!linesRef.value || !graphData.value) {
@@ -162,7 +166,7 @@ onMounted(() => {
 // Cleanup beams
 const { onBeforeRender } = useLoop()
 
-onBeforeRender(({ delta }) => {
+onBeforeRender(({ delta, camera }) => {
   // Cleanup beams
   const currentTime = Date.now() / 1000
   beams.value = beams.value.filter(b => (currentTime - b.startTime) * beamSpeed.value < b.maxDistance + 5)
@@ -170,6 +174,11 @@ onBeforeRender(({ delta }) => {
   // Update colors from config
   cLink.set(config.value.colorLink)
   cBeam.set(config.value.beamColor)
+
+  // Get camera direction for depth fade (camera looks at origin)
+  if (camera?.value) {
+    camera.value.getWorldDirection(cameraDirection)
+  }
 
   if (!graphData.value || !nodesMeshRef.value || !linesRef.value)
     return
@@ -398,6 +407,16 @@ onBeforeRender(({ delta }) => {
         tempColor.multiplyScalar(1.2)
       }
     }
+
+    // --- Depth Fade: dim nodes on the back of the sphere ---
+    // Calculate node normal (pointing outward from sphere center)
+    nodeNormal.copy(n.currentPosition).normalize()
+    // Dot product with camera direction: negative = facing camera, positive = facing away
+    const dotProduct = nodeNormal.dot(cameraDirection)
+    // Map: front (dot=-1) -> 1.0, back (dot=1) -> 0.25
+    const depthFade = Math.max(0.25, 0.625 - dotProduct * 0.375)
+    n.depthFade = depthFade // Store for link calculation
+    tempColor.multiplyScalar(depthFade)
 
     nodesMeshRef.value.setColorAt(i, tempColor)
 
@@ -667,10 +686,16 @@ onBeforeRender(({ delta }) => {
         tempColor.multiplyScalar(1.5)
       }
       else {
-        tempColor.multiplyScalar(0.8)
+        tempColor.multiplyScalar(0.5)
       }
     }
     tempColor.multiplyScalar(alpha)
+
+    // Apply depth fade based on connected nodes (use average, less aggressive for links)
+    const avgDepthFade = ((n1.depthFade ?? 1) + (n2.depthFade ?? 1)) * 0.5
+    // Softer fade for links: remap 0.25-1 to 0.4-1
+    const linkDepthFade = 0.4 + avgDepthFade * 0.6
+    tempColor.multiplyScalar(linkDepthFade)
 
     // Set Colors for all curve segments
     for (let seg = 0; seg < CURVE_SEGMENTS; seg++) {
