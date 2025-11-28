@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { AnimatePresence, Motion } from 'motion-v'
 import { onKeyStroke } from '@vueuse/core'
+import { AnimatePresence, Motion } from 'motion-v'
 
 const show = defineModel<boolean>({ required: true })
 
@@ -12,7 +12,7 @@ const isMedium = breakpoints.between('md', 'lg')
 
 // Shared content for both stories and callouts
 const stories = [
-  { id: 'music', title: 'Hear the Blockchain', lines: ['Every new block adds melodies, rhythms, and textures on top of the base track.', "The block producer's signature shapes the sound, so the music shifts live with the chain."], hasDemo: 'producer' },
+  { id: 'music', title: 'Hear the Blockchain', lines: ['Every new block adds melodies, rhythms, and textures on top of the base track.', 'The block producer\'s signature shapes the sound, so the music shifts live with the chain.'], hasDemo: 'producer' },
   { id: 'orb', title: 'The Network Breathes', lines: ['Live map of the Nimiq network.', 'Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.', 'Lines show their connections as the network rewires.'], hasDemo: 'orb' },
   { id: 'propagation', title: 'The Orange Wave', lines: ['When a new block is built, its creator flashes and launches an orange wave.', 'The beam travels along connections to show the block spreading through the network in real time.'] },
   { id: 'player', title: 'The Rhythm of Blocks', lines: ['Blocks stream into the grid; three batches make up one song before the next begins.', 'Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.'] },
@@ -34,7 +34,8 @@ let lastTime = 0
 function startTimer() {
   lastTime = performance.now()
   const tick = (now: number) => {
-    if (!show.value || !isStories.value) return
+    if (!show.value || !isStories.value)
+      return
     if (!isPaused.value) {
       const delta = now - lastTime
       progress.value += (delta / STORY_DURATION) * 100
@@ -44,7 +45,8 @@ function startTimer() {
           direction.value = 1
           currentStory.value++
           progress.value = 0
-        } else {
+        }
+        else {
           show.value = false
           return
         }
@@ -71,7 +73,8 @@ async function goNext() {
     await nextTick()
     currentStory.value++
     progress.value = 0
-  } else {
+  }
+  else {
     show.value = false
   }
 }
@@ -79,7 +82,8 @@ async function goNext() {
 async function goPrev() {
   if (currentStory.value === 0) {
     progress.value = 0
-  } else {
+  }
+  else {
     exitX.value = 50 // old exits right
     direction.value = -1
     await nextTick()
@@ -93,7 +97,8 @@ function handleTap(e: MouseEvent | TouchEvent) {
   const rect = target.getBoundingClientRect()
   const clientX = 'changedTouches' in e ? e.changedTouches[0]?.clientX ?? 0 : e.clientX
   const x = clientX - rect.left
-  if (x < rect.width / 3) goPrev()
+  if (x < rect.width / 3)
+    goPrev()
   else goNext()
 }
 
@@ -101,11 +106,12 @@ function handleTap(e: MouseEvent | TouchEvent) {
 let pressTimer: ReturnType<typeof setTimeout> | null = null
 
 function handlePointerDown() {
-  pressTimer = setTimeout(() => { isPaused.value = true }, 150)
+  pressTimer = setTimeout(() => isPaused.value = true, 150)
 }
 
 function handlePointerUp() {
-  if (pressTimer) clearTimeout(pressTimer)
+  if (pressTimer)
+    clearTimeout(pressTimer)
   isPaused.value = false
 }
 
@@ -120,10 +126,12 @@ function handleTouchStart(e: TouchEvent) {
 }
 
 function handleTouchMove(e: TouchEvent) {
-  if (!isDragging.value) return
+  if (!isDragging.value)
+    return
   const deltaY = (e.touches[0]?.clientY ?? 0) - startY
   dragY.value = Math.max(0, deltaY)
-  if (dragY.value > 50) isPaused.value = true
+  if (dragY.value > 50)
+    isPaused.value = true
 }
 
 function handleTouchEnd() {
@@ -141,13 +149,15 @@ watch(show, (val) => {
     currentStory.value = 0
     progress.value = 0
     startTimer()
-  } else {
+  }
+  else {
     stopTimer()
   }
 })
 
 watch(isStories, (val) => {
-  if (val && show.value) startTimer()
+  if (val && show.value)
+    startTimer()
   else stopTimer()
 })
 
@@ -208,7 +218,9 @@ onUnmounted(() => stopTimer())
                   :transition="{ duration: 0.25 }"
                   class="space-y-4"
                 >
-                  <h3 class="font-bold text-xl text-sky-400">{{ activeStory.title }}</h3>
+                  <h3 class="font-bold text-xl text-sky-400">
+                    {{ activeStory.title }}
+                  </h3>
                   <div class="space-y-3">
                     <p v-for="(line, i) in activeStory.lines" :key="i" class="text-white/90 leading-relaxed">
                       {{ line }}
@@ -229,7 +241,6 @@ onUnmounted(() => stopTimer())
                 </Motion>
               </AnimatePresence>
             </div>
-
           </div>
         </template>
 
@@ -257,9 +268,15 @@ onUnmounted(() => stopTimer())
             :exit="{ opacity: 0, x: 40, y: -20, scale: 0.9 }"
             :transition="{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }"
           >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">The Orange Wave</h3>
-            <p class="text-sm text-white/80 leading-relaxed">When a new block is built, its creator flashes and launches an orange wave.</p>
-            <p class="text-sm text-white/80 leading-relaxed mt-2">The beam travels along connections to show the block spreading through the network in real time.</p>
+            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
+              The Orange Wave
+            </h3>
+            <p class="text-sm text-white/80 leading-relaxed">
+              When a new block is built, its creator flashes and launches an orange wave.
+            </p>
+            <p class="text-sm text-white/80 leading-relaxed mt-2">
+              The beam travels along connections to show the block spreading through the network in real time.
+            </p>
           </Motion>
 
           <!-- Hear the Blockchain callout with live producer demo -->
@@ -270,9 +287,15 @@ onUnmounted(() => stopTimer())
             :exit="{ opacity: 0, x: -40, y: -20, scale: 0.9 }"
             :transition="{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }"
           >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">Hear the Blockchain</h3>
-            <p class="text-sm text-white/80 leading-relaxed">Every new block adds melodies, rhythms, and textures on top of the base track.</p>
-            <p class="text-sm text-white/80 leading-relaxed mt-2">The block producer's signature shapes the sound, so the music shifts live with the chain.</p>
+            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
+              Hear the Blockchain
+            </h3>
+            <p class="text-sm text-white/80 leading-relaxed">
+              Every new block adds melodies, rhythms, and textures on top of the base track.
+            </p>
+            <p class="text-sm text-white/80 leading-relaxed mt-2">
+              The block producer's signature shapes the sound, so the music shifts live with the chain.
+            </p>
             <div class="mt-3 pt-3 border-t border-white/10">
               <ClientOnly>
                 <LatestProducerDemo />
@@ -288,7 +311,9 @@ onUnmounted(() => stopTimer())
             :exit="{ opacity: 0, x: -40, y: 0, scale: 0.9 }"
             :transition="{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }"
           >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">The Network Breathes</h3>
+            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
+              The Network Breathes
+            </h3>
             <div class="text-sm text-white/80 leading-relaxed">
               <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
                 <ClientOnly>
@@ -296,8 +321,12 @@ onUnmounted(() => stopTimer())
                 </ClientOnly>
               </div>
               <p>Live map of the Nimiq network.</p>
-              <p class="mt-2">Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.</p>
-              <p class="mt-2">Lines show their connections as the network rewires.</p>
+              <p class="mt-2">
+                Soft white lights are peers joining and leaving; vivid cores are block producers anchoring the mesh.
+              </p>
+              <p class="mt-2">
+                Lines show their connections as the network rewires.
+              </p>
             </div>
           </Motion>
 
@@ -310,9 +339,15 @@ onUnmounted(() => stopTimer())
             :exit="{ opacity: 0, x: 40, y: isMedium ? 0 : -20, scale: 0.9 }"
             :transition="{ duration: 0.5, delay: 0.19, ease: [0.16, 1, 0.3, 1] }"
           >
-            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">The Rhythm of Blocks</h3>
-            <p class="text-sm text-white/80 leading-relaxed">Blocks stream into the grid; three batches make up one song before the next begins.</p>
-            <p class="text-sm text-white/80 leading-relaxed mt-2">Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.</p>
+            <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
+              The Rhythm of Blocks
+            </h3>
+            <p class="text-sm text-white/80 leading-relaxed">
+              Blocks stream into the grid; three batches make up one song before the next begins.
+            </p>
+            <p class="text-sm text-white/80 leading-relaxed mt-2">
+              Hit play to unmute; "Now playing" and "Up next" mirror the live chain while block creators glow when they land a block.
+            </p>
           </Motion>
         </template>
       </Motion>

@@ -1,62 +1,34 @@
 <script setup lang="ts">
 import { AnimatePresence, Motion } from 'motion-v'
 
-const emit = defineEmits<{
-  (e: 'isExpanded', value: boolean): void
-}>()
+const emit = defineEmits<{ (e: 'isExpanded', value: boolean): void }>()
 
 const isExpanded = ref(false)
-const { sortedBySlots, displayValidators, hiddenValidators, remainingCount } = useValidators()
+const { sortedBySlots } = useValidators()
 const { latestBlock } = useBlockchain()
 
-// Track active validators - use Map for proper reactivity
-const activeValidators = ref(new Map<string, 'glow' | 'fading'>())
-const overflowGlowState = ref<'glow' | 'fading' | null>(null)
+// Sliding validators queue
+interface SlidingValidator { address: string, name?: string, logo?: string, id: string }
+const slidingValidatorQueue = ref<SlidingValidator[]>([])
+const MAX_QUEUE_SIZE = 30
 
-// Watch for new blocks and trigger glow effect
-watch(latestBlock, (block) => {
-  if (block?.validatorAddress) {
-    const address = block.validatorAddress
-    const isHidden = hiddenValidators.value.some(v => v.address === address)
-
-    if (isHidden) {
-      overflowGlowState.value = 'glow'
-      setTimeout(() => {
-        if (overflowGlowState.value === 'glow')
-          overflowGlowState.value = 'fading'
-      }, 300)
-      setTimeout(() => {
-        overflowGlowState.value = null
-      }, 1300)
-    }
-    else {
-      activeValidators.value.set(address, 'glow')
-      activeValidators.value = new Map(activeValidators.value)
-      setTimeout(() => {
-        if (activeValidators.value.get(address) === 'glow') {
-          activeValidators.value.set(address, 'fading')
-          activeValidators.value = new Map(activeValidators.value)
-        }
-      }, 300)
-      setTimeout(() => {
-        activeValidators.value.delete(address)
-        activeValidators.value = new Map(activeValidators.value)
-      }, 1300)
-    }
-  }
+// Watch for new blocks - defer to onMounted so placeholders show on initial render
+onMounted(() => {
+  watch(latestBlock, (block) => {
+    if (!block?.validatorAddress)
+      return
+    const validator = sortedBySlots.value.find(v => v.address === block.validatorAddress)
+    const newEntry: SlidingValidator = { address: block.validatorAddress, name: validator?.name, logo: validator?.logo, id: `${block.blockNumber}-${block.validatorAddress}` }
+    slidingValidatorQueue.value = [newEntry, ...slidingValidatorQueue.value.slice(0, MAX_QUEUE_SIZE - 1)]
+  })
 })
-
-function getValidatorState(address: string) {
-  return activeValidators.value.get(address)
-}
 
 // Get validator name by address
 function getValidatorName(address: string): string | undefined {
-  const validator = sortedBySlots.value.find(v => v.address === address)
-  return validator?.name || undefined
+  return sortedBySlots.value.find(v => v.address === address)?.name
 }
 
-// Get active validator name for display
+// Active validator name for display
 const activeValidatorName = ref<string | undefined>('Waiting for blocks...')
 watch(latestBlock, () => {
   if (latestBlock.value?.validatorAddress)
@@ -72,59 +44,76 @@ function toggleExpand() {
 <template>
   <ClientOnly>
     <div
-      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-md py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
+      class="w-full sm:w-max m-0 sm:m-3 hover:bg-white/5 transition-colors rounded-b-xl py-3 sm:py-5 px-4 sm:px-6 cursor-zoom-in select-none border-t border-white/10 sm:border-t-0"
       :class="{ 'cursor-zoom-out': isExpanded }"
       @click="toggleExpand"
     >
-      <div class="grid grid-cols-4 min-[370px]:grid-cols-5 sm:flex sm:items-center gap-2 sm:gap-4 mb-2">
-        <div v-for="v in displayValidators" :key="v.address" class="flex items-center justify-center gap-0.5">
-          <div
-            class="validator-hex"
-            :class="{
-              'validator-glow': getValidatorState(v.address) === 'glow',
-              'validator-fading': getValidatorState(v.address) === 'fading',
-            }"
-          >
-            <img :src="v.logo" :alt="v.name" class="size-8 validator-img" :class="{ 'validator-glow': getValidatorState(v.address) === 'glow', 'validator-fading': getValidatorState(v.address) === 'fading' }">
-          </div>
-        </div>
-        <!-- Overflow indicator -->
-        <div v-if="remainingCount > 0" class="flex items-center justify-center gap-0.5">
-          <div class="relative validator-hex">
-            <svg class="size-8 overflow-icon" :class="{ 'overflow-glow': overflowGlowState === 'glow', 'overflow-fading': overflowGlowState === 'fading' }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18" fill="currentColor">
+      <!-- Sliding animation (always shown) -->
+      <div class="relative">
+        <!-- Sliding container with mask -->
+        <div class="flex gap-3 overflow-hidden sliding-mask py-1 w-full sm:w-[512px]">
+          <!-- Empty state placeholders -->
+          <template v-if="!slidingValidatorQueue.length">
+            <svg v-for="i in 8" :key="`placeholder-${i}`" class="shrink-0 size-8 text-white/15" viewBox="0 0 20 18" fill="none" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2">
               <path d="M19.734 8.156 15.576.844A1.66 1.66 0 0014.135 0H5.819C5.226 0 4.677.32 4.38.844L.222 8.156a1.71 1.71 0 000 1.688l4.158 7.312c.297.523.846.844 1.439.844h8.316c.593 0 1.142-.32 1.438-.844l4.158-7.312c.3-.523.3-1.165.003-1.688" />
             </svg>
-            <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-900">+{{ remainingCount }}</span>
-          </div>
-        </div>
-      </div>
-      <div class="flex justify-center sm:justify-start mt-1">
-        <Motion
-          tag="span"
-          layout
-          :layout-dependency="activeValidatorName"
-          :transition="{ layout: { duration: 0.3, ease: 'easeOut' } }"
-          class="text-xs text-white/80 font-medium font-mono bg-white/5 rounded px-3 py-1 inline-block outline outline-1.5 -outline-offset-1.5 outline-white/10"
-        >
-          <AnimatePresence mode="wait">
+          </template>
+          <!-- Validators -->
+          <template v-else>
             <Motion
-              tag="span"
-              :key="activeValidatorName"
-              :initial="{ opacity: 0, y: 4 }"
-              :animate="{ opacity: 1, y: 0 }"
-              :exit="{ opacity: 0, y: -4 }"
-              :transition="{ duration: 0.15 }"
-              class="inline-block whitespace-nowrap"
+              v-for="v in slidingValidatorQueue"
+              :key="v.id"
+              layout
+              :initial="{ opacity: 0, scale: 0.6 }"
+              :animate="{ opacity: 1, scale: 1 }"
+              :transition="{ type: 'spring', stiffness: 260, damping: 26 }"
+              class="shrink-0"
             >
-              <template v-if="activeValidatorName">{{ activeValidatorName }}</template>
-              <ShortAddress v-else :address="latestBlock?.validatorAddress || ''" />
+              <img :src="v.logo" :alt="v.name" class="size-8 object-contain">
             </Motion>
-          </AnimatePresence>
-        </Motion>
+          </template>
+        </div>
+
+        <!-- Validator name + CTA row -->
+        <div class="flex justify-between items-center mt-1">
+          <div class="flex items-end gap-0 ml-2">
+            <!-- L-shaped connector with arrow -->
+            <svg class="w-4 h-5 text-white/10 mb-0.5" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 0 L8 14 L14 14" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M12 11 L15 14 L12 17" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+
+            <!-- Validator name -->
+            <AnimatePresence mode="wait">
+              <Motion
+                :key="activeValidatorName"
+                tag="span"
+                :initial="{ opacity: 0 }"
+                :animate="{ opacity: 1 }"
+                :exit="{ opacity: 0 }"
+                :transition="{ duration: 0.15 }"
+                class="text-xs text-white/80 font-medium font-mono whitespace-nowrap ml-1"
+              >
+                <template v-if="activeValidatorName">
+                  {{ activeValidatorName }}
+                </template>
+                <ShortAddress v-else :address="latestBlock?.validatorAddress || ''" />
+              </Motion>
+            </AnimatePresence>
+          </div>
+
+          <!-- CTA -->
+          <span class="text-[10px] text-white/40 flex items-center gap-1 hover:text-white/60 transition-colors">
+            {{ isExpanded ? 'Close' : 'See all' }}
+            <svg class="size-2.5 transition-transform" :class="{ 'rotate-90': isExpanded }" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 2l4 4-4 4" />
+            </svg>
+          </span>
+        </div>
       </div>
     </div>
     <template #fallback>
-      <div class="w-full sm:w-max m-0 sm:m-3 rounded-md py-3 sm:py-5 px-4 sm:px-6">
+      <div class="w-full sm:w-max m-0 sm:m-3 rounded-b-xl py-3 sm:py-5 px-4 sm:px-6">
         <div class="text-sm text-white/80 font-medium">
           Loading validators...
         </div>
@@ -134,45 +123,8 @@ function toggleExpand() {
 </template>
 
 <style scoped>
-.validator-img {
-  filter: grayscale(80%);
-  opacity: 0.6;
-}
-
-.validator-img.validator-glow {
-  filter: grayscale(0%) drop-shadow(0 0 10px rgba(255, 96, 0, 0.5)) drop-shadow(0 0 16px rgba(255, 96, 0, 0.2));
-  opacity: 1;
-}
-
-.validator-img.validator-fading {
-  filter: grayscale(80%);
-  opacity: 0.6;
-  transition: filter 1s ease-out, opacity 1s ease-out;
-}
-
-.validator-text {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.validator-text.validator-text-glow {
-  color: rgb(251, 146, 60);
-}
-
-.validator-text.validator-text-fading {
-  color: rgba(255, 255, 255, 0.7);
-  transition: color 1s ease-out;
-}
-
-.overflow-icon {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.overflow-icon.overflow-glow {
-  filter: drop-shadow(0 0 10px rgba(255, 96, 0, 0.5)) drop-shadow(0 0 16px rgba(255, 96, 0, 0.2));
-}
-
-.overflow-icon.overflow-fading {
-  filter: none;
-  transition: filter 1s ease-out;
+.sliding-mask {
+  mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
 }
 </style>

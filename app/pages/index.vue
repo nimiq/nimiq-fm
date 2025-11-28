@@ -74,6 +74,7 @@ onUnmounted(() => {
 })
 
 const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')
+const isAudioReady = computed(() => strudel.value?.isReady.value ?? false)
 const displayNowPlaying = computed(() => {
   if (nowPlayingTitle.value)
     return nowPlayingTitle.value
@@ -90,15 +91,14 @@ const hasBlockchainData = computed(() => !!latestBlock.value)
 // Staged animation sequence
 const animationStage = ref(0) // 0: welcome, 1: orb, 2: bottom, 3: header
 
-
 watch(hasBlockchainData, (ready) => {
   if (ready) {
     // Stage 1: Orb fades in (after welcome fades out ~400ms)
-    setTimeout(() => { animationStage.value = 1 }, 400)
+    setTimeout(() => animationStage.value = 1, 400)
     // Stage 2: Bottom appears
-    setTimeout(() => { animationStage.value = 2 }, 1200)
+    setTimeout(() => animationStage.value = 2, 1200)
     // Stage 3: Header appears
-    setTimeout(() => { animationStage.value = 3 }, 1800)
+    setTimeout(() => animationStage.value = 3, 1800)
   }
 })
 </script>
@@ -139,11 +139,12 @@ watch(hasBlockchainData, (ready) => {
 
         <!-- Right side links -->
         <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">
-          <button class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0" @click="togglePlay">
+          <button class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0 disabled:opacity-50 disabled:cursor-wait" :disabled="!isAudioReady" @click="togglePlay">
             <AudioBars :is-playing="isPlaying" class="size-5 sm:size-4" />
-            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-4 text-left">
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 1 : 0, filter: isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 0 : 1, filter: isPlaying ? 'blur(4px)' : 'blur(0px)' }" :transition="{ duration: 0.2 }">off</Motion>
+            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-8 text-left">
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: !isAudioReady ? 1 : 0, filter: !isAudioReady ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">loading</Motion>
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isAudioReady && isPlaying ? 1 : 0, filter: isAudioReady && isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
+              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isAudioReady && !isPlaying ? 1 : 0, filter: isAudioReady && !isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">off</Motion>
             </span></span>
           </button>
           <button class="hover:text-white transition-colors cursor-pointer text-base sm:text-sm p-2 sm:p-0" @click="showWhatIsThis = true">
@@ -229,7 +230,7 @@ watch(hasBlockchainData, (ready) => {
           :transition="{ duration: 0.5, ease: [0, 0, 0.2, 1], delay: 0.3 }"
         >
           <p class="text-white/50 text-xs text-center inline-flex items-center justify-center gap-1 w-full">
-            Made with ❤️ by Team <a href="https://nimiq.com" target="_blank" rel="noopener" class="group inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 rounded py-0.5 px-1.5 transition-colors"><svg class="size-3 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18"><path class="fill-current group-hover:fill-[url(#nimiq-gradient)]" d="M19.734 8.156 15.576.844A1.66 1.66 0 0014.135 0H5.819C5.226 0 4.677.32 4.38.844L.222 8.156a1.71 1.71 0 000 1.688l4.158 7.312c.297.523.846.844 1.439.844h8.316c.593 0 1.142-.32 1.438-.844l4.158-7.312c.3-.523.3-1.165.003-1.688"/><defs><radialGradient id="nimiq-gradient" cx="0" cy="0" r="1" gradientTransform="matrix(-19.9562 0 0 -18 19.956 18)" gradientUnits="userSpaceOnUse"><stop stop-color="#EC991C"/><stop offset="1" stop-color="#E9B213"/></radialGradient></defs></svg><span class="group-hover:text-white transition-colors">Nimiq</span></a>
+            Made with ❤️ by Team <a href="https://nimiq.com" target="_blank" rel="noopener" class="group inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 rounded py-0.5 px-1.5 transition-colors"><svg class="size-3 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18"><path class="fill-current group-hover:fill-[url(#nimiq-gradient)]" d="M19.734 8.156 15.576.844A1.66 1.66 0 0014.135 0H5.819C5.226 0 4.677.32 4.38.844L.222 8.156a1.71 1.71 0 000 1.688l4.158 7.312c.297.523.846.844 1.439.844h8.316c.593 0 1.142-.32 1.438-.844l4.158-7.312c.3-.523.3-1.165.003-1.688" /><defs><radialGradient id="nimiq-gradient" cx="0" cy="0" r="1" gradientTransform="matrix(-19.9562 0 0 -18 19.956 18)" gradientUnits="userSpaceOnUse"><stop stop-color="#EC991C" /><stop offset="1" stop-color="#E9B213" /></radialGradient></defs></svg><span class="group-hover:text-white transition-colors">Nimiq</span></a>
           </p>
         </Motion>
       </Motion>
