@@ -1,13 +1,62 @@
 <script setup lang="ts">
-import { AnimatePresence, Motion } from 'motion-v'
-
 const emit = defineEmits<{
   (e: 'isExpanded', value: boolean): void
 }>()
 
 const isExpanded = ref(false)
+const badgeRef = ref<HTMLElement>()
+
 const { sortedBySlots, displayValidators, hiddenValidators, remainingCount } = useValidators()
 const { latestBlock } = useBlockchain()
+
+// Watch for validator name changes and animate width
+watch(
+  () => latestBlock.value?.validatorAddress,
+  () => {
+    if (!badgeRef.value)
+      return
+
+    // Reset to auto width first
+    badgeRef.value.style.width = 'auto'
+
+    // Get current width
+    const oldWidth = badgeRef.value.offsetWidth
+
+    // Let content update naturally
+    nextTick(() => {
+      if (!badgeRef.value)
+        return
+
+      badgeRef.value.style.width = 'auto'
+      const newWidth = badgeRef.value.offsetWidth
+
+      if (oldWidth !== newWidth) {
+        // Set explicit width to enable transition
+        badgeRef.value.style.width = `${oldWidth}px`
+
+        // Force reflow
+        void badgeRef.value.offsetWidth
+
+        // Transition to new width
+        requestAnimationFrame(() => {
+          if (!badgeRef.value)
+            return
+
+          badgeRef.value.style.width = `${newWidth}px`
+
+          // Reset to auto after transition completes
+          const resetWidth = () => {
+            if (badgeRef.value) {
+              badgeRef.value.style.width = 'auto'
+              badgeRef.value.removeEventListener('transitionend', resetWidth)
+            }
+          }
+          badgeRef.value.addEventListener('transitionend', resetWidth)
+        })
+      }
+    })
+  },
+)
 
 // Track active validators - use Map for proper reactivity
 const activeValidators = ref(new Map<string, 'glow' | 'fading'>())
@@ -99,28 +148,13 @@ function toggleExpand() {
         </div>
       </div>
       <div class="flex justify-center sm:justify-start mt-1">
-        <Motion
-          tag="span"
-          layout
-          :layout-dependency="activeValidatorName"
-          :transition="{ layout: { duration: 0.3, ease: 'easeOut' } }"
-          class="text-xs text-white/80 font-medium font-mono bg-white/5 rounded px-3 py-1 inline-block outline outline-1.5 -outline-offset-1.5 outline-white/10"
+        <span
+          ref="badgeRef"
+          class="text-xs text-white/80 font-medium font-mono bg-white/5 rounded px-3 py-1 inline-block outline outline-1.5 -outline-offset-1.5 outline-white/10 validator-badge whitespace-nowrap"
         >
-          <AnimatePresence mode="wait">
-            <Motion
-              tag="span"
-              :key="activeValidatorName"
-              :initial="{ opacity: 0, y: 4 }"
-              :animate="{ opacity: 1, y: 0 }"
-              :exit="{ opacity: 0, y: -4 }"
-              :transition="{ duration: 0.15 }"
-              class="inline-block whitespace-nowrap"
-            >
-              <template v-if="activeValidatorName">{{ activeValidatorName }}</template>
-              <ShortAddress v-else :address="latestBlock?.validatorAddress || ''" />
-            </Motion>
-          </AnimatePresence>
-        </Motion>
+          <template v-if="activeValidatorName">{{ activeValidatorName }}</template>
+          <ShortAddress v-else :address="latestBlock?.validatorAddress || ''" />
+        </span>
       </div>
     </div>
     <template #fallback>
@@ -174,5 +208,10 @@ function toggleExpand() {
 .overflow-icon.overflow-fading {
   filter: none;
   transition: filter 1s ease-out;
+}
+
+.validator-badge {
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: width;
 }
 </style>
