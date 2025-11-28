@@ -30,7 +30,7 @@ const background = computed(() => {
 
 <template>
   <button
-    class="relative h-10 sm:h-12"
+    class="relative h-10 sm:h-12 cursor-pointer"
     @click="emit('toggle')"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false; if (isPlaying) hasLeftAfterPlay = true"
@@ -57,14 +57,15 @@ const background = computed(() => {
     <!-- Single morphing container -->
     <Motion
       tag="span"
-      class="h-10 sm:h-12 flex items-center justify-center rounded-full relative overflow-hidden"
+      class="pill-container h-10 sm:h-12 flex items-center justify-center rounded-full relative overflow-hidden"
+      :class="{ 'is-playing': isPlaying }"
       :animate="{ width: isPlaying ? (isMobile ? '40px' : '48px') : (isMobile ? '110px' : '140px'), background }"
       :transition="{ width: { type: 'spring', stiffness: 500, damping: 35, delay: isPlaying ? 0.08 : 0.15 }, background: { duration: 0.2 } }"
     >
       <!-- Pill content: icon + text -->
       <Motion
         tag="span"
-        class="flex items-center gap-1.5 sm:gap-2 font-bold text-white text-sm sm:text-base whitespace-nowrap absolute"
+        class="flex items-center gap-1.5 sm:gap-2 font-bold text-white text-sm sm:text-base whitespace-nowrap absolute z-10"
         :animate="{ opacity: isPlaying ? 0 : 1, scale: isPlaying ? 0.85 : 1, x: isPlaying ? -20 : 0 }"
         :transition="{ opacity: { duration: 0.1, delay: isPlaying ? 0 : 0.2 }, scale: { duration: 0.15 }, x: { duration: 0.15 } }"
       >
@@ -94,4 +95,31 @@ const background = computed(() => {
 .icon-swap-enter-from, .icon-swap-leave-to { opacity: 0; transform: scale(0.8); }
 .shimmer-ring { animation: shimmer-rotate 3s linear infinite; }
 @keyframes shimmer-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Glossy reflection effect for "Tune in" hover */
+.pill-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.8) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  filter: blur(8px);
+  transform: translateX(-150%) translateY(-150%) rotate(30deg);
+  transition: transform 0.4s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pill-container:not(.is-playing):hover::before {
+  transform: translateX(50%) translateY(50%) rotate(30deg);
+}
 </style>

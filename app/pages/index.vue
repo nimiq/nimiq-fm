@@ -139,13 +139,23 @@ watch(hasBlockchainData, (ready) => {
 
         <!-- Right side links -->
         <div class="flex items-center gap-1 sm:gap-6 text-sm text-white/70">
-          <button v-if="isAudioReady" class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0" @click="togglePlay">
-            <AudioBars :is-playing="isPlaying" class="size-5 sm:size-4" />
-            <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-6 text-left">
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 1 : 0, filter: isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
-              <Motion tag="span" class="absolute inset-0" :animate="{ opacity: !isPlaying ? 1 : 0, filter: !isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">off</Motion>
-            </span></span>
-          </button>
+          <AnimatePresence>
+            <Motion
+              v-if="isAudioReady"
+              tag="button"
+              :initial="{ opacity: 0, scale: 0.8 }"
+              :animate="{ opacity: 1, scale: 1 }"
+              :transition="{ type: 'spring', stiffness: 400, damping: 25, duration: 0.4 }"
+              class="flex items-center justify-center gap-1.5 hover:text-white transition-colors cursor-pointer p-2 sm:p-0"
+              @click="togglePlay"
+            >
+              <AudioBars :is-playing="isPlaying" class="size-5 sm:size-4" />
+              <span class="hidden sm:inline-flex whitespace-nowrap gap-1">Audio<span class="relative inline-block w-6 text-left">
+                <Motion tag="span" class="absolute inset-0" :animate="{ opacity: isPlaying ? 1 : 0, filter: isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">on</Motion>
+                <Motion tag="span" class="absolute inset-0" :animate="{ opacity: !isPlaying ? 1 : 0, filter: !isPlaying ? 'blur(0px)' : 'blur(4px)' }" :transition="{ duration: 0.2 }">off</Motion>
+              </span></span>
+            </Motion>
+          </AnimatePresence>
           <button class="hover:text-white transition-colors cursor-pointer text-base sm:text-sm p-2 sm:p-0" @click="showWhatIsThis = true">
             <span class="hidden sm:inline">What is this?</span>
             <span class="sm:hidden">?</span>
