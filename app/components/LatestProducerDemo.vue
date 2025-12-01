@@ -4,12 +4,16 @@ import { AnimatePresence, Motion } from 'motion-v'
 const { sortedBySlots } = useValidators()
 const { latestBlock } = useBlockchain()
 
-const currentValidator = ref<{ name: string, logo: string | undefined } | null>(null)
+const currentValidator = ref<{ name: string | undefined, logo: string | undefined, address: string } | null>(null)
 
 // Get validator info by address
 function getValidatorInfo(address: string) {
   const validator = sortedBySlots.value.find(v => v.address === address)
-  return validator ? { name: validator.name || 'Unknown', logo: validator.logo } : null
+  return validator ? { name: validator.name, logo: validator.logo, address } : null
+}
+
+function truncateAddress(address: string) {
+  return `${address.slice(0, 8)}...${address.slice(-4)}`
 }
 
 // Watch for new blocks
@@ -29,7 +33,7 @@ watch(latestBlock, (block) => {
       <AnimatePresence mode="wait">
         <Motion
           v-if="currentValidator"
-          :key="currentValidator.name"
+          :key="currentValidator.address"
           class="flex items-center gap-2"
           :initial="{ opacity: 0, y: 12, filter: 'blur(2px)' }"
           :animate="{ opacity: 1, y: 0, filter: 'blur(0px)' }"
@@ -37,7 +41,7 @@ watch(latestBlock, (block) => {
           :transition="{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }"
         >
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
-          <span class="text-sm text-white/90 font-medium">{{ currentValidator.name }}</span>
+          <span class="text-sm text-white/90 font-medium">{{ currentValidator.name || truncateAddress(currentValidator.address) }}</span>
         </Motion>
         <Motion
           v-else
