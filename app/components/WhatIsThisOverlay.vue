@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onKeyStroke } from '@vueuse/core'
 import { AnimatePresence, Motion } from 'motion-v'
 
 const show = defineModel<boolean>({ required: true })
@@ -14,8 +13,10 @@ const windowSize = useWindowSize()
 const isShortScreen = computed(() => windowSize.height.value < 700 && windowSize.width.value / windowSize.height.value > 1.5)
 const isStories = computed(() => isStoriesWidth.value || isShortScreen.value)
 
+interface Story { id: string, title: string, lines: [string, string], hasDemo?: string, hasTech?: boolean, hasSocials?: boolean }
+
 // Shared content for both stories and callouts
-const stories = [
+const stories: Story[] = [
   { id: 'music', title: 'The blockchain conducts the music', lines: ['Melodies and rhythms are generated live by block data.', 'When a validator mines a block, their unique signature shapes the sound, creating an endless, evolving soundtrack.'], hasDemo: 'producer' },
   { id: 'player', title: 'The blockchain writes the music', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to set the mood—but the blockchain picks the tune.'] },
   { id: 'propagation', title: 'Lightning-fast consensus', lines: ['See that orange flash? That\'s a new block born.', 'It ripples across the globe instantly, turning the whole network into a synchronized wave of consensus.'], hasDemo: 'propagation' },
@@ -330,13 +331,13 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                {{ stories[0].title }}
+                {{ stories[0]?.title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                {{ stories[0].lines[0] }}
+                {{ stories[0]?.lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                {{ stories[0].lines[1] }}
+                {{ stories[0]?.lines[1] }}
               </p>
               <div class="mt-3 pt-3 border-t border-white/10">
                 <ClientOnly>
@@ -354,13 +355,13 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                {{ stories[2].title }}
+                {{ stories[2]?.title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                {{ stories[2].lines[0] }}
+                {{ stories[2]?.lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                {{ stories[2].lines[1] }}
+                {{ stories[2]?.lines[1] }}
               </p>
               <div class="mt-3 pt-3 border-t border-white/10 h-24">
                 <ClientOnly>
@@ -378,13 +379,13 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                {{ stories[1].title }}
+                {{ stories[1]?.title }}
               </h3>
               <p class="text-sm text-white/80 leading-relaxed">
-                {{ stories[1].lines[0] }}
+                {{ stories[1]?.lines[0] }}
               </p>
               <p class="text-sm text-white/80 leading-relaxed mt-2">
-                {{ stories[1].lines[1] }}
+                {{ stories[1]?.lines[1] }}
               </p>
             </Motion>
 
@@ -397,7 +398,7 @@ onUnmounted(() => stopTimer())
               :transition="{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }"
             >
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
-                {{ stories[3].title }}
+                {{ stories[3]?.title }}
               </h3>
               <div class="text-sm text-white/80 leading-relaxed">
                 <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
@@ -406,10 +407,10 @@ onUnmounted(() => stopTimer())
                   </ClientOnly>
                 </div>
                 <p>
-                  {{ stories[3].lines[0] }}
+                  {{ stories[3]?.lines[0] }}
                 </p>
                 <p class="mt-2">
-                  {{ stories[3].lines[1] }}
+                  {{ stories[3]?.lines[1] }}
                 </p>
               </div>
             </Motion>
