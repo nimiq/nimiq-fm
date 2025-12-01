@@ -17,8 +17,8 @@ const isStories = computed(() => isStoriesWidth.value || isShortScreen.value)
 // Shared content for both stories and callouts
 const stories = [
   { id: 'music', title: 'The blockchain conducts the music', lines: ['Melodies and rhythms are generated live by block data.', 'When a validator mines a block, their unique signature shapes the sound, creating an endless, evolving soundtrack.'], hasDemo: 'producer' },
-  { id: 'player', title: 'You control the stream', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to change the vibe, or sit back and let the blockchain DJ the playlist for you.']},
-  { id: 'propagation', title: 'Lightning-fast consensus', lines: ['See that orange flash? That\'s a new block being born.', 'It ripples across the globe instantly, turning the whole network into a synchronized wave of consensus.'], hasDemo: 'propagation' },
+  { id: 'player', title: 'The blockchain writes the music', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to set the mood—but the blockchain picks the tune.'] },
+  { id: 'propagation', title: 'Lightning-fast consensus', lines: ['See that orange flash? That\'s a new block born.', 'It ripples across the globe instantly, turning the whole network into a synchronized wave of consensus.'], hasDemo: 'propagation' },
   { id: 'orb', title: 'A living map of the network', lines: ['Soft lights represent real people connected to Nimiq. Brighter cores are validators securing the chain.', 'Watch as the mesh rewires itself in real time.'], hasDemo: 'orb' },
   { id: 'tech', title: 'Built with open source magic', lines: ['Powered by Strudel for generative audio and TresJS for 3D visuals.', 'A tribute to the creative coding community and the browser-first spirit.'], hasTech: true },
   { id: 'community', title: 'Crypto that just works', lines: ['Nimiq is the only blockchain that runs entirely in your browser.', 'No downloads, no sync times—just instant, secure, and censorship-resistant money.'], hasSocials: true },
@@ -207,10 +207,10 @@ onUnmounted(() => stopTimer())
 
             <!-- Close button -->
             <button
-              class="absolute top-[max(2rem,calc(env(safe-area-inset-top)+0.5rem))] right-3 z-20 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              class="absolute top-[max(2rem,calc(env(safe-area-inset-top)+0.5rem))] right-3 z-20 size-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
               @click.stop="show = false"
             >
-              <UIcon name="i-heroicons-x-mark" class="size-5 text-white" />
+              <UIcon name="i-heroicons-x-mark" class="size-5 text-white shrink-0" />
             </button>
 
             <!-- Content -->
@@ -232,7 +232,7 @@ onUnmounted(() => stopTimer())
                   </div>
 
                   <!-- Propagation demo on top -->
-                  <div v-if="activeStory.hasDemo === 'propagation'" class="flex justify-center h-40 -my-4">
+                  <div v-if="activeStory.hasDemo === 'propagation'" class="flex justify-center h-40 mb-2">
                     <ClientOnly>
                       <PropagationDemo />
                     </ClientOnly>
@@ -269,7 +269,7 @@ onUnmounted(() => stopTimer())
                         <svg class="size-3.5" viewBox="0 0 512 512"><path class="fill-white/60 group-hover:fill-[#00DC82] transition-colors" d="M281.44 397.667h156.88c5.006 0 9.798-1.759 14.133-4.24 4.336-2.481 8.805-5.596 11.307-9.894 2.502-4.297 4.242-9.173 4.24-14.134s-1.734-9.836-4.24-14.131l-106-182.321c-2.502-4.297-5.559-7.413-9.893-9.894s-10.542-4.24-15.547-4.24-9.799 1.76-14.133 4.24c-4.335 2.481-7.392 5.597-9.894 9.894l-26.853 46.64-53.707-90.457c-2.504-4.296-5.557-8.823-9.893-11.303S208.713 115 203.707 115s-9.798.346-14.134 2.827c-4.335 2.48-8.802 7.007-11.306 11.303L46.827 355.268c-2.506 4.295-2.825 9.169-2.827 14.131s.325 9.836 2.827 14.134c2.502 4.297 6.97 7.413 11.306 9.894s9.127 4.24 14.134 4.24H171.2c39.201 0 67.734-17.585 87.627-50.88L306.88 263.4l25.44-43.813 77.733 132.853H306.88zM169.787 352.44h-69.254l103.174-178.08L256 263.4l-34.639 60.384c-13.21 21.603-28.272 28.656-51.574 28.656" /></svg>
                         <span class="text-white/70 text-sm group-hover:text-white transition-colors">Nuxt</span>
                       </a>
-                      <a href="https://www.youtube.com/@Switch-Angel" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded py-1 px-2 transition-colors group">
+                      <a href="https://www.youtube.com/@SwitchAngel" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded py-1 px-2 transition-colors group">
                         <svg class="size-3.5 fill-white/60 group-hover:fill-[#FF0000] transition-colors" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
                         <span class="text-white/70 text-sm group-hover:text-white transition-colors">Switch Angel</span>
                       </a>
@@ -369,7 +369,7 @@ onUnmounted(() => stopTimer())
               </div>
             </Motion>
 
-            <!-- The Network Breathes - left side -->
+            <!-- The blockchain writes the music - left side -->
             <Motion
               class="callout-orb pointer-events-auto p-4 rounded-lg callout-box"
               :initial="{ opacity: 0, x: -40, scale: 0.9 }"
@@ -380,22 +380,15 @@ onUnmounted(() => stopTimer())
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
                 {{ stories[1].title }}
               </h3>
-              <div class="text-sm text-white/80 leading-relaxed">
-                <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
-                  <ClientOnly>
-                    <MiniOrbDemo class="absolute inset-0" />
-                  </ClientOnly>
-                </div>
-                <p>
-                  {{ stories[1].lines[0] }}
-                </p>
-                <p class="mt-2">
-                  {{ stories[1].lines[1] }}
-                </p>
-              </div>
+              <p class="text-sm text-white/80 leading-relaxed">
+                {{ stories[1].lines[0] }}
+              </p>
+              <p class="text-sm text-white/80 leading-relaxed mt-2">
+                {{ stories[1].lines[1] }}
+              </p>
             </Motion>
 
-            <!-- The Rhythm of Blocks - center bottom -->
+            <!-- A living map of the network - center bottom -->
             <Motion
               class="callout-rhythm pointer-events-auto p-4 rounded-lg callout-box"
               :initial="{ opacity: 0, y: 40, scale: 0.9 }"
@@ -406,12 +399,19 @@ onUnmounted(() => stopTimer())
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
                 {{ stories[3].title }}
               </h3>
-              <p class="text-sm text-white/80 leading-relaxed">
-                {{ stories[3].lines[0] }}
-              </p>
-              <p class="text-sm text-white/80 leading-relaxed mt-2">
-                {{ stories[3].lines[1] }}
-              </p>
+              <div class="text-sm text-white/80 leading-relaxed">
+                <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
+                  <ClientOnly>
+                    <MiniOrbDemo class="absolute inset-0" />
+                  </ClientOnly>
+                </div>
+                <p>
+                  {{ stories[3].lines[0] }}
+                </p>
+                <p class="mt-2">
+                  {{ stories[3].lines[1] }}
+                </p>
+              </div>
             </Motion>
 
             <!-- Credits & Links - bottom right -->
@@ -446,7 +446,7 @@ onUnmounted(() => stopTimer())
                     <svg class="size-3" viewBox="0 0 512 512"><path class="fill-white/60 group-hover:fill-[#00DC82] transition-colors" d="M281.44 397.667h156.88c5.006 0 9.798-1.759 14.133-4.24 4.336-2.481 8.805-5.596 11.307-9.894 2.502-4.297 4.242-9.173 4.24-14.134s-1.734-9.836-4.24-14.131l-106-182.321c-2.502-4.297-5.559-7.413-9.893-9.894s-10.542-4.24-15.547-4.24-9.799 1.76-14.133 4.24c-4.335 2.481-7.392 5.597-9.894 9.894l-26.853 46.64-53.707-90.457c-2.504-4.296-5.557-8.823-9.893-11.303S208.713 115 203.707 115s-9.798.346-14.134 2.827c-4.335 2.48-8.802 7.007-11.306 11.303L46.827 355.268c-2.506 4.295-2.825 9.169-2.827 14.131s.325 9.836 2.827 14.134c2.502 4.297 6.97 7.413 11.306 9.894s9.127 4.24 14.134 4.24H171.2c39.201 0 67.734-17.585 87.627-50.88L306.88 263.4l25.44-43.813 77.733 132.853H306.88zM169.787 352.44h-69.254l103.174-178.08L256 263.4l-34.639 60.384c-13.21 21.603-28.272 28.656-51.574 28.656" /></svg>
                     <span class="text-white/70 text-xs group-hover:text-white transition-colors">Nuxt</span>
                   </a>
-                  <a href="https://www.youtube.com/@Switch-Angel" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded py-1 px-2 transition-colors group">
+                  <a href="https://www.youtube.com/@SwitchAngel" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 rounded py-1 px-2 transition-colors group">
                     <svg class="size-3 fill-white/60 group-hover:fill-[#FF0000] transition-colors" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
                     <span class="text-white/70 text-xs group-hover:text-white transition-colors">Switch Angel</span>
                   </a>
