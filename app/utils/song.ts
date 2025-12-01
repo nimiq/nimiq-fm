@@ -15,10 +15,6 @@ const SONG_LIST: Array<{ name: string, key: SongName, author: string }> = [
   { name: 'Qimin', key: 'qimin', author: 'Albermonte' },
 ]
 
-export function getSongCount() {
-  return SONG_LIST.length
-}
-
 export function getSongNameByIndex(index: number): string {
   const len = SONG_LIST.length
   return SONG_LIST[((index % len) + len) % len]!.name
