@@ -13,8 +13,5 @@ export function useValidators() {
   const hiddenValidators = computed(() => sortedBySlots.value.slice(maxDisplay.value))
   const remainingCount = computed(() => hiddenValidators.value.length)
 
-  // Keep topValidators for backward compatibility with ValidatorsPanel
-  const topValidators = computed(() => sortedBySlots.value.slice(0, isDesktop ? 10 : 8))
-
-  return { validators, sortedBySlots, topValidators, displayValidators, hiddenValidators, remainingCount, status }
+  return { validators, sortedBySlots, displayValidators, hiddenValidators, remainingCount, status }
 }
