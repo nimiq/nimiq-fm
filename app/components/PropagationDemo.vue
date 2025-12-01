@@ -15,7 +15,7 @@ onMounted(() => {
   // Fallback: If no blocks detected for > 2 seconds (e.g. disconnected), auto-pulse slowly
   // or just let the idle animation take over.
   // For now, we'll just rely on the heartbeat of the producer.
-  
+
   onUnmounted(cleanup)
 })
 </script>
@@ -35,13 +35,13 @@ onMounted(() => {
         <path d="M80,50 L110,75" />
         <path d="M80,50 L60,20" />
         <path d="M80,50 L100,20" />
-        
+
         <!-- Secondary Connections -->
         <path d="M40,30 L20,50" />
         <path d="M120,30 L140,50" />
         <path d="M50,80 L30,70" />
         <path d="M110,75 L130,70" />
-        
+
         <!-- Micro Interconnections -->
         <path d="M40,30 L60,20" />
         <path d="M120,30 L100,20" />
@@ -75,7 +75,7 @@ onMounted(() => {
           <circle cx="110" cy="75" r="3" class="peer peer-4" />
           <circle cx="60" cy="20" r="2.5" class="peer peer-5" />
           <circle cx="100" cy="20" r="2.5" class="peer peer-6" />
-          
+
           <!-- Tier 2 (Micro nodes) -->
           <circle cx="20" cy="50" r="2" class="peer peer-7" />
           <circle cx="140" cy="50" r="2" class="peer peer-8" />
@@ -88,21 +88,21 @@ onMounted(() => {
 
       <!-- Static nodes (Base layer to prevent flickering when replacing key) -->
       <g fill="#475569">
-         <circle cx="80" cy="50" r="5" fill="#EA580C" /> <!-- Producer Base -->
-         <!-- Tier 1 -->
-         <circle cx="40" cy="30" r="3" />
-         <circle cx="120" cy="30" r="3" />
-         <circle cx="50" cy="80" r="3" />
-         <circle cx="110" cy="75" r="3" />
-         <circle cx="60" cy="20" r="2.5" />
-         <circle cx="100" cy="20" r="2.5" />
-         <!-- Tier 2 -->
-         <circle cx="20" cy="50" r="2" />
-         <circle cx="140" cy="50" r="2" />
-         <circle cx="30" cy="70" r="2" />
-         <circle cx="130" cy="70" r="2" />
-         <circle cx="60" cy="90" r="1.5" />
-         <circle cx="100" cy="90" r="1.5" />
+        <circle cx="80" cy="50" r="5" fill="#EA580C" /> <!-- Producer Base -->
+        <!-- Tier 1 -->
+        <circle cx="40" cy="30" r="3" />
+        <circle cx="120" cy="30" r="3" />
+        <circle cx="50" cy="80" r="3" />
+        <circle cx="110" cy="75" r="3" />
+        <circle cx="60" cy="20" r="2.5" />
+        <circle cx="100" cy="20" r="2.5" />
+        <!-- Tier 2 -->
+        <circle cx="20" cy="50" r="2" />
+        <circle cx="140" cy="50" r="2" />
+        <circle cx="30" cy="70" r="2" />
+        <circle cx="130" cy="70" r="2" />
+        <circle cx="60" cy="90" r="1.5" />
+        <circle cx="100" cy="90" r="1.5" />
       </g>
     </svg>
   </div>
