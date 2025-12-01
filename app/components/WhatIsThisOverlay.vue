@@ -17,7 +17,7 @@ const isStories = computed(() => isStoriesWidth.value || isShortScreen.value)
 // Shared content for both stories and callouts
 const stories = [
   { id: 'music', title: 'The blockchain conducts the music', lines: ['Melodies and rhythms are generated live by block data.', 'When a validator mines a block, their unique signature shapes the sound, creating an endless, evolving soundtrack.'], hasDemo: 'producer' },
-  { id: 'player', title: 'You control the stream', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to change the vibe, or sit back and let the blockchain DJ the playlist for you.']},
+  { id: 'player', title: 'The blockchain writes the music', lines: ['Blocks arrive in batches to form songs.', 'Switch channels to set the mood—but the blockchain picks the tune.'] },
   { id: 'propagation', title: 'Lightning-fast consensus', lines: ['See that orange flash? That\'s a new block being born.', 'It ripples across the globe instantly, turning the whole network into a synchronized wave of consensus.'], hasDemo: 'propagation' },
   { id: 'orb', title: 'A living map of the network', lines: ['Soft lights represent real people connected to Nimiq. Brighter cores are validators securing the chain.', 'Watch as the mesh rewires itself in real time.'], hasDemo: 'orb' },
   { id: 'tech', title: 'Built with open source magic', lines: ['Powered by Strudel for generative audio and TresJS for 3D visuals.', 'A tribute to the creative coding community and the browser-first spirit.'], hasTech: true },
@@ -207,10 +207,10 @@ onUnmounted(() => stopTimer())
 
             <!-- Close button -->
             <button
-              class="absolute top-[max(2rem,calc(env(safe-area-inset-top)+0.5rem))] right-3 z-20 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              class="absolute top-[max(2rem,calc(env(safe-area-inset-top)+0.5rem))] right-3 z-20 size-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
               @click.stop="show = false"
             >
-              <UIcon name="i-heroicons-x-mark" class="size-5 text-white" />
+              <UIcon name="i-heroicons-x-mark" class="size-5 text-white shrink-0" />
             </button>
 
             <!-- Content -->
@@ -232,7 +232,7 @@ onUnmounted(() => stopTimer())
                   </div>
 
                   <!-- Propagation demo on top -->
-                  <div v-if="activeStory.hasDemo === 'propagation'" class="flex justify-center h-40 -my-4">
+                  <div v-if="activeStory.hasDemo === 'propagation'" class="flex justify-center h-40 mb-2">
                     <ClientOnly>
                       <PropagationDemo />
                     </ClientOnly>
@@ -369,7 +369,7 @@ onUnmounted(() => stopTimer())
               </div>
             </Motion>
 
-            <!-- The Network Breathes - left side -->
+            <!-- The blockchain writes the music - left side -->
             <Motion
               class="callout-orb pointer-events-auto p-4 rounded-lg callout-box"
               :initial="{ opacity: 0, x: -40, scale: 0.9 }"
@@ -380,22 +380,15 @@ onUnmounted(() => stopTimer())
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
                 {{ stories[1].title }}
               </h3>
-              <div class="text-sm text-white/80 leading-relaxed">
-                <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
-                  <ClientOnly>
-                    <MiniOrbDemo class="absolute inset-0" />
-                  </ClientOnly>
-                </div>
-                <p>
-                  {{ stories[1].lines[0] }}
-                </p>
-                <p class="mt-2">
-                  {{ stories[1].lines[1] }}
-                </p>
-              </div>
+              <p class="text-sm text-white/80 leading-relaxed">
+                {{ stories[1].lines[0] }}
+              </p>
+              <p class="text-sm text-white/80 leading-relaxed mt-2">
+                {{ stories[1].lines[1] }}
+              </p>
             </Motion>
 
-            <!-- The Rhythm of Blocks - center bottom -->
+            <!-- A living map of the network - center bottom -->
             <Motion
               class="callout-rhythm pointer-events-auto p-4 rounded-lg callout-box"
               :initial="{ opacity: 0, y: 40, scale: 0.9 }"
@@ -406,12 +399,19 @@ onUnmounted(() => stopTimer())
               <h3 class="font-bold text-sm text-sky-400 mb-2 tracking-wide">
                 {{ stories[3].title }}
               </h3>
-              <p class="text-sm text-white/80 leading-relaxed">
-                {{ stories[3].lines[0] }}
-              </p>
-              <p class="text-sm text-white/80 leading-relaxed mt-2">
-                {{ stories[3].lines[1] }}
-              </p>
+              <div class="text-sm text-white/80 leading-relaxed">
+                <div class="float-right ml-3 mb-2 relative" style="width: 130px; height: 110px; shape-outside: ellipse(70% 55% at 70% 50%);">
+                  <ClientOnly>
+                    <MiniOrbDemo class="absolute inset-0" />
+                  </ClientOnly>
+                </div>
+                <p>
+                  {{ stories[3].lines[0] }}
+                </p>
+                <p class="mt-2">
+                  {{ stories[3].lines[1] }}
+                </p>
+              </div>
             </Motion>
 
             <!-- Credits & Links - bottom right -->
