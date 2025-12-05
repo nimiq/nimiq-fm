@@ -29,19 +29,20 @@ watch(latestBlock, (block) => {
 <template>
   <div class="flex flex-col gap-1">
     <span class="text-xs text-white/50">Latest producer</span>
-    <div class="h-6 overflow-hidden">
+    <div class="h-6 overflow-hidden mt-2">
       <AnimatePresence mode="wait">
         <Motion
           v-if="currentValidator"
           :key="currentValidator.address"
-          class="flex items-center gap-2"
+          class="flex items-center gap-2 text-sm text-white/80 font-medium"
           :initial="{ opacity: 0, y: 12, filter: 'blur(2px)' }"
           :animate="{ opacity: 1, y: 0, filter: 'blur(0px)' }"
           :exit="{ opacity: 0, y: -12, filter: 'blur(2px)' }"
           :transition="{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }"
         >
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
-          <span class="text-sm text-white/90 font-medium">{{ currentValidator.name || truncateAddress(currentValidator.address) }}</span>
+          <span v-if="currentValidator.name">{{ currentValidator.name }}</span>
+          <ShortAddress v-else :address="currentValidator.address" />
         </Motion>
         <Motion
           v-else
