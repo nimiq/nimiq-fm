@@ -5,7 +5,7 @@ const show = defineModel<boolean>({ required: true })
 
 onKeyStroke('Escape', () => show.value = false)
 
-const breakpoints = useBreakpoints({ stories: 1000 })
+const breakpoints = useBreakpoints({ stories: 1024 })
 const isStoriesWidth = breakpoints.smaller('stories')
 
 // Also use stories mode for wide but short screens (like Nest Hub 1024x600)
@@ -182,7 +182,7 @@ onUnmounted(() => stopTimer())
         :exit="{ opacity: 0 }"
         :transition="{ duration: 0.3 }"
       >
-        <!-- STORIES MODE (< 1000px) - Fullscreen -->
+        <!-- STORIES MODE (< 1024px) - Fullscreen -->
         <template v-if="isStories">
           <div
             class="absolute inset-0 story-glass"
@@ -304,7 +304,7 @@ onUnmounted(() => stopTimer())
           </div>
         </template>
 
-        <!-- DESKTOP: Grid-based callouts (>= 1000px) -->
+        <!-- DESKTOP: Grid-based callouts (>= 1024px) -->
         <template v-else>
           <!-- Backdrop -->
           <div class="absolute inset-0" @click="show = false" />
@@ -482,6 +482,10 @@ onUnmounted(() => stopTimer())
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.callout-box:hover {
+  z-index: 999;
 }
 
 .story-glass {
