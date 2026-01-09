@@ -15,7 +15,6 @@ async function initializeClient(): Promise<Client | null> {
     await init()
 
     const client = await Client.create({
-      networkId: 'mainnet',
       logLevel: 'info',
     })
 
