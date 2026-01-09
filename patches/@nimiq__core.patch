@@ -1,0 +1,80 @@
+diff --git a/vite.js b/vite.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e43a4e7ff157a2c992b1db6c013c8b9f2fa1de4d
+--- /dev/null
++++ b/vite.js
+@@ -0,0 +1,74 @@
++import wasm from 'vite-plugin-wasm'
++import { copyFileSync, mkdirSync } from 'fs'
++import { join, dirname } from 'path'
++import { fileURLToPath } from 'url'
++
++/**
++ * Vite plugin for Nimiq blockchain integration
++ * Configures WebAssembly support and optimizations required for @nimiq/core
++ *
++ * Note: This plugin does not include top-level await support. Modern browsers
++ * support top-level await natively. If you need support for older browsers,
++ * you can add vite-plugin-top-level-await to your plugins array manually.
++ *
++ * @param {object} [options] - Plugin options
++ * @param {boolean} [options.worker=true] - Configure worker support for WASM
++ * @returns {import('vite').Plugin[]} Array of Vite plugins
++ */
++export default function nimiq({ worker = true } = {}) {
++  return [
++    wasm(),
++    {
++      name: 'vite-plugin-nimiq',
++      config() {
++        return {
++          optimizeDeps: {
++            exclude: ['@nimiq/core'],
++          },
++          build: {
++            target: 'esnext',
++            rollupOptions: {
++              output: {
++                format: 'es',
++              },
++            },
++          },
++          ...(worker && {
++            worker: {
++              format: 'es',
++              plugins: () => [wasm()],
++            },
++          }),
++        }
++      },
++      async writeBundle(options, bundle) {
++        if (!worker) return
++
++        try {
++          const outDir = options.dir || 'dist'
++          const __dirname = dirname(fileURLToPath(import.meta.url))
++          const nimiqWebDir = join(__dirname, 'web')
++
++          // Copy comlink.min.js
++          const comlinkSrc = join(nimiqWebDir, 'comlink.min.js')
++          const comlinkDest = join(outDir, '_nuxt', 'comlink.min.js')
++          mkdirSync(dirname(comlinkDest), { recursive: true })
++          copyFileSync(comlinkSrc, comlinkDest)
++
++          // Copy worker-wasm directory
++          const workerWasmSrc = join(nimiqWebDir, 'worker-wasm')
++          const workerWasmDest = join(outDir, '_nuxt', 'worker-wasm')
++          mkdirSync(workerWasmDest, { recursive: true })
++
++          // Copy index.js and index_bg.wasm
++          copyFileSync(join(workerWasmSrc, 'index.js'), join(workerWasmDest, 'index.js'))
++          copyFileSync(join(workerWasmSrc, 'index_bg.wasm'), join(workerWasmDest, 'index_bg.wasm'))
++        } catch (error) {
++          console.error('[vite-plugin-nimiq] Failed to copy worker files:', error)
++        }
++      },
++    },
++  ]
++}
++
++export { nimiq }
