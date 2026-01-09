@@ -1,5 +1,4 @@
-import type { PlainBlock } from '@nimiq/core/web'
-import { electionBlockOf, epochAt } from '@nimiq/utils/albatross-policy'
+import type { PlainStakingContract } from '@nimiq/core/web'
 import consola from 'consola'
 
 export interface BlockEvent {
@@ -25,6 +24,7 @@ export type ConnectionState = 'loading-wasm' | 'wasm-failed' | 'connecting' | 's
 
 const NETWORK_STALLED_BLOCK_GAP = 60e3 // 60 seconds
 const VALIDATORS_CACHE_TTL = 60e3 // 60 seconds
+const STAKING_CONTRACT_ADDRESS = 'NQ77 0000 0000 0000 0000 0000 0000 0000 0001'
 
 interface ValidatorsCache {
   data: { count: number, validators: any[] } | null
@@ -166,21 +166,25 @@ function _useBlockchain() {
       // Wait for consensus before fetching validators
       await $nimiqClient.waitForConsensusEstablished()
 
-      const headHeight = await retry(() => $nimiqClient.getHeadHeight(), { maxRetries: 3 })
-      const currentEpoch = epochAt(headHeight)
-      // Get previous epoch's election block (current epoch validators are active)
-      const electionBlockNumber = electionBlockOf(currentEpoch - 1)!
-      // PlainMacroBlock types don't include slots field yet - keep workaround until upstream adds it
-      const electionBlock = await retry(
-        () => $nimiqClient.getBlockAt(electionBlockNumber),
+      // Get staking contract to fetch active validators
+      const contract = await retry(
+        () => $nimiqClient.getAccount(STAKING_CONTRACT_ADDRESS) as Promise<PlainStakingContract>,
         { maxRetries: 3 },
-      ) as PlainBlock & { slots?: Array<{ validator: string, numSlots: number }> }
+      )
 
-      // Runtime validation for type safety
-      if (!electionBlock.slots) {
-        throw new Error('Election block missing slots field')
+      if (!contract?.activeValidators) {
+        throw new Error('Staking contract missing activeValidators')
       }
 
+      // activeValidators is an array of [address, balance] tuples
+      const activeValidators = contract.activeValidators.map(([address, balance]) => ({
+        address,
+        balance,
+      }))
+
+      const activeStake = activeValidators.reduce((sum, validator) => sum + validator.balance, 0)
+
+      // Fetch validator metadata from API
       const validatorsFromApi = await $fetch<ValidatorFromApi[]>(
         'https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false',
       ).catch((error) => {
@@ -190,14 +194,14 @@ function _useBlockchain() {
 
       const apiValidatorsMap = new Map(validatorsFromApi.map(v => [v.address, v]))
 
-      const slots = electionBlock.slots || []
-      const validators = slots.map((slot) => {
-        const apiValidator = apiValidatorsMap.get(slot.validator)
+      const validators = activeValidators.map(({ address, balance }) => {
+        const apiValidator = apiValidatorsMap.get(address)
         return {
-          address: slot.validator,
-          numSlots: slot.numSlots,
+          address,
+          numSlots: balance, // Balance represents validator's stake/slots
           name: apiValidator?.name !== 'Unknown validator' ? apiValidator?.name : undefined,
           logo: apiValidator?.logo,
+          dominance: balance / activeStake,
         }
       })
 
