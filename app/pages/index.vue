@@ -155,6 +155,20 @@ watch(hasBlockchainData, (ready) => {
       </div>
     </Motion>
 
+    <!-- Connection dot - rendered above background, below text -->
+    <AnimatePresence>
+      <Motion
+        v-if="!hasBlockchainData || animationStage < 1"
+        key="connection-dot"
+        class="fixed inset-0 flex items-center justify-center z-10 pointer-events-none"
+        :initial="{ opacity: 1, scale: 1 }"
+        :exit="{ opacity: 0, scale: 8, y: -40, filter: 'blur(30px)' }"
+        :transition="{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }"
+      >
+        <div class="connection-dot" />
+      </Motion>
+    </AnimatePresence>
+
     <!-- Welcome Screen -->
     <AnimatePresence>
       <Motion
@@ -175,9 +189,8 @@ watch(hasBlockchainData, (ready) => {
             <AnimatePresence mode="wait">
               <Motion :key="connectionState" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.3 }">
                 <span class="text-xs text-white/40">
-                  <template v-if="connectionState === 'loading-wasm'">Loading WASM...</template>
-                  <template v-else-if="connectionState === 'wasm-failed'">Failed to initialize</template>
-                  <template v-else-if="connectionState === 'connecting'">Connecting to network...</template>
+                  <template v-if="connectionState === 'loading-wasm' || connectionState === 'connecting'">Connecting directly to the blockchain...</template>
+                  <template v-else-if="connectionState === 'wasm-failed'">Connection failed</template>
                   <template v-else-if="connectionState === 'syncing'">Syncing blocks...</template>
                   <template v-else-if="connectionState === 'disconnected'">Disconnected</template>
                   <template v-else>Tuning in...</template>
@@ -186,28 +199,6 @@ watch(hasBlockchainData, (ready) => {
             </AnimatePresence>
           </div>
         </div>
-      </Motion>
-    </AnimatePresence>
-
-    <!-- Connection dot - stays visible during transition and merges with orb -->
-    <AnimatePresence>
-      <Motion
-        v-if="!hasBlockchainData || animationStage < 1"
-        key="connection-dot"
-        class="fixed inset-0 flex items-center justify-center z-15 pointer-events-none"
-        :initial="{ opacity: 1, scale: 1 }"
-        :exit="{ opacity: 0, scale: 3, filter: 'blur(20px)' }"
-        :transition="{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }"
-      >
-        <div
-          class="connection-dot"
-          :class="{
-            connecting: connectionState === 'connecting' || connectionState === 'loading-wasm',
-            syncing: connectionState === 'syncing',
-            established: connectionState === 'established',
-            error: connectionState === 'wasm-failed' || connectionState === 'disconnected',
-          }"
-        />
       </Motion>
     </AnimatePresence>
 
@@ -330,51 +321,27 @@ watch(hasBlockchainData, (ready) => {
   );
 }
 
-/* Connection dot animations */
+/* Connection dot - pink/visible, pulsing */
 .connection-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle, #00E5FF 0%, #0288D1 100%);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+  background: radial-gradient(circle, #EC4899 0%, #DB2777 100%);
+  box-shadow: 0 0 30px rgba(236, 72, 153, 0.8), 0 0 60px rgba(236, 72, 153, 0.4);
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-.connection-dot.connecting {
-  animation: pulse-connecting 2s ease-in-out infinite;
-}
-
-.connection-dot.syncing {
-  animation: pulse-syncing 1s ease-in-out infinite;
-}
-
-.connection-dot.established {
-  animation: pulse-established 2s ease-in-out infinite;
-}
-
-.connection-dot.error {
-  background: radial-gradient(circle, #FF5252 0%, #D32F2F 100%);
-  box-shadow: 0 0 20px rgba(255, 82, 82, 0.6);
-  animation: pulse-error 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-connecting {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.4); }
-}
-
-@keyframes pulse-syncing {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.3); }
-}
-
-@keyframes pulse-established {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-@keyframes pulse-error {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.2); }
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.8), 0 0 60px rgba(236, 72, 153, 0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+    box-shadow: 0 0 40px rgba(236, 72, 153, 1), 0 0 80px rgba(236, 72, 153, 0.6);
+  }
 }
 </style>
 
