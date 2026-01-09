@@ -1,6 +1,8 @@
 import type { Client } from '@nimiq/core/web'
 import consola from 'consola'
 
+const logger = consola.withTag('nimiq')
+
 declare module '#app' {
   interface NuxtApp {
     $nimiqClient: Client | null
@@ -42,7 +44,7 @@ async function initializeClient(): Promise<Client | null> {
     return client
   }
   catch (error) {
-    consola.error('[Nimiq WASM] Failed to initialize:', error)
+    logger.error('Failed to initialize:', error)
     return null
   }
 }
@@ -52,7 +54,7 @@ export default defineNuxtPlugin({
   async setup() {
     // Provide retry function for recovery
     const retryInit = async () => {
-      consola.info('[Nimiq WASM] Retrying initialization...')
+      logger.info('Retrying initialization...')
       const newClient = await initializeClient()
       if (newClient) {
         // Trigger page reload to reinitialize everything

@@ -1,6 +1,8 @@
 import type { PlainStakingContract } from '@nimiq/core/web'
 import consola from 'consola'
 
+const logger = consola.withTag('nimiq')
+
 export interface BlockEvent {
   blockNumber: number
   epoch: number
@@ -57,7 +59,7 @@ function _useBlockchain() {
   // Update connection state based on stalled detection
   watch(isStalled, (stalled) => {
     if (stalled && connectionState.value === 'established') {
-      consola.warn('[Nimiq] Network stalled - no blocks for 60s')
+      logger.warn('Network stalled - no blocks for 60s')
       connectionState.value = 'disconnected'
     }
   })
@@ -68,7 +70,7 @@ function _useBlockchain() {
 
     // Check if WASM failed to init
     if (connectionState.value === 'wasm-failed') {
-      consola.error('[Nimiq] Cannot start listening - WASM initialization failed')
+      logger.error('Cannot start listening - WASM initialization failed')
       return
     }
 
@@ -92,10 +94,10 @@ function _useBlockchain() {
         }
         lastBlockTimestamp.value = Date.now()
         connectionState.value = 'syncing'
-        consola.info('[Nimiq] Initial head fetched:', block.height)
+        logger.info('Initial head fetched:', block.height)
       }
       catch (error) {
-        consola.warn('[Nimiq] Could not fetch initial head, waiting for listener:', error)
+        logger.warn('Could not fetch initial head, waiting for listener:', error)
       }
 
       listenerHandle = await retry(
@@ -131,7 +133,7 @@ function _useBlockchain() {
             listeners.forEach(listener => listener(blockEvent))
           }
           catch (error) {
-            consola.error('[Nimiq] Failed to process block:', error)
+            logger.error('Failed to process block:', error)
           }
         }),
         { baseDelay: 500, maxRetries: 5 },
@@ -140,7 +142,7 @@ function _useBlockchain() {
       connectionState.value = 'syncing'
     }
     catch (error) {
-      consola.error('[Nimiq] Failed to register block listener:', error)
+      logger.error('Failed to register block listener:', error)
       isListening = false
       connectionState.value = 'disconnected'
     }
@@ -153,7 +155,7 @@ function _useBlockchain() {
         await $nimiqClient.removeListener(listenerHandle)
       }
       catch (error) {
-        consola.error('[Nimiq] Failed to remove listener:', error)
+        logger.error('Failed to remove listener:', error)
       }
       listenerHandle = null
       isListening = false
@@ -209,7 +211,7 @@ function _useBlockchain() {
       const validatorsFromApi = await $fetch<ValidatorFromApi[]>(
         'https://validators-api-mainnet.pages.dev/api/v1/validators?only-known=false',
       ).catch((error) => {
-        consola.error('Failed to fetch validator metadata:', error)
+        logger.error('Failed to fetch validator metadata:', error)
         return []
       })
 
@@ -232,7 +234,7 @@ function _useBlockchain() {
       return result
     }
     catch (error) {
-      consola.error('[Nimiq] Failed to fetch validators:', error)
+      logger.error('Failed to fetch validators:', error)
       return { count: 0, validators: [], error: true }
     }
   }
@@ -240,13 +242,13 @@ function _useBlockchain() {
   // Browser online/offline detection
   watch(isOnline, async (online) => {
     if (!online) {
-      consola.warn('[Nimiq] Browser is OFFLINE')
+      logger.warn('Browser is OFFLINE')
       stopReconnectTimeout()
       connectionState.value = 'disconnected'
       await stopListening()
     }
     else {
-      consola.info('[Nimiq] Browser is ONLINE')
+      logger.info('Browser is ONLINE')
       startReconnectTimeout() // 1 second delay before reconnecting
     }
   })
@@ -254,7 +256,7 @@ function _useBlockchain() {
   // Reconnect when returning to visible tab
   watch(visibility, (visible) => {
     if (visible === 'visible' && connectionState.value === 'disconnected' && isOnline.value) {
-      consola.info('[Nimiq] Tab visible - attempting reconnect')
+      logger.info('Tab visible - attempting reconnect')
       stopListening().then(startListening)
     }
   })
