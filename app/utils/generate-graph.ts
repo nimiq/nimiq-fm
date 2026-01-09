@@ -63,23 +63,31 @@ export function generateGraph() {
     })
   }
 
-  // --- 2. Generate Self Node (center) ---
+  // --- 2. Generate Self Node (on surface, front-facing) ---
   const selfNodeId = validatorCount
-  const selfColor = new THREE.Color('#00E5FF') // Bright cyan for self node
+  const selfColor = new THREE.Color('#EC4899') // Pink to match loading dot
+  // Position on front of sphere (visible to user)
+  const selfPhi = Math.PI / 2.2 // Slightly above equator
+  const selfTheta = 0 // Front-facing
+  const selfX = orbRadius * Math.sin(selfPhi) * Math.cos(selfTheta)
+  const selfY = orbRadius * Math.sin(selfPhi) * Math.sin(selfTheta)
+  const selfZ = orbRadius * Math.cos(selfPhi)
+  const selfPos = new THREE.Vector3(selfX, selfY, selfZ)
+
   nodes.push({
     id: selfNodeId,
-    targetPosition: new THREE.Vector3(0, 0, 0), // Center
-    startPosition: new THREE.Vector3(0, 0, 0),
-    currentPosition: new THREE.Vector3(0, 0, 0),
+    targetPosition: selfPos.clone(),
+    startPosition: selfPos.clone(),
+    currentPosition: selfPos.clone(),
     type: NodeType.SELF,
     connections: [],
     stake: 0,
     state: 'ACTIVE',
     timer: 0,
     opacity: 1,
-    phi: 0,
-    theta: 0,
-    radius: 0, // Center position
+    phi: selfPhi,
+    theta: selfTheta,
+    radius: orbRadius,
     lastBlockTime: 0,
     baseColor: selfColor,
     validatorAddress: undefined,

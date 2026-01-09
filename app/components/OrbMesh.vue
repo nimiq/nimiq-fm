@@ -235,10 +235,15 @@ onBeforeRender(({ delta, camera }) => {
       n.opacity = 1
     }
     else if (n.type === NodeType.SELF) {
-      // Self node stays at center, always visible
-      n.currentPosition.set(0, 0, 0)
+      // Self node on surface (front-center, visible to user)
+      // Position slightly above center on the front face of the sphere
+      const selfRadius = config.value.orbRadius
+      n.theta += config.value.validatorRotationSpeed * delta * 0.3 // Slower rotation
+      const x = selfRadius * Math.sin(n.phi) * Math.cos(n.theta)
+      const y = selfRadius * Math.sin(n.phi) * Math.sin(n.theta)
+      const z = selfRadius * Math.cos(n.phi)
+      n.currentPosition.set(x + noiseX, y + noiseY, z + noiseZ)
       n.opacity = 1
-      // No lifecycle changes for self node
     }
     else {
       n.timer -= dt
@@ -418,8 +423,9 @@ onBeforeRender(({ delta, camera }) => {
         tempColor.multiplyScalar(3.5)
       }
       else if (n.type === NodeType.SELF) {
-        // Self node: bright cyan glow (user representation)
-        tempColor.multiplyScalar(4.0)
+        // Self node: bright pink glow (user representation - matches loading dot)
+        tempColor.set(0xEC4899) // Pink color
+        tempColor.multiplyScalar(5.0) // Extra bright to stand out
       }
       else {
         // Peers: gray/white, subtle glow

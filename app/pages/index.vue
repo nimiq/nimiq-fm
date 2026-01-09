@@ -155,19 +155,21 @@ watch(hasBlockchainData, (ready) => {
       </div>
     </Motion>
 
-    <!-- Connection dot - rendered above background, below text -->
-    <AnimatePresence>
-      <Motion
-        v-if="!hasBlockchainData || animationStage < 1"
-        key="connection-dot"
-        class="fixed inset-0 flex items-center justify-center z-10 pointer-events-none"
-        :initial="{ opacity: 1, scale: 1 }"
-        :exit="{ opacity: 0, scale: 8, y: -40, filter: 'blur(30px)' }"
-        :transition="{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }"
-      >
-        <div class="connection-dot" />
-      </Motion>
-    </AnimatePresence>
+    <!-- Connection dot - rendered above background (z-10), below text (z-20) -->
+    <div class="fixed inset-0 z-10 pointer-events-none">
+      <AnimatePresence>
+        <Motion
+          v-if="!hasBlockchainData || animationStage < 1"
+          key="connection-dot"
+          class="absolute inset-0 flex items-center justify-center"
+          :initial="{ opacity: 1, scale: 1, y: 0 }"
+          :exit="{ opacity: 0, scale: 8, y: -60, filter: 'blur(30px)' }"
+          :transition="{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }"
+        >
+          <div class="connection-dot" />
+        </Motion>
+      </AnimatePresence>
+    </div>
 
     <!-- Welcome Screen -->
     <AnimatePresence>
