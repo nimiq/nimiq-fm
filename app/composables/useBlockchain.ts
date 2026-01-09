@@ -35,7 +35,7 @@ function _useBlockchain() {
   const { $nimiqClient } = useNuxtApp()
   const latestBlock = shallowRef<BlockEvent | null>(null)
   const listeners = new Set<(event: BlockEvent) => void>()
-  const connectionState = ref<ConnectionState>('loading-wasm')
+  const connectionState = ref<ConnectionState>($nimiqClient ? 'loading-wasm' : 'wasm-failed')
   const peerCount = ref<number>(0)
   const lastBlockTimestamp = ref<number>(0)
 
@@ -77,6 +77,27 @@ function _useBlockchain() {
     connectionState.value = isOnline.value ? 'connecting' : 'disconnected'
 
     try {
+      // Immediately fetch current head to populate latestBlock and trigger UI transition
+      try {
+        const headHash = await $nimiqClient.getHeadHash()
+        const block = await $nimiqClient.getBlock(headHash)
+        latestBlock.value = {
+          blockNumber: block.height,
+          epoch: block.epoch,
+          batch: block.batch,
+          timestamp: block.timestamp,
+          validatorAddress: block.type === 'micro' ? block.producer.validator : undefined,
+          type: block.type,
+          hash: block.hash,
+        }
+        lastBlockTimestamp.value = Date.now()
+        connectionState.value = 'syncing'
+        consola.info('[Nimiq] Initial head fetched:', block.height)
+      }
+      catch (error) {
+        consola.warn('[Nimiq] Could not fetch initial head, waiting for listener:', error)
+      }
+
       listenerHandle = await retry(
         () => $nimiqClient.addHeadChangedListener(async (hash: string) => {
           if (isStopping)
