@@ -163,6 +163,9 @@ function _useBlockchain() {
     }
 
     try {
+      // Wait for consensus before fetching validators
+      await $nimiqClient.waitForConsensusEstablished()
+
       const headHeight = await retry(() => $nimiqClient.getHeadHeight(), { maxRetries: 3 })
       const currentEpoch = epochAt(headHeight)
       // Get previous epoch's election block (current epoch validators are active)
