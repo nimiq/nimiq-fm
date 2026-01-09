@@ -1,8 +1,8 @@
-interface Validator { address: string, numSlots: number, name?: string, logo?: string }
-
 export function useValidators() {
   const { isDesktop } = useDevice()
-  const { data, status } = useFetch<{ count: number, validators: Validator[] }>('/api/validators')
+  const blockchain = useBlockchain()
+
+  const { data, status } = useAsyncData('validators', () => blockchain.getValidators(), { server: false })
 
   const validators = computed(() => data.value?.validators || [])
   const sortedBySlots = computed(() => [...validators.value].sort((a, b) => b.numSlots - a.numSlots))

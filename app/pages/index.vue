@@ -6,13 +6,12 @@ import { setValidatorAddresses } from '~/utils/orb-constants'
 const isPlaying = ref(false)
 const showWhatIsThis = ref(false)
 
-// Initialize composables only on client-side (shallowRef for reactivity)
 const strudel = shallowRef<ReturnType<typeof useStrudel> | null>(null)
-let blockchain: ReturnType<typeof useBlockchain> | null = null
 let _cleanupBlockListener: (() => void) | null = null
 
-// Use the shared blockchain state
-const { latestBlock } = useBlockchain()
+const blockchain = useBlockchain()
+const { latestBlock, connectionState } = blockchain
+const { validators } = useValidators()
 const isValidatorsPanelExpanded = ref(false)
 
 async function togglePlay() {
@@ -30,23 +29,17 @@ async function togglePlay() {
 }
 
 onMounted(async () => {
-  // Initialize composables (client-side only)
   strudel.value = useStrudel()
-  blockchain = useBlockchain()
 
-  // Initialize Strudel with error handling
   try {
     await strudel.value.init()
   }
   catch (error) {
     console.error('Failed to initialize audio system:', error)
-    // User can still see visuals, audio just won't work
   }
 
-  // Start listening to blockchain events
   blockchain.startListening()
 
-  // Store cleanup function for event listener
   _cleanupBlockListener = blockchain.onBlockEvent((blockEvent: BlockEvent) => {
     if (!isPlaying.value || !strudel.value)
       return
@@ -54,23 +47,18 @@ onMounted(async () => {
     strudel.value.playBlockSound({ validatorAddress: blockEvent.validatorAddress, epoch: blockEvent.epoch, batch: blockEvent.batch, blockNumber: blockEvent.blockNumber })
   })
 
-  // Load validators with error handling
-  try {
-    const { addresses } = await blockchain.getValidators()
+  watch(validators, (newValidators) => {
+    const addresses = newValidators.map(v => v.address)
     setValidatorAddresses(addresses)
-  }
-  catch (error) {
-    console.error('Failed to load validators:', error)
-    // Application still works, just won't have validator visuals on the orbs
-  }
+  }, { immediate: true })
 })
 
 onUnmounted(() => {
-  // Clean up the block event listener
   if (_cleanupBlockListener) {
     _cleanupBlockListener()
     _cleanupBlockListener = null
   }
+  blockchain.stopListening()
 })
 
 const nowPlayingTitle = computed(() => strudel.value?.nowPlaying.value || '')
@@ -177,7 +165,34 @@ watch(hasBlockchainData, (ready) => {
         <div class="absolute inset-0 backdrop-blur-md bg-slate-900/30" />
         <div class="relative flex flex-col items-center gap-3">
           <img src="/logo-dark.svg" alt="Nimiq FM" class="h-6 sm:h-8">
-          <span class="text-sm sm:text-base text-white/60">The Soundtrack of the Nimiq Blockchain</span>
+          <div class="flex flex-col items-center gap-2">
+            <span class="text-sm sm:text-base text-white/60">The Soundtrack of the Nimiq Blockchain</span>
+
+            <!-- Connection status text -->
+            <AnimatePresence mode="wait">
+              <Motion :key="connectionState" :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -4 }" :transition="{ duration: 0.3 }">
+                <span class="text-xs text-white/40">
+                  <template v-if="connectionState === 'loading-wasm'">Loading WASM...</template>
+                  <template v-else-if="connectionState === 'wasm-failed'">Failed to initialize</template>
+                  <template v-else-if="connectionState === 'connecting'">Connecting to network...</template>
+                  <template v-else-if="connectionState === 'syncing'">Syncing blocks...</template>
+                  <template v-else-if="connectionState === 'disconnected'">Disconnected</template>
+                  <template v-else>Tuning in...</template>
+                </span>
+              </Motion>
+            </AnimatePresence>
+
+            <!-- Pulsing connection dot -->
+            <div
+              class="connection-dot"
+              :class="{
+                connecting: connectionState === 'connecting' || connectionState === 'loading-wasm',
+                syncing: connectionState === 'syncing',
+                established: connectionState === 'established',
+                error: connectionState === 'wasm-failed' || connectionState === 'disconnected',
+              }"
+            />
+          </div>
         </div>
       </Motion>
     </AnimatePresence>
@@ -299,6 +314,53 @@ watch(hasBlockchainData, (ready) => {
     rgba(2, 6, 23, 0.95) 80%,
     #020617 100%
   );
+}
+
+/* Connection dot animations */
+.connection-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00E5FF 0%, #0288D1 100%);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+}
+
+.connection-dot.connecting {
+  animation: pulse-connecting 2s ease-in-out infinite;
+}
+
+.connection-dot.syncing {
+  animation: pulse-syncing 1s ease-in-out infinite;
+}
+
+.connection-dot.established {
+  animation: pulse-established 2s ease-in-out infinite;
+}
+
+.connection-dot.error {
+  background: radial-gradient(circle, #FF5252 0%, #D32F2F 100%);
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.6);
+  animation: pulse-error 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-connecting {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+
+@keyframes pulse-syncing {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes pulse-established {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes pulse-error {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.2); }
 }
 </style>
 
