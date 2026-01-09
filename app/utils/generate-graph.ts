@@ -63,8 +63,30 @@ export function generateGraph() {
     })
   }
 
-  // --- 2. Generate Peers ---
-  for (let i = validatorCount; i < nodeCount; i++) {
+  // --- 2. Generate Self Node (center) ---
+  const selfNodeId = validatorCount
+  const selfColor = new THREE.Color('#00E5FF') // Bright cyan for self node
+  nodes.push({
+    id: selfNodeId,
+    targetPosition: new THREE.Vector3(0, 0, 0), // Center
+    startPosition: new THREE.Vector3(0, 0, 0),
+    currentPosition: new THREE.Vector3(0, 0, 0),
+    type: NodeType.SELF,
+    connections: [],
+    stake: 0,
+    state: 'ACTIVE',
+    timer: 0,
+    opacity: 1,
+    phi: 0,
+    theta: 0,
+    radius: 0, // Center position
+    lastBlockTime: 0,
+    baseColor: selfColor,
+    validatorAddress: undefined,
+  })
+
+  // --- 3. Generate Peers ---
+  for (let i = validatorCount + 1; i < nodeCount + 1; i++) {
     const u = Math.random()
     const v = Math.random()
     const theta = 2 * Math.PI * u
@@ -112,7 +134,7 @@ export function generateGraph() {
     })
   }
 
-  // --- 3. Generate Links ---
+  // --- 4. Generate Links ---
   // Validators Mesh - Full mesh: connect all validators to all other validators
   for (let i = 0; i < validatorCount; i++) {
     for (let j = i + 1; j < validatorCount; j++) {
@@ -130,8 +152,11 @@ export function generateGraph() {
     }
   }
 
+  // Self node doesn't connect to others (user just observes)
+  // Skip selfNodeId (validatorCount) in link generation
+
   // Peers
-  for (let i = validatorCount; i < nodeCount; i++) {
+  for (let i = validatorCount + 1; i < nodeCount + 1; i++) {
     // Connect to nearby validators
     const valCandidates = []
     for (let vIdx = 0; vIdx < validatorCount; vIdx++) {
@@ -166,8 +191,8 @@ export function generateGraph() {
     // Connect to nearby peers
     const peerDistances = []
     const scanRange = 60
-    const startScan = Math.max(validatorCount, i - scanRange)
-    const endScan = Math.min(nodeCount, i + scanRange)
+    const startScan = Math.max(validatorCount + 1, i - scanRange)
+    const endScan = Math.min(nodeCount + 1, i + scanRange)
 
     for (let j = startScan; j < endScan; j++) {
       if (i === j)

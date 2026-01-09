@@ -3,6 +3,7 @@ import type * as THREE from 'three'
 export enum NodeType {
   PEER,
   VALIDATOR,
+  SELF,
 }
 
 export type LifeCycleState = 'HIDDEN' | 'SPAWNING' | 'ACTIVE' | 'DYING'

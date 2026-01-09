@@ -204,9 +204,11 @@ onBeforeRender(({ delta, camera }) => {
   if (Math.random() > 0.85) { // Reduced from 0.2 to 0.85 (only 15% of frames)
     const linkIdx = Math.floor(Math.random() * links.length)
     const link = links[linkIdx]
+    const selfNodeId = getValidatorCount() // Self node is right after validators
     if (link && !link.isValidatorLink && nodes[link.sourceIndex]!.state === 'ACTIVE' && link.connectionState === 'CONNECTED') {
-      const candidateId = getValidatorCount() + Math.floor(Math.random() * (config.value.nodeCount - getValidatorCount()))
-      if (candidateId !== link.sourceIndex && candidateId !== link.targetIndex) {
+      const candidateId = getValidatorCount() + 1 + Math.floor(Math.random() * (config.value.nodeCount - getValidatorCount()))
+      // Skip self node in rewiring
+      if (candidateId !== link.sourceIndex && candidateId !== link.targetIndex && candidateId !== selfNodeId) {
         const dist = nodes[link.sourceIndex]!.currentPosition.distanceTo(nodes[candidateId]!.currentPosition)
         if (dist < config.value.linkRewireDistance)
           link.targetIndex = candidateId
@@ -231,6 +233,12 @@ onBeforeRender(({ delta, camera }) => {
       const z = n.radius * Math.cos(n.phi)
       n.currentPosition.set(x + noiseX, y + noiseY, z + noiseZ)
       n.opacity = 1
+    }
+    else if (n.type === NodeType.SELF) {
+      // Self node stays at center, always visible
+      n.currentPosition.set(0, 0, 0)
+      n.opacity = 1
+      // No lifecycle changes for self node
     }
     else {
       n.timer -= dt
@@ -322,8 +330,15 @@ onBeforeRender(({ delta, camera }) => {
 
     // --- Matrix & Scale ---
     let scale = config.value.peerNodeScale
-    if (n.type === NodeType.VALIDATOR)
+    if (n.type === NodeType.VALIDATOR) {
       scale = config.value.validatorNodeScale
+    }
+    else if (n.type === NodeType.SELF) {
+      // Self node: slightly larger than peers, with gentle pulse
+      const pulseSpeed = 0.5 // 2 seconds per cycle
+      const pulseAmount = 0.1 // 10% size variation
+      scale = config.value.peerNodeScale * 1.2 * (1 + Math.sin(time * pulseSpeed * Math.PI * 2) * pulseAmount)
+    }
 
     // Scale modification for beam hit
     if (beamIntensity > 0)
@@ -395,12 +410,16 @@ onBeforeRender(({ delta, camera }) => {
       tempColor.multiplyScalar(intensity)
     }
     else {
-      // Standard State - Different for validators vs peers
+      // Standard State - Different for validators vs peers vs self
       if (n.baseColor)
         tempColor.copy(n.baseColor)
       if (n.type === NodeType.VALIDATOR) {
         // Validators: bright purple glow
         tempColor.multiplyScalar(3.5)
+      }
+      else if (n.type === NodeType.SELF) {
+        // Self node: bright cyan glow (user representation)
+        tempColor.multiplyScalar(4.0)
       }
       else {
         // Peers: gray/white, subtle glow

@@ -15,6 +15,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@nimiq/core": "https://pkg.pr.new/nimiq/core-rs-albatross/@nimiq/core@3497#582e601",
     "@nimiq/utils": "^0.12.4",
     "@nuxt/eslint": "1.10.0",
     "@nuxt/hints": "1.0.0-alpha.1",
@@ -28,11 +29,11 @@
     "@tresjs/core": "^5.1.1",
     "@tresjs/post-processing": "^3.1.1",
     "@vueuse/nuxt": "14.0.0",
+    "consola": "^3.4.2",
     "drizzle-orm": "^0.44.7",
     "eslint": "^9.39.1",
     "identicons-esm": "1.0.0-beta.5",
     "motion-v": "^1.7.4",
-    "nimiq-rpc-client-ts": "1.0.0-beta.38",
     "nuxt": "^4.2.1",
     "three": "^0.181.2",
     "typescript": "^5.9.3",

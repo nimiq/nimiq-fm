@@ -212,7 +212,7 @@ export function useOrbConfig() {
   // Mobile Detection
   if (import.meta.client && !metrics.value.isMobile) {
     const { isMobile } = useDevice()
-    const deviceMemory = (navigator as any).deviceMemory || 4
+    const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4
     const concurrency = navigator.hardwareConcurrency || 4
 
     // Auto-enable mobile mode if low specs or mobile UA

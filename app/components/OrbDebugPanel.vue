@@ -1,7 +1,14 @@
 <script setup lang="ts">
 const { config, metrics, reset, resetGroup, regenerateGraph } = useOrbConfig()
+const { connectionState, lastBlockTimestamp, peerCount } = useBlockchain()
 const isOpen = ref(false)
 const showResetAlert = ref(false)
+
+const timeSinceLastBlock = computed(() => {
+  if (!lastBlockTimestamp.value)
+    return 0
+  return Math.floor((Date.now() - lastBlockTimestamp.value) / 1000)
+})
 
 async function copyConfigAsJson() {
   await navigator.clipboard.writeText(JSON.stringify(config.value, null, 2))
@@ -60,6 +67,38 @@ function confirmReset() {
             </div>
             <div class="flex justify-between pl-2 border-l border-white/10">
               <span>RAM</span><span>{{ metrics.deviceMemory }} GB</span>
+            </div>
+          </div>
+        </template>
+      </UCollapsible>
+
+      <!-- Connection -->
+      <UCollapsible>
+        <UButton block color="neutral" variant="ghost" class="justify-between">
+          <span class="flex items-center gap-2"><UIcon name="i-heroicons-signal" class="size-4" /> Connection</span>
+          <template #trailing>
+            <UIcon name="i-heroicons-chevron-down" class="size-4 transition-transform group-data-[state=open]:rotate-180" />
+          </template>
+        </UButton>
+        <template #content>
+          <div class="space-y-2 pt-2 pb-2 text-xs font-mono text-white/80">
+            <div class="flex justify-between">
+              <span>State</span>
+              <span
+                :class="{
+                  'text-gray-400': connectionState === 'loading-wasm',
+                  'text-red-400': connectionState === 'wasm-failed' || connectionState === 'disconnected',
+                  'text-yellow-400': connectionState === 'connecting',
+                  'text-blue-400': connectionState === 'syncing',
+                  'text-green-400': connectionState === 'established',
+                }"
+              >{{ connectionState }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Last Block</span><span>{{ timeSinceLastBlock }}s ago</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Peer Count</span><span>{{ peerCount }}</span>
             </div>
           </div>
         </template>

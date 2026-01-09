@@ -1,5 +1,5 @@
-import process from 'node:process'
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import nimiq from '@nimiq/core/vite'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -36,17 +36,9 @@ export default defineNuxtConfig({
       standalone: false,
     },
   },
-  nitro: {
-    experimental: {
-      websocket: true,
-    },
-    rollupConfig: {
-      external: ['utf-8-validate', 'bufferutil', '@libsql/isomorphic-ws'],
-    },
-  },
   css: ['./app/assets/css/main.css'],
-  runtimeConfig: {
-    nimiqRpcUrl: process.env.NIMIQ_RPC_URL || 'http://localhost:8648',
+  vite: {
+    plugins: [nimiq()],
   },
   hub: {
     cache: true,
