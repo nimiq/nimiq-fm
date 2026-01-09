@@ -12,10 +12,6 @@ function getValidatorInfo(address: string) {
   return validator ? { name: validator.name, logo: validator.logo, address } : null
 }
 
-function truncateAddress(address: string) {
-  return `${address.slice(0, 8)}...${address.slice(-4)}`
-}
-
 // Watch for new blocks
 watch(latestBlock, (block) => {
   if (!block?.validatorAddress)
@@ -41,7 +37,8 @@ watch(latestBlock, (block) => {
           :transition="{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }"
         >
           <img :src="currentValidator.logo" :alt="currentValidator.name" class="size-5 rounded-full">
-          <span class="text-sm text-white/90 font-medium">{{ currentValidator.name || truncateAddress(currentValidator.address) }}</span>
+          <span v-if="currentValidator.name" class="text-sm text-white/90 font-medium">{{ currentValidator.name }}</span>
+          <ShortAddress v-else :address="currentValidator.address" />
         </Motion>
         <Motion
           v-else
