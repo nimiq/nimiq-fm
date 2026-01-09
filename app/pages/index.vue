@@ -99,9 +99,12 @@ watch(hasBlockchainData, (ready) => {
       <ClientOnly>
         <Motion
           class="absolute inset-0"
-          :initial="{ opacity: 0 }"
-          :animate="{ opacity: animationStage >= 1 ? (showWhatIsThis ? 0.3 : 1) : 0 }"
-          :transition="{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }"
+          :initial="{ opacity: 0, scale: 0 }"
+          :animate="{
+            opacity: animationStage >= 1 ? (showWhatIsThis ? 0.3 : 1) : 0,
+            scale: animationStage >= 1 ? 1 : 0
+          }"
+          :transition="{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }"
         >
           <LazyOrbScene :audio-data="0" />
         </Motion>
@@ -159,8 +162,8 @@ watch(hasBlockchainData, (ready) => {
         key="welcome"
         class="fixed inset-0 flex items-center justify-center z-20 pointer-events-none"
         :initial="{ opacity: 1, scale: 1 }"
-        :exit="{ opacity: 0, scale: 0.95, filter: 'blur(16px)' }"
-        :transition="{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }"
+        :exit="{ opacity: 0, y: -30, filter: 'blur(8px)' }"
+        :transition="{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }"
       >
         <div class="absolute inset-0 backdrop-blur-md bg-slate-900/30" />
         <div class="relative flex flex-col items-center gap-3">
@@ -181,19 +184,30 @@ watch(hasBlockchainData, (ready) => {
                 </span>
               </Motion>
             </AnimatePresence>
-
-            <!-- Pulsing connection dot -->
-            <div
-              class="connection-dot"
-              :class="{
-                connecting: connectionState === 'connecting' || connectionState === 'loading-wasm',
-                syncing: connectionState === 'syncing',
-                established: connectionState === 'established',
-                error: connectionState === 'wasm-failed' || connectionState === 'disconnected',
-              }"
-            />
           </div>
         </div>
+      </Motion>
+    </AnimatePresence>
+
+    <!-- Connection dot - stays visible during transition and merges with orb -->
+    <AnimatePresence>
+      <Motion
+        v-if="!hasBlockchainData || animationStage < 1"
+        key="connection-dot"
+        class="fixed inset-0 flex items-center justify-center z-15 pointer-events-none"
+        :initial="{ opacity: 1, scale: 1 }"
+        :exit="{ opacity: 0, scale: 3, filter: 'blur(20px)' }"
+        :transition="{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }"
+      >
+        <div
+          class="connection-dot"
+          :class="{
+            connecting: connectionState === 'connecting' || connectionState === 'loading-wasm',
+            syncing: connectionState === 'syncing',
+            established: connectionState === 'established',
+            error: connectionState === 'wasm-failed' || connectionState === 'disconnected',
+          }"
+        />
       </Motion>
     </AnimatePresence>
 
